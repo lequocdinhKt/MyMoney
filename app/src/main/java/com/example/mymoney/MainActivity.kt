@@ -5,8 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
-import com.example.mymoney.domain.usecase.*
+import com.example.mymoney.ui.navigation.AppNavigation
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,6 +14,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyMoneyTheme {
+                // Tạo NavController và truyền vào navigation graph
+                val navController = rememberNavController()
+                AppNavigation(navController = navController)
             }
         }
     }
