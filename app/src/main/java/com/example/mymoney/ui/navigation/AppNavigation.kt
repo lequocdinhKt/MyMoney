@@ -3,28 +3,25 @@ package com.example.mymoney.ui.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.ui.screens.main.MainScreen
-import com.example.mymoney.ui.screens.startScreens.OnboardingEvent
-import com.example.mymoney.ui.screens.startScreens.OnboardingViewModel
-import com.example.mymoney.ui.screens.startScreens.StartScreen1
-import com.example.mymoney.ui.screens.startScreens.StartScreen2
-import com.example.mymoney.ui.screens.startScreens.StartScreen3
+import com.example.mymoney.ui.screens.onboarding.OnboardingScreen
 
 /**
  * Navigation graph chính của ứng dụng.
  *
- * Luồng: Start1 → Start2 → Start3 → Main
+ * startDestination được quyết định dựa vào DataStore:
+ *   - IS_ONBOARDING_COMPLETED = true  → vào thẳng MainScreen
+ *   - IS_ONBOARDING_COMPLETED = false → hiện OnboardingScreen
  *
- * Mỗi màn hình onboarding có ViewModel riêng (scoped theo NavBackStackEntry).
- * Navigation được điều khiển qua Event + State (UDF), không gọi trực tiếp trong UI.
+ * Tránh nhấp nháy màn hình: đọc Flow trực tiếp trước khi NavHost render.
  *
  * @param navController Controller điều hướng từ MainActivity
  * @param modifier Modifier tuỳ chỉnh
@@ -34,9 +31,23 @@ fun AppNavigation(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    // Đọc trạng thái onboarding từ DataStore — null = đang tải, chưa render NavHost
+    val isOnboardingCompleted by SettingPreferences(context)
+        .isOnboardingCompleted
+        .collectAsState(initial = null)
+
+    // Chờ DataStore đọc xong (tránh flash màn hình sai)
+    val startDestination = when (isOnboardingCompleted) {
+        true  -> Screen.Main.route         // đã xem → vào thẳng Main
+        false -> Screen.Onboarding.route   // chưa xem → hiện Onboarding
+        null  -> return                    // đang tải → chưa render gì
+    }
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Start1.route,
+        startDestination = startDestination,
         modifier = modifier,
         // Tắt toàn bộ animation khi chuyển màn hình
         enterTransition = { EnterTransition.None },
@@ -44,63 +55,9 @@ fun AppNavigation(
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        // ── Màn hình onboarding 1 ──
-        composable(route = Screen.Start1.route) {
-            // ViewModel scoped theo NavBackStackEntry → mỗi trang có instance riêng
-            val viewModel: OnboardingViewModel = viewModel()
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-            // Quan sát cờ navigation → điều hướng sang trang 2
-            LaunchedEffect(uiState.shouldNavigateNext) {
-                if (uiState.shouldNavigateNext) {
-                    navController.navigate(Screen.Start2.route)
-                    viewModel.onEvent(OnboardingEvent.OnNavigationHandled)
-                }
-            }
-
-            // UI gửi event khi nhấn nút "Tiếp theo"
-            StartScreen1(
-                onNextClick = { viewModel.onEvent(OnboardingEvent.OnNextClicked) }
-            )
-        }
-
-        // ── Màn hình onboarding 2 ──
-        composable(route = Screen.Start2.route) {
-            val viewModel: OnboardingViewModel = viewModel()
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-            // Quan sát cờ navigation → điều hướng sang trang 3
-            LaunchedEffect(uiState.shouldNavigateNext) {
-                if (uiState.shouldNavigateNext) {
-                    navController.navigate(Screen.Start3.route)
-                    viewModel.onEvent(OnboardingEvent.OnNavigationHandled)
-                }
-            }
-
-            StartScreen2(
-                onNextClick = { viewModel.onEvent(OnboardingEvent.OnNextClicked) }
-            )
-        }
-
-        // ── Màn hình onboarding 3 ──
-        composable(route = Screen.Start3.route) {
-            val viewModel: OnboardingViewModel = viewModel()
-            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-            // Quan sát cờ navigation → điều hướng sang màn hình chính
-            // popUpTo xoá toàn bộ onboarding khỏi back stack để không quay lại được
-            LaunchedEffect(uiState.shouldNavigateNext) {
-                if (uiState.shouldNavigateNext) {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Start1.route) { inclusive = true }
-                    }
-                    viewModel.onEvent(OnboardingEvent.OnNavigationHandled)
-                }
-            }
-
-            StartScreen3(
-                onNextClick = { viewModel.onEvent(OnboardingEvent.OnNextClicked) }
-            )
+        // ── Màn hình onboarding thống nhất (gồm 3 trang nội bộ) ──
+        composable(route = Screen.Onboarding.route) {
+            OnboardingScreen(navController = navController)
         }
 
         // ── Màn hình chính ──

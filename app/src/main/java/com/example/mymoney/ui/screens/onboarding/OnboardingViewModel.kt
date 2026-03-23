@@ -1,84 +1,102 @@
 package com.example.mymoney.ui.screens.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.local.datastore.SettingPreferences
+import com.example.mymoney.data.local.static.onboardingPages
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 // ────────────────────────────────────────────────────────────
-// Số trang onboarding (không đổi)
+// ViewModel: chỉ chứa logic xử lý — data/contract đã tách riêng
 // ────────────────────────────────────────────────────────────
-const val ONBOARDING_TOTAL_PAGES = 3
 
-// ────────────────────────────────────────────────────────────
-// Event: hành động người dùng gửi tới ViewModel
-// ────────────────────────────────────────────────────────────
-sealed class OnboardingEvent {
-    /** Người dùng nhấn nút "Tiếp theo" */
-    data object OnNextClicked : OnboardingEvent()
-
-    /** Người dùng nhấn nút "Quay lại" */
-    data object OnPreviousClicked : OnboardingEvent()
-
-    /** UI đã xử lý xong navigation → reset cờ để tránh navigate lặp */
-    data object OnNavigationHandled : OnboardingEvent()
-}
-
-// ────────────────────────────────────────────────────────────
-// State: trạng thái UI quan sát được
-// ────────────────────────────────────────────────────────────
 /**
- * Trạng thái của màn hình onboarding thống nhất.
+ * ViewModel cho OnboardingScreen.
  *
- * @param currentPage Trang hiện tại (0-based, tối đa ONBOARDING_TOTAL_PAGES - 1)
- * @param navigateToMain Cờ báo hiệu UI cần chuyển sang MainScreen
- */
-data class OnboardingUiState(
-    val currentPage: Int = 0,
-    val navigateToMain: Boolean = false
-)
-
-// ────────────────────────────────────────────────────────────
-// ViewModel: xử lý logic chuyển trang và navigation
-// ────────────────────────────────────────────────────────────
-/**
- * ViewModel cho OnboardingScreen thống nhất.
+ * Nhận [SettingPreferences] qua constructor để lưu trạng thái
+ * "đã xem onboarding" vào DataStore mà không phụ thuộc trực tiếp vào Context.
  *
  * Luồng UDF:
- *   UI gửi OnboardingEvent → ViewModel cập nhật OnboardingUiState
- *   → UI quan sát state → render đúng trang / thực hiện navigate
+ *   UI gửi [OnboardingEvent] → ViewModel cập nhật [OnboardingUiState]
+ *   hoặc phát [OnboardingNavEvent] qua SharedFlow → UI collect và navigate
+ *
+ * @param settingPreferences Truy cập DataStore để đọc/ghi cài đặt ứng dụng
  */
-class OnboardingViewModel : ViewModel() {
+class OnboardingViewModel(
+    private val settingPreferences: SettingPreferences,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
 
-    /** State cho UI quan sát (chỉ đọc) */
+    /** State cho UI quan sát — chỉ đọc */
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    /** Nhận sự kiện từ UI và xử lý */
+    // replay = 0: không phát lại event cũ khi subscriber mới collect
+    private val _navEvent = MutableSharedFlow<OnboardingNavEvent>()
+
+    /** Navigation side-effect — UI collect 1 lần qua LaunchedEffect(Unit) */
+    val navEvent: SharedFlow<OnboardingNavEvent> = _navEvent.asSharedFlow()
+
+    // ── Xử lý event từ UI ──
+
     fun onEvent(event: OnboardingEvent) {
         when (event) {
-            // Nhấn "Tiếp theo": nếu là trang cuối → bật cờ navigate, ngược lại tăng trang
-            is OnboardingEvent.OnNextClicked -> {
-                val current = _uiState.value.currentPage
-                if (current >= ONBOARDING_TOTAL_PAGES - 1) {
-                    _uiState.update { it.copy(navigateToMain = true) }
-                } else {
-                    _uiState.update { it.copy(currentPage = current + 1) }
-                }
-            }
-            // Nhấn "Quay lại": giảm trang (không xuống dưới 0)
-            is OnboardingEvent.OnPreviousClicked -> {
-                val current = _uiState.value.currentPage
-                if (current > 0) {
-                    _uiState.update { it.copy(currentPage = current - 1) }
-                }
-            }
-            // UI đã navigate xong → tắt cờ để tránh navigate lại khi recompose
-            is OnboardingEvent.OnNavigationHandled -> {
-                _uiState.update { it.copy(navigateToMain = false) }
+            is OnboardingEvent.OnNextClicked -> handleNextClicked()
+        }
+    }
+
+    /**
+     * Xử lý nhấn "Tiếp theo":
+     * - Chưa phải trang cuối → tăng currentPage
+     * - Trang cuối → lưu IS_ONBOARDING_COMPLETED = true → phát NavigateToMain
+     */
+    private fun handleNextClicked() {
+        val current = _uiState.value.currentPage
+        if (current < onboardingPages.lastIndex) {
+            // Chưa phải trang cuối → sang trang tiếp theo
+            _uiState.update { it.copy(currentPage = current + 1) }
+        } else {
+            // Trang cuối → lưu preference TRƯỚC, sau đó navigate
+            viewModelScope.launch {
+                settingPreferences.saveOnboardingCompleted()      // ghi DataStore
+                _navEvent.emit(OnboardingNavEvent.NavigateToMain) // báo UI navigate
             }
         }
     }
+
+    // ────────────────────────────────────────────────────────────
+    // Factory: tạo ViewModel với dependency SettingPreferences
+    // Dùng thủ công khi chưa có DI framework (Hilt/Koin)
+    // ────────────────────────────────────────────────────────────
+
+    companion object {
+        /**
+         * Tạo [ViewModelProvider.Factory] nhận [Context].
+         *
+         * Cách dùng trong Composable:
+         * ```kotlin
+         * val ctx = LocalContext.current
+         * val vm: OnboardingViewModel = viewModel(factory = OnboardingViewModel.factory(ctx))
+         * ```
+         */
+        fun factory(context: Context): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    OnboardingViewModel(
+                        settingPreferences = SettingPreferences(context.applicationContext)
+                    ) as T
+            }
+    }
 }
+
+

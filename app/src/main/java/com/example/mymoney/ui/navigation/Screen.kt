@@ -7,14 +7,8 @@ package com.example.mymoney.ui.navigation
 sealed class Screen(val route: String) {
 
     // ── Onboarding ──
-    /** Màn hình giới thiệu 1: "Tiền biến mất không rõ lý do?" */
-    data object Start1 : Screen("start_1")
-
-    /** Màn hình giới thiệu 2: "Kiểm Soát Tiền Của Bạn Ngay Hôm Nay" */
-    data object Start2 : Screen("start_2")
-
-    /** Màn hình giới thiệu 3: "Chào mừng bạn đến với myMoney" */
-    data object Start3 : Screen("start_3")
+    /** Màn hình onboarding thống nhất (thay thế Start1, Start2, Start3) */
+    data object Onboarding : Screen("onboarding")
 
     // ── Màn hình chính ──
     /** Màn hình chính sau khi hoàn thành onboarding */
