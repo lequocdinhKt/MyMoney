@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.startScreens.component
+package com.example.mymoney.ui.screens.onboarding.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -102,7 +102,7 @@ fun OnboardingPageLayout(
         OnboardingBottomBar(
             currentPage = currentPage,
             totalPages = totalPages,
-            onNextClick = onNextClick
+            onNextClick = onNextClick,
         )
 
         Spacer(modifier = Modifier.height(64.dp))
@@ -110,7 +110,7 @@ fun OnboardingPageLayout(
 }
 
 /**
- * Thanh điều hướng dưới cùng: page indicator dots + nút FAB mũi tên.
+ * Thanh điều hướng dưới cùng:page indicator dots + nút tiếp theo.
  */
 @Composable
 private fun OnboardingBottomBar(
