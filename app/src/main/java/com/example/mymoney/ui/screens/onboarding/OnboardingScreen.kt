@@ -12,9 +12,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.mymoney.data.local.static.onboardingPages
-import com.example.mymoney.ui.navigation.Screen
 import com.example.mymoney.ui.screens.onboarding.component.OnboardingPageLayout
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
@@ -23,15 +21,15 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
  *
  * State ([OnboardingUiState.currentPage]) đến từ [OnboardingViewModel].
  * Navigation side-effect đến từ [OnboardingViewModel.navEvent] (SharedFlow).
- * UI hoàn toàn stateless — không chứa logic nghiệp vụ.
+ * UI hoàn toàn stateless — không chứa logic nghiệp vụ, không phụ thuộc NavController.
  *
- * @param navController Điều hướng sang MainScreen khi hoàn thành onboarding
- * @param modifier Modifier tuỳ chỉnh từ bên ngoài
- * @param viewModel ViewModel quản lý state onboarding (tự tạo factory nếu không truyền)
+ * @param onFinished Callback gọi khi người dùng hoàn thành tất cả trang onboarding
+ * @param modifier   Modifier tuỳ chỉnh từ bên ngoài
+ * @param viewModel  ViewModel quản lý state onboarding (tự tạo factory nếu không truyền)
  */
 @Composable
 fun OnboardingScreen(
-    navController: NavController,
+    onFinished: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OnboardingViewModel = viewModel(
         // Truyền factory để inject SettingPreferences mà không cần Hilt/Koin
@@ -42,15 +40,11 @@ fun OnboardingScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Collect navigation side-effect — LaunchedEffect(Unit) chạy 1 lần, lắng nghe liên tục
+    // Khi ViewModel phát NavigateToMain → gọi callback onFinished, không tự navigate
     LaunchedEffect(Unit) {
         viewModel.navEvent.collect { event ->
             when (event) {
-                // Xoá toàn bộ onboarding khỏi back stack trước khi vào Main
-                is OnboardingNavEvent.NavigateToMain -> {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
+                is OnboardingNavEvent.NavigateToMain -> onFinished()
             }
         }
     }
