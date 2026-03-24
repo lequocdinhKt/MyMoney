@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.onboarding
+package com.example.mymoney.ui.onboarding
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,7 +13,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.data.local.static.onboardingPages
-import com.example.mymoney.ui.screens.onboarding.component.OnboardingPageLayout
+import com.example.mymoney.presentation.viewmodel.onboarding.OnboardingViewModel
+import com.example.mymoney.presentation.viewmodel.onboarding.onboarding.OnboardingEvent
+import com.example.mymoney.presentation.viewmodel.onboarding.onboarding.OnboardingNavEvent
+import com.example.mymoney.ui.onboarding.components.OnboardingPageLayout
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
@@ -21,7 +24,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
  *
  * State ([OnboardingUiState.currentPage]) đến từ [OnboardingViewModel].
  * Navigation side-effect đến từ [OnboardingViewModel.navEvent] (SharedFlow).
- * UI hoàn toàn stateless — không chứa logic nghiệp vụ, không phụ thuộc NavController.
+ * UI hoàn toàn stateless – không chứa logic nghiệp vụ, không phụ thuộc NavController.
  *
  * @param onFinished Callback gọi khi người dùng hoàn thành tất cả trang onboarding
  * @param modifier   Modifier tuỳ chỉnh từ bên ngoài
@@ -39,7 +42,7 @@ fun OnboardingScreen(
     // Quan sát UI state từ ViewModel
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Collect navigation side-effect — LaunchedEffect(Unit) chạy 1 lần, lắng nghe liên tục
+    // Collect navigation side-effect – LaunchedEffect(Unit) chạy 1 lần, lắng nghe liên tục
     // Khi ViewModel phát NavigateToMain → gọi callback onFinished, không tự navigate
     LaunchedEffect(Unit) {
         viewModel.navEvent.collect { event ->
@@ -49,7 +52,7 @@ fun OnboardingScreen(
         }
     }
 
-    // Lấy dữ liệu trang hiện tại từ danh sách — không hardcode số trang
+    // Lấy dữ liệu trang hiện tại từ danh sách – không hardcode số trang
     val page = onboardingPages[uiState.currentPage]
 
     OnboardingPageLayout(
@@ -64,10 +67,10 @@ fun OnboardingScreen(
     )
 }
 
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Hàm build AnnotatedString tiêu đề theo titleKey
 // Tách riêng để OnboardingScreen không bị lẫn logic styling
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Chuyển [titleKey] thành [androidx.compose.ui.text.AnnotatedString] tương ứng.
@@ -83,7 +86,7 @@ private fun buildPageTitle(titleKey: String) = when (titleKey) {
     }
     // page_2 và mọi trang tương lai đều dùng nhánh else
     else -> {
-        // Lấy màu primary để tô "myMoney" — phải gọi trong @Composable scope
+        // Lấy màu primary để tô "myMoney" – phải gọi trong @Composable scope
         val primaryColor = MaterialTheme.colorScheme.primary
         buildAnnotatedString {
             append("Chào mừng bạn đến với\n")
@@ -94,7 +97,7 @@ private fun buildPageTitle(titleKey: String) = when (titleKey) {
     }
 }
 
-// ── Previews — hiển thị từng trang riêng biệt ──
+// ── Previews – hiển thị từng trang riêng biệt ──
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

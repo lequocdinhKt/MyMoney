@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.mymoney.ui.screens.main.MainScreen
-import com.example.mymoney.ui.screens.onboarding.OnboardingScreen
+import com.example.mymoney.ui.main.MainScreen
+import com.example.mymoney.ui.onboarding.OnboardingScreen
 
 /**
  * Navigation graph chính của ứng dụng.

@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.home
+package com.example.mymoney.ui.saving
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,37 +12,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mymoney.presentation.viewmodel.saving.SavingViewModel
+import com.example.mymoney.presentation.viewmodel.saving.saving.SavingUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
- * Màn hình Trang chủ — tab đầu tiên trong Bottom Navigation.
+ * Màn hình Tiết kiệm – tab thứ 3 trong Bottom Navigation.
  * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
- *
- * @param viewModel ViewModel cung cấp trạng thái cho màn hình
- * @param modifier Modifier tùy chỉnh từ bên ngoài
  */
 @Composable
-fun HomeScreen(
+fun SavingScreen(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: SavingViewModel = viewModel()
 ) {
-    // Lắng nghe trạng thái từ ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
-    // Gọi phần UI thuần — tách biệt để dễ Preview
-    HomeContent(
+    SavingContent(
         uiState = uiState,
         modifier = modifier
     )
 }
 
 /**
- * Nội dung hiển thị của màn hình Trang chủ.
- * Composable thuần túy — không phụ thuộc ViewModel, dễ test và preview.
+ * Nội dung hiển thị của màn hình Tiết kiệm.
+ * Composable thuần tuý – không phụ thuộc ViewModel, dễ test và preview.
  */
 @Composable
-private fun HomeContent(
-    uiState: HomeUiState,
+private fun SavingContent(
+    uiState: SavingUiState,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -51,9 +48,8 @@ private fun HomeContent(
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        // Placeholder — sẽ thay thế bằng nội dung thực tế
         Text(
-            text = "Màn hình Trang Chủ",
+            text = "Màn hình Tiết Kiệm",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -64,16 +60,16 @@ private fun HomeContent(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun HomeScreenLightPreview() {
+private fun SavingScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
-        HomeContent(uiState = HomeUiState())
+        SavingContent(uiState = SavingUiState())
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun HomeScreenDarkPreview() {
+private fun SavingScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
-        HomeContent(uiState = HomeUiState())
+        SavingContent(uiState = SavingUiState())
     }
 }

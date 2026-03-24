@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.other
+package com.example.mymoney.ui.other
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,10 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mymoney.presentation.viewmodel.other.OtherViewModel
+import com.example.mymoney.presentation.viewmodel.other.other.OtherUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
- * Màn hình Khác — tab cuối cùng trong Bottom Navigation.
+ * Màn hình Khác – tab cuối cùng trong Bottom Navigation.
  * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
  */
 @Composable
@@ -33,7 +35,7 @@ fun OtherScreen(
 
 /**
  * Nội dung hiển thị của màn hình Khác.
- * Composable thuần túy — không phụ thuộc ViewModel, dễ test và preview.
+ * Composable thuần tuý – không phụ thuộc ViewModel, dễ test và preview.
  */
 @Composable
 private fun OtherContent(

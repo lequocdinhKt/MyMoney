@@ -1,9 +1,9 @@
-package com.example.mymoney.ui.screens.onboarding
+package com.example.mymoney.presentation.viewmodel.onboarding.onboarding
 
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Contract: tập hợp State, Event, NavEvent cho OnboardingScreen
 // Tách riêng để ViewModel và Screen không import lẫn nhau
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ── UI State ──
 
@@ -21,7 +21,7 @@ data class OnboardingUiState(
 
 /**
  * Hành động người dùng gửi từ UI lên ViewModel.
- * Chỉ có OnNextClicked — không có Previous vì UI không dùng.
+ * Chỉ có OnNextClicked – không có Previous vì UI không dùng.
  */
 sealed class OnboardingEvent {
     /** Người dùng nhấn nút "Tiếp theo" */
@@ -32,9 +32,9 @@ sealed class OnboardingEvent {
 
 /**
  * Side-effect điều hướng phát qua SharedFlow.
- * Không lưu trong UiState — tránh xử lý lại khi recompose.
+ * Không lưu trong UiState – tránh xử lý lại khi recompose.
  */
 sealed class OnboardingNavEvent {
-    /** Hoàn thành onboarding → điều hướng sang MainScreen */
+    /** Hoàn thành onboarding để điều hướng sang MainScreen */
     data object NavigateToMain : OnboardingNavEvent()
 }

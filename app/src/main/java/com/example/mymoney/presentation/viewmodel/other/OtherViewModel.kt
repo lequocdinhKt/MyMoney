@@ -1,22 +1,11 @@
-package com.example.mymoney.ui.screens.other
+package com.example.mymoney.presentation.viewmodel.other
 
 import androidx.lifecycle.ViewModel
+import com.example.mymoney.presentation.viewmodel.other.other.OtherEvent
+import com.example.mymoney.presentation.viewmodel.other.other.OtherUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-/**
- * Trạng thái giao diện của màn hình Khác.
- * Dùng data class bất biến — cập nhật bằng copy().
- */
-data class OtherUiState(
-    val isLoading: Boolean = false
-)
-
-/**
- * Sự kiện người dùng gửi từ OtherScreen lên ViewModel.
- */
-sealed interface OtherEvent
 
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Khác.

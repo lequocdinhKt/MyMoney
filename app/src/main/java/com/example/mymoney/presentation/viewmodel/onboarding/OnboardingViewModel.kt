@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.onboarding
+package com.example.mymoney.presentation.viewmodel.onboarding
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -6,6 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.static.onboardingPages
+import com.example.mymoney.presentation.viewmodel.onboarding.onboarding.OnboardingEvent
+import com.example.mymoney.presentation.viewmodel.onboarding.onboarding.OnboardingNavEvent
+import com.example.mymoney.presentation.viewmodel.onboarding.onboarding.OnboardingUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -15,9 +18,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ────────────────────────────────────────────────────────────
-// ViewModel: chỉ chứa logic xử lý — data/contract đã tách riêng
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ViewModel: chỉ chứa logic xử lý – data/contract đã tách riêng
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * ViewModel cho OnboardingScreen.
@@ -37,13 +40,13 @@ class OnboardingViewModel(
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
 
-    /** State cho UI quan sát — chỉ đọc */
+    /** State cho UI quan sát – chỉ đọc */
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     // replay = 0: không phát lại event cũ khi subscriber mới collect
     private val _navEvent = MutableSharedFlow<OnboardingNavEvent>()
 
-    /** Navigation side-effect — UI collect 1 lần qua LaunchedEffect(Unit) */
+    /** Navigation side-effect – UI collect 1 lần qua LaunchedEffect(Unit) */
     val navEvent: SharedFlow<OnboardingNavEvent> = _navEvent.asSharedFlow()
 
     // ── Xử lý event từ UI ──
@@ -73,10 +76,10 @@ class OnboardingViewModel(
         }
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
     // Factory: tạo ViewModel với dependency SettingPreferences
     // Dùng thủ công khi chưa có DI framework (Hilt/Koin)
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
 
     companion object {
         /**
@@ -98,5 +101,3 @@ class OnboardingViewModel(
             }
     }
 }
-
-

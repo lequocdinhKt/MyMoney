@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.onboarding.component
+package com.example.mymoney.ui.onboarding.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -110,7 +110,7 @@ fun OnboardingPageLayout(
 }
 
 /**
- * Thanh điều hướng dưới cùng:page indicator dots + nút tiếp theo.
+ * Thanh điều hướng dưới cùng: page indicator dots + nút tiếp theo.
  */
 @Composable
 private fun OnboardingBottomBar(

@@ -1,22 +1,11 @@
-package com.example.mymoney.ui.screens.saving
+package com.example.mymoney.presentation.viewmodel.saving
 
 import androidx.lifecycle.ViewModel
+import com.example.mymoney.presentation.viewmodel.saving.saving.SavingEvent
+import com.example.mymoney.presentation.viewmodel.saving.saving.SavingUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-/**
- * Trạng thái giao diện của màn hình Tiết kiệm.
- * Dùng data class bất biến — cập nhật bằng copy().
- */
-data class SavingUiState(
-    val isLoading: Boolean = false
-)
-
-/**
- * Sự kiện người dùng gửi từ SavingScreen lên ViewModel.
- */
-sealed interface SavingEvent
 
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Tiết kiệm.

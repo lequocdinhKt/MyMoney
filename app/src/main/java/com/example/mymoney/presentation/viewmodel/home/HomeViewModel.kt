@@ -1,27 +1,15 @@
-package com.example.mymoney.ui.screens.home
+package com.example.mymoney.presentation.viewmodel.home
 
 import androidx.lifecycle.ViewModel
+import com.example.mymoney.presentation.viewmodel.home.home.HomeEvent
+import com.example.mymoney.presentation.viewmodel.home.home.HomeUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Trạng thái giao diện của màn hình Trang chủ.
- * Dùng data class bất biến — cập nhật bằng copy().
- */
-data class HomeUiState(
-    val isLoading: Boolean = false
-)
-
-/**
- * Sự kiện người dùng gửi từ HomeScreen lên ViewModel.
- * Hiện tại chưa có event — mở rộng khi cần.
- */
-sealed interface HomeEvent
-
-/**
  * ViewModel quản lý logic và trạng thái cho màn hình Trang chủ.
- * UI chỉ observe [uiState] — không chứa logic nghiệp vụ.
+ * UI chỉ observe [uiState] – không chứa logic nghiệp vụ.
  */
 class HomeViewModel : ViewModel() {
 

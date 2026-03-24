@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.main
+package com.example.mymoney.ui.main
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -15,16 +15,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mymoney.ui.budget.BudgetScreen
 import com.example.mymoney.ui.components.CustomBottomBar
+import com.example.mymoney.ui.home.HomeScreen
 import com.example.mymoney.ui.navigation.BottomTab
-import com.example.mymoney.ui.screens.budget.BudgetScreen
-import com.example.mymoney.ui.screens.home.HomeScreen
-import com.example.mymoney.ui.screens.other.OtherScreen
-import com.example.mymoney.ui.screens.saving.SavingScreen
+import com.example.mymoney.ui.other.OtherScreen
+import com.example.mymoney.ui.saving.SavingScreen
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
- * Màn hình chính của ứng dụng — chứa Bottom Navigation và nội dung các tab.
+ * Màn hình chính của ứng dụng – chứa Bottom Navigation và nội dung các tab.
  *
  * Cấu trúc:
  *   Scaffold
@@ -44,7 +44,7 @@ fun MainScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        // Tắt màu nền mặc định của Scaffold — để content tự quản lý
+        // Tắt màu nền mặc định của Scaffold – để content tự quản lý
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             CustomBottomBar(

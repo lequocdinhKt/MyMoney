@@ -1,4 +1,4 @@
-package com.example.mymoney.ui.screens.budget
+package com.example.mymoney.ui.budget
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,10 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModel
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
- * Màn hình Ngân sách — tab thứ 2 trong Bottom Navigation.
+ * Màn hình Ngân sách – tab thứ 2 trong Bottom Navigation.
  * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
  */
 @Composable
@@ -33,7 +35,7 @@ fun BudgetScreen(
 
 /**
  * Nội dung hiển thị của màn hình Ngân sách.
- * Composable thuần túy — không phụ thuộc ViewModel, dễ test và preview.
+ * Composable thuần tuý – không phụ thuộc ViewModel, dễ test và preview.
  */
 @Composable
 private fun BudgetContent(

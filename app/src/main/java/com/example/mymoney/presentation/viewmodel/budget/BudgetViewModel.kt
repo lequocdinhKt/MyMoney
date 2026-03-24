@@ -1,22 +1,11 @@
-package com.example.mymoney.ui.screens.budget
+package com.example.mymoney.presentation.viewmodel.budget
 
 import androidx.lifecycle.ViewModel
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetEvent
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-/**
- * Trạng thái giao diện của màn hình Ngân sách.
- * Dùng data class bất biến — cập nhật bằng copy().
- */
-data class BudgetUiState(
-    val isLoading: Boolean = false
-)
-
-/**
- * Sự kiện người dùng gửi từ BudgetScreen lên ViewModel.
- */
-sealed interface BudgetEvent
 
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Ngân sách.
