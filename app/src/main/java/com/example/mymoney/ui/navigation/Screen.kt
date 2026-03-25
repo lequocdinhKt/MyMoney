@@ -23,46 +23,60 @@ sealed class Screen(val route: String) {
 
 /**
  * Sealed class quản lý các tab trong Bottom Navigation.
- * Mỗi tab có route, label hiển thị và icon tương ứng.
+ * Mỗi tab có route, label hiển thị, icon và title (cho Top Bar).
  *
  * @param route Đường dẫn điều hướng của tab
  * @param label Tên hiển thị bên dưới icon
  * @param icon Icon Material hiển thị trên tab
+ * @param title Tiêu đề hiển thị trên Top Bar — null nếu tab không cần Top Bar
  */
 sealed class BottomTab(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val title: String? = null
 ) {
     // ── Cụm bên trái (trước chỗ lõm) ──
     data object Home : BottomTab(
         route = "tab_home",
         label = "Trang chủ",
-        icon = Icons.Filled.Home
+        icon = Icons.Filled.Home,
+        title = "Trang chủ"
     )
 
     data object Budget : BottomTab(
         route = "tab_budget",
         label = "Ngân sách",
-        icon = Icons.Filled.AccountBalanceWallet
+        icon = Icons.Filled.AccountBalanceWallet,
+        title = "Ngân sách"
     )
 
     // ── Cụm bên phải (sau chỗ lõm) ──
     data object Saving : BottomTab(
         route = "tab_saving",
         label = "Tiết kiệm",
-        icon = Icons.Filled.Savings
+        icon = Icons.Filled.Savings,
+        title = "Tiết kiệm"
     )
 
+    /** Màn hình "Khác" – title = null → Top Bar sẽ bị ẩn */
     data object Other : BottomTab(
         route = "tab_other",
         label = "Khác",
-        icon = Icons.Filled.MoreHoriz
+        icon = Icons.Filled.MoreHoriz,
+        title = null
     )
 
     companion object {
         /** Danh sách tất cả các tab — dùng để render Bottom Bar */
         val all = listOf(Home, Budget, Saving, Other)
+
+        /**
+         * Tìm BottomTab tương ứng với route hiện tại.
+         * Dùng trong MainScreen để xác định tab đang hiển thị → truyền title cho Top Bar.
+         */
+        fun fromRoute(route: String?): BottomTab? =
+            all.firstOrNull { it.route == route }
     }
 }
 

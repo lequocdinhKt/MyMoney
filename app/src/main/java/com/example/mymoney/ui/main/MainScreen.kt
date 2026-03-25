@@ -18,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.mymoney.ui.budget.BudgetScreen
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.home.HomeScreen
+import com.example.mymoney.ui.main.components.CustomTopAppBar
 import com.example.mymoney.ui.navigation.BottomTab
 import com.example.mymoney.ui.other.OtherScreen
 import com.example.mymoney.ui.saving.SavingScreen
@@ -42,10 +43,30 @@ fun MainScreen(
     val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Xác định tab hiện tại → lấy title cho Top Bar
+    val currentTab = BottomTab.fromRoute(currentRoute)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         // Tắt màu nền mặc định của Scaffold – để content tự quản lý
         containerColor = MaterialTheme.colorScheme.background,
+        // ── Top Bar: chỉ hiện khi tab có title (OtherScreen → title = null → ẩn) ──
+        topBar = {
+            currentTab?.title?.let { title ->
+                CustomTopAppBar(
+                    title = title,
+                    onSettingsClick = {
+                        // TODO: Mở màn hình cài đặt
+                    },
+                    onSearchClick = {
+                        // TODO: Mở tìm kiếm
+                    },
+                    onCalendarClick = {
+                        // TODO: Mở lịch
+                    }
+                )
+            }
+        },
         bottomBar = {
             CustomBottomBar(
                 currentRoute = currentRoute,
