@@ -34,7 +34,8 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
  */
 @Composable
 fun MainScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAddTransactionClick: () -> Unit = {}
 ) {
     // NavController riêng cho các tab bên trong MainScreen
     val tabNavController = rememberNavController()
@@ -81,7 +82,8 @@ fun MainScreen(
                     }
                 },
                 onAddClick = {
-                    // TODO: Mở màn hình thêm giao dịch
+                    // Mở màn hình thêm giao dịch thông qua callback từ AppNavigation
+                    onAddTransactionClick()
                 }
             )
         }

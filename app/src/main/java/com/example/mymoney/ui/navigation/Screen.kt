@@ -19,6 +19,9 @@ sealed class Screen(val route: String) {
 
     // ── Màn hình chính (shell chứa bottom bar + nội dung tab) ──
     data object Main : Screen("main")
+
+    // ── Màn hình thêm giao dịch (mở từ FAB trong Bottom Bar) ──
+    data object AddTransaction : Screen("add_transaction")
 }
 
 /**

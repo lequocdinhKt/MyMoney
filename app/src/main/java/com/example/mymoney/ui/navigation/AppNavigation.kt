@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.mymoney.ui.addtransaction.AddTransactionScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
 
@@ -58,7 +59,21 @@ fun AppNavigation(
 
         // ── Màn hình chính ──
         composable(route = Screen.Main.route) {
-            MainScreen()
+            MainScreen(
+                // Callback khi nhấn FAB (+) → navigate sang màn hình thêm giao dịch
+                onAddTransactionClick = {
+                    navController.navigate(Screen.AddTransaction.route)
+                }
+            )
+        }
+
+        // ── Màn hình thêm giao dịch ──
+        composable(route = Screen.AddTransaction.route) {
+            AddTransactionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
