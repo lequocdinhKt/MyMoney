@@ -12,6 +12,8 @@ import com.example.mymoney.domain.usecase.GetTransactionsUseCase
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionNavEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatMessage
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatSender
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,11 +24,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ViewModel: quản lý logic và trạng thái cho màn hình Thêm Giao Dịch
+// ViewModel: quản lý logic và trạng thái cho màn hình Chat AI
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * ViewModel cho AddTransactionScreen.
+ * ViewModel cho AIChatScreen (trước đây AddTransactionScreen).
  *
  * Luồng UDF:
  *   UI gửi [AddTransactionEvent] → ViewModel cập nhật [AddTransactionUiState]
@@ -49,30 +51,8 @@ class AddTransactionViewModel(
     /** Navigation side-effect – UI collect 1 lần qua LaunchedEffect(Unit) */
     val navEvent: SharedFlow<AddTransactionNavEvent> = _navEvent.asSharedFlow()
 
-    init {
-        // Bắt đầu observe danh sách giao dịch từ Room
-        observeTransactions()
-    }
-
-    // ── Observe danh sách giao dịch từ Room ──
-
-    /**
-     * Lắng nghe Flow từ Room → cập nhật state tự động.
-     * Khi dữ liệu thay đổi (thêm/xoá), UI sẽ recompose.
-     */
-    private fun observeTransactions() {
-        viewModelScope.launch {
-            getTransactionsUseCase().collect { transactions ->
-                _uiState.update {
-                    it.copy(
-                        transactions = transactions,
-                        isEmpty = transactions.isEmpty(),
-                        isLoading = false
-                    )
-                }
-            }
-        }
-    }
+    /** Counter để tạo id duy nhất cho mỗi tin nhắn */
+    private var messageIdCounter = 0L
 
     // ── Xử lý event từ UI ──
 
@@ -89,7 +69,7 @@ class AddTransactionViewModel(
     }
 
     /**
-     * Cập nhật nội dung ô nhập ghi chú.
+     * Cập nhật nội dung ô nhập.
      */
     private fun handleNoteChanged(note: String) {
         _uiState.update { it.copy(noteInput = note) }
@@ -97,34 +77,34 @@ class AddTransactionViewModel(
 
     /**
      * Xử lý nhấn nút gửi:
-     * - Parse ghi chú thành giao dịch (tạm thời: lưu toàn bộ note làm 1 giao dịch)
-     * - Gọi addTransactionUseCase
-     * - Xoá nội dung ô nhập sau khi thành công
+     * 1. Thêm tin nhắn người dùng vào danh sách chat
+     * 2. TODO: Gửi tin nhắn tới AI → nhận phản hồi → thêm tin nhắn AI
+     * 3. TODO: AI parse giao dịch và tự động lưu vào Room
      */
     private fun handleSubmit() {
         val noteText = _uiState.value.noteInput.trim()
         if (noteText.isBlank()) return
 
-        viewModelScope.launch {
-            try {
-                // TODO: Parse "Bữa tối 100k, mua sắm 400k" thành nhiều giao dịch riêng biệt
-                // Hiện tại tạm lưu toàn bộ note làm 1 giao dịch với amount = 0
-                val transaction = TransactionModel(
-                    note = noteText,
-                    amount = 0.0,       // TODO: Parse số tiền từ ghi chú
-                    type = "expense",
-                    category = "Khác"
-                )
-                addTransactionUseCase(transaction)
+        // Thêm tin nhắn người dùng vào chat
+        val userMessage = ChatMessage(
+            id = ++messageIdCounter,
+            content = noteText,
+            sender = ChatSender.USER
+        )
 
-                // Xoá ô nhập sau khi thêm thành công
-                _uiState.update { it.copy(noteInput = "", errorMessage = null) }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(errorMessage = e.message ?: "Có lỗi xảy ra")
-                }
-            }
+        _uiState.update {
+            val updatedMessages = it.messages + userMessage
+            it.copy(
+                messages = updatedMessages,
+                noteInput = "",
+                isEmpty = false,
+                errorMessage = null
+            )
         }
+
+        // TODO: Gửi noteText tới AI service, nhận phản hồi, thêm ChatMessage(sender=AI)
+        //       Sau đó AI parse giao dịch và gọi addTransactionUseCase() để lưu vào Room
+        //       Xem file AI_INTEGRATION_GUIDE.md để biết cách triển khai
     }
 
     /**
@@ -142,17 +122,6 @@ class AddTransactionViewModel(
     // ─────────────────────────────────────────────────────────────────────────
 
     companion object {
-        /**
-         * Tạo [ViewModelProvider.Factory] nhận [Context].
-         *
-         * Cách dùng trong Composable:
-         * ```kotlin
-         * val ctx = LocalContext.current
-         * val vm: AddTransactionViewModel = viewModel(
-         *     factory = AddTransactionViewModel.factory(ctx)
-         * )
-         * ```
-         */
         fun factory(context: Context): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

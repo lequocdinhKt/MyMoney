@@ -1,26 +1,47 @@
 package com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction
 
-import com.example.mymoney.domain.model.TransactionModel
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Contract: tập hợp State, Event, NavEvent cho AddTransactionScreen
+// Contract: tập hợp State, Event, NavEvent cho AIChatScreen (trước đây AddTransactionScreen)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Trạng thái giao diện màn hình Thêm Giao Dịch.
+ * Người gửi tin nhắn trong cuộc trò chuyện.
+ */
+enum class ChatSender {
+    USER,   // Tin nhắn của người dùng (hiển thị bên phải)
+    AI      // Tin nhắn của AI (hiển thị bên trái)
+}
+
+/**
+ * Một tin nhắn trong cuộc trò chuyện giữa người dùng và AI.
+ *
+ * @param id        Mã định danh duy nhất
+ * @param content   Nội dung tin nhắn
+ * @param sender    Người gửi: USER hoặc AI
+ * @param timestamp Thời điểm gửi (epoch millis)
+ */
+data class ChatMessage(
+    val id: Long = 0L,
+    val content: String,
+    val sender: ChatSender,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+/**
+ * Trạng thái giao diện màn hình Chat AI.
  * Immutable data class — cập nhật bằng copy().
  *
- * @param transactions    Danh sách giao dịch hiện có (observe từ Room)
- * @param noteInput       Nội dung người dùng đang nhập trong ô ghi chú
+ * @param messages        Danh sách tin nhắn trong cuộc trò chuyện
+ * @param noteInput       Nội dung người dùng đang nhập trong ô chat
  * @param isLoading       Đang tải dữ liệu ban đầu hay không
- * @param isEmpty         true khi không có giao dịch nào
+ * @param isEmpty         true khi chưa có tin nhắn nào
  * @param walletName      Tên ví hiện tại (hiển thị trên top bar)
  * @param errorMessage    Thông báo lỗi (null = không lỗi)
  */
 data class AddTransactionUiState(
-    val transactions: List<TransactionModel> = emptyList(),
+    val messages: List<ChatMessage> = emptyList(),
     val noteInput: String = "",
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val isEmpty: Boolean = true,
     val walletName: String = "Ví chính",
     val errorMessage: String? = null

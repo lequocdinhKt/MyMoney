@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AssistChip
@@ -56,25 +58,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.presentation.viewmodel.addtransaction.AddTransactionViewModel
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionNavEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
-import com.example.mymoney.ui.components.EmptyStateComposable
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatMessage
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatSender
 import com.example.mymoney.ui.theme.MyMoneyTheme
-import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AddTransactionScreen
+// AIChatScreen — Màn hình chat giữa người dùng và AI để thêm giao dịch
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Màn hình chat AI — entry point có ViewModel.
+ * Người dùng nhắn "bữa tối 20k" → AI phản hồi và thêm giao dịch tự động.
+ */
 @Composable
-fun AddTransactionScreen(
+fun AIChatScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -93,7 +97,7 @@ fun AddTransactionScreen(
         }
     }
 
-    AddTransactionContent(
+    AIChatContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
@@ -102,18 +106,12 @@ fun AddTransactionScreen(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content — Không dùng imePadding, không dùng Scaffold
-//
-// Cách cố định TopBar khi mở bàn phím:
-//   - Dùng Column bao ngoài toàn bộ màn hình
-//   - TopBar (Surface) nằm ở trên: KHÔNG có bất kỳ IME inset nào → luôn cố định
-//   - Box(weight=1f): vùng nội dung co giãn theo không gian còn lại
-//   - BottomInputCard: dùng windowInsetsPadding(WindowInsets.ime) để tự đẩy lên
-//     đúng bằng chiều cao bàn phím, không khoảng cách thừa
+// Content — Layout chính: TopBar cố định + Chat list + Bottom input
 // ─────────────────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddTransactionContent(
+private fun AIChatContent(
     uiState: AddTransactionUiState,
     onEvent: (AddTransactionEvent) -> Unit,
     onNavigateBack: () -> Unit,
@@ -125,18 +123,17 @@ private fun AddTransactionContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // ── TopBar CỐ ĐỊNH — nằm ngoài bất kỳ IME inset nào ──
-        // Surface đảm bảo elevation + màu nền không bị ảnh hưởng
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding(),        // chỉ account for status bar
+                .statusBarsPadding(),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column {
                 TopAppBar(
                     title = {
                         Text(
-                            text = "cuộc trò chuyện kéo dài 48 giờ",
+                            text = "Chat với AI",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -163,7 +160,7 @@ private fun AddTransactionContent(
                     )
                 )
 
-                // ── Wallet chip: icon AccountBalanceWallet cố định + tên ví ──
+                // ── Wallet chip ──
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,14 +177,12 @@ private fun AddTransactionContent(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            // Icon ví — luôn cố định, không thay đổi theo tên ví
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
-                            // Tên ví — thay đổi theo walletName trong UiState
                             Text(
                                 text = uiState.walletName,
                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -201,14 +196,13 @@ private fun AddTransactionContent(
         }
 
         // ── Phần content dưới TopBar: imePadding() ở đây ──
-        // TopBar nằm NGOÀI Column này → không bị ảnh hưởng bởi bàn phím
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .imePadding()
         ) {
-            // ── Vùng nội dung co giãn: list hoặc empty state ──
+            // ── Vùng chat co giãn ──
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -222,14 +216,14 @@ private fun AddTransactionContent(
                         )
                     }
                     uiState.isEmpty -> {
-                        EmptyStateComposable(
-                            message = "Chưa có giao dịch nào",
+                        // Trạng thái trống — hướng dẫn người dùng
+                        EmptyChatState(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
                     else -> {
-                        TransactionList(
-                            transactions = uiState.transactions,
+                        ChatMessageList(
+                            messages = uiState.messages,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -249,6 +243,40 @@ private fun AddTransactionContent(
                 )
             }
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmptyChatState — Trạng thái chưa có tin nhắn
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun EmptyChatState(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.SmartToy,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+        )
+        Text(
+            text = "Xin chào! Tôi là trợ lý AI 🤖",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "Hãy nhắn cho tôi giao dịch của bạn.\nVí dụ: \"Bữa tối 20k\" hoặc \"Lương tháng 10tr\"",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 
@@ -304,14 +332,13 @@ private fun BottomInputCard(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // TextField chiếm toàn bộ phần còn lại
             OutlinedTextField(
                 value = noteInput,
                 onValueChange = { onEvent(AddTransactionEvent.OnNoteChanged(it)) },
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "Bữa tối 100k, mua sắm 400k",
+                        text = "Bữa tối 20k, cà phê 35k...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
@@ -327,7 +354,6 @@ private fun BottomInputCard(
                 maxLines = 3
             )
 
-            // Submit FAB — cùng hàng, bên phải TextField, khoảng cách 8dp
             FloatingActionButton(
                 onClick = { onEvent(AddTransactionEvent.OnSubmitClicked) },
                 modifier = Modifier.size(48.dp),
@@ -336,7 +362,7 @@ private fun BottomInputCard(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp)
             ) {
-                Icon(Icons.Default.ArrowUpward, "Gửi giao dịch", modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.ArrowUpward, "Gửi tin nhắn", modifier = Modifier.size(20.dp))
             }
         }
 
@@ -364,20 +390,19 @@ private fun BottomInputCard(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TransactionList
+// ChatMessageList — Danh sách tin nhắn dạng chat
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun TransactionList(
-    transactions: List<TransactionModel>,
+private fun ChatMessageList(
+    messages: List<ChatMessage>,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll xuống tin nhắn mới nhất khi danh sách thay đổi
-    // reverseLayout = true → index 0 = tin nhắn mới nhất (dưới cùng)
-    LaunchedEffect(transactions.size) {
-        if (transactions.isNotEmpty()) {
+    // Auto-scroll xuống tin nhắn mới nhất
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
             listState.animateScrollToItem(0)
         }
     }
@@ -389,57 +414,84 @@ private fun TransactionList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 8.dp)
     ) {
-        items(items = transactions, key = { it.id }) { transaction ->
-            TransactionItem(transaction = transaction)
+        items(items = messages.reversed(), key = { it.id }) { message ->
+            ChatBubble(message = message)
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TransactionItem
+// ChatBubble — Bong bóng chat: AI bên trái, User bên phải
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun TransactionItem(
-    transaction: TransactionModel,
+private fun ChatBubble(
+    message: ChatMessage,
     modifier: Modifier = Modifier
 ) {
+    val isUser = message.sender == ChatSender.USER
+
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
     ) {
-        Text(
-            text = transaction.note,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = if (transaction.amount != 0.0)
-                "${String.format(Locale.getDefault(), "%,.0f", transaction.amount)}đ"
-            else "—",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = if (transaction.type == "income") MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.End
-        )
+        if (!isUser) {
+            // ── Avatar AI — bên trái ──
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SmartToy,
+                    contentDescription = "AI",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        // ── Bong bóng tin nhắn — tối đa 75% chiều rộng ──
+        Box(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isUser) 16.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 16.dp
+                    )
+                )
+                .background(
+                    if (isUser) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.surfaceVariant
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Text(
+                text = message.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isUser) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
-// ── Previews ──
+// ─────────────────────────────────────────────────────────────────────────────
+// Previews
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun AddTransactionEmptyPreview() {
+private fun AIChatEmptyPreview() {
     MyMoneyTheme(darkTheme = false) {
-        AddTransactionContent(
+        AIChatContent(
             uiState = AddTransactionUiState(isLoading = false, isEmpty = true),
             onEvent = {},
             onNavigateBack = {}
@@ -449,15 +501,19 @@ private fun AddTransactionEmptyPreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun AddTransactionWithDataPreview() {
+private fun AIChatWithMessagesPreview() {
     MyMoneyTheme(darkTheme = false) {
-        AddTransactionContent(
+        AIChatContent(
             uiState = AddTransactionUiState(
                 isLoading = false,
                 isEmpty = false,
-                transactions = listOf(
-                    TransactionModel(id = 1, note = "Bữa tối", amount = 100000.0),
-                    TransactionModel(id = 2, note = "Mua sắm", amount = 400000.0)
+                messages = listOf(
+                    ChatMessage(id = 1, content = "Bữa tối 20k", sender = ChatSender.USER),
+                    ChatMessage(id = 2, content = "Oh tuyệt vời! Bữa tối chỉ có 20k thôi á 🎉\nMình đã thêm giao dịch:\n• Bữa tối: -20,000đ\nvào ví chính cho bạn rồi nhé!", sender = ChatSender.AI),
+                    ChatMessage(id = 3, content = "Cà phê sáng 35k", sender = ChatSender.USER),
+                    ChatMessage(id = 4, content = "Đã ghi nhận ☕\n• Cà phê sáng: -35,000đ\nTổng chi hôm nay: 55,000đ", sender = ChatSender.AI),
+                    ChatMessage(id = 5, content = "Lương tháng 10tr", sender = ChatSender.USER),
+                    ChatMessage(id = 6, content = "Wow xin chúc mừng! 💰\n• Lương tháng: +10,000,000đ\nĐã thêm vào mục Thu nhập.", sender = ChatSender.AI),
                 )
             ),
             onEvent = {},
@@ -468,12 +524,21 @@ private fun AddTransactionWithDataPreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun AddTransactionDarkPreview() {
+private fun AIChatDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
-        AddTransactionContent(
-            uiState = AddTransactionUiState(isLoading = false, isEmpty = true),
+        AIChatContent(
+            uiState = AddTransactionUiState(
+                isLoading = false,
+                isEmpty = false,
+                messages = listOf(
+                    ChatMessage(id = 1, content = "Mua sắm 400k", sender = ChatSender.USER),
+                    ChatMessage(id = 2, content = "Đã ghi nhận 🛍️\n• Mua sắm: -400,000đ\nCẩn thận chi tiêu nhé!", sender = ChatSender.AI),
+                )
+            ),
             onEvent = {},
             onNavigateBack = {}
         )
     }
 }
+
+

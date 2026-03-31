@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.mymoney.ui.addtransaction.AddTransactionScreen
+import com.example.mymoney.ui.addtransaction.AIChatScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
 
@@ -67,9 +67,9 @@ fun AppNavigation(
             )
         }
 
-        // ── Màn hình thêm giao dịch ──
+        // ── Màn hình chat AI thêm giao dịch ──
         composable(route = Screen.AddTransaction.route) {
-            AddTransactionScreen(
+            AIChatScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
