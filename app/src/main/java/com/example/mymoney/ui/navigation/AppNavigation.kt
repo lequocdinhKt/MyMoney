@@ -8,6 +8,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mymoney.ui.addtransaction.AIChatScreen
+import com.example.mymoney.ui.auth.SignInScreen
+import com.example.mymoney.ui.auth.SignUpScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
 
@@ -49,11 +51,39 @@ fun AppNavigation(
             OnboardingScreen(
                 // Khi onboarding hoàn thành, điều hướng sang Main và xoá Onboarding khỏi back stack
                 onFinished = {
-                    navController.navigate(Screen.Main.route) {
+                    navController.navigate(Screen.SignIn.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                     onOnboardingFinished()
                 }
+            )
+        }
+
+        // ── Màn hình đăng nhập ──
+        composable(route = Screen.SignIn.route) {
+            SignInScreen(
+                onNavigateToMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                },
+                onNavigateToSignUp = {
+                    navController.navigate(Screen.SignUp.route)
+                },
+            )
+        }
+
+        // ── Màn hình đăng ký ──
+        composable(route = Screen.SignUp.route) {
+            SignUpScreen(
+                onNavigateToMain = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                },
+                onNavigateToSignIn = {
+                    navController.popBackStack()
+                },
             )
         }
 

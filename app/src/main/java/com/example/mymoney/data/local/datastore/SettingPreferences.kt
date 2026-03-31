@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -33,6 +34,10 @@ class SettingPreferences(private val context: Context) {
         // Key lưu trạng thái đã xem hết onboarding
         private val KEY_IS_ONBOARDING_COMPLETED =
             booleanPreferencesKey("IS_ONBOARDING_COMPLETED")
+
+        // Key lưu user ID từ Supabase Auth (UUID string)
+        private val KEY_SUPABASE_USER_ID =
+            stringPreferencesKey("SUPABASE_USER_ID")
     }
 
     // ── Đọc ──
@@ -46,6 +51,15 @@ class SettingPreferences(private val context: Context) {
             preferences[KEY_IS_ONBOARDING_COMPLETED] ?: false
         }
 
+    /**
+     * Flow phát ra user ID hiện tại (UUID string) hoặc null nếu chưa đăng nhập.
+     * Dùng để filter dữ liệu local theo user: WHERE user_id = :currentUserId
+     */
+    val currentUserId: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[KEY_SUPABASE_USER_ID]
+        }
+
     // ── Ghi ──
 
     /**
@@ -55,6 +69,26 @@ class SettingPreferences(private val context: Context) {
     suspend fun saveOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[KEY_IS_ONBOARDING_COMPLETED] = true
+        }
+    }
+
+    /**
+     * Lưu user ID sau khi đăng nhập/đăng ký thành công.
+     * @param userId UUID string từ Supabase auth.uid()
+     */
+    suspend fun saveUserId(userId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_SUPABASE_USER_ID] = userId
+        }
+    }
+
+    /**
+     * Xoá user ID khi đăng xuất.
+     * Gọi khi user sign out → dữ liệu local sẽ không filter được → cần sign in lại.
+     */
+    suspend fun clearUserId() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(KEY_SUPABASE_USER_ID)
         }
     }
 }

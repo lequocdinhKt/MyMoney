@@ -17,6 +17,13 @@ sealed class Screen(val route: String) {
     /** Màn hình onboarding thống nhất (thay thế Start1, Start2, Start3) */
     data object Onboarding : Screen("onboarding")
 
+    // ── Auth ──
+    /** Màn hình đăng nhập */
+    data object SignIn : Screen("sign_in")
+
+    /** Màn hình đăng ký */
+    data object SignUp : Screen("sign_up")
+
     // ── Màn hình chính (shell chứa bottom bar + nội dung tab) ──
     data object Main : Screen("main")
 
