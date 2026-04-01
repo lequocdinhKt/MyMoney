@@ -33,6 +33,10 @@ class SettingPreferences(private val context: Context) {
         // Key lưu trạng thái đã xem hết onboarding
         private val KEY_IS_ONBOARDING_COMPLETED =
             booleanPreferencesKey("IS_ONBOARDING_COMPLETED")
+
+        // Key lưu dấu phân cách hàng nghìn đã bật chưa
+        private val KEY_IS_THOUSAND_SEPARATOR_ENABLED =
+            booleanPreferencesKey("IS_THOUSAND_SEPERATOR_ENABLED")
     }
 
     // ── Đọc ──
@@ -46,6 +50,15 @@ class SettingPreferences(private val context: Context) {
             preferences[KEY_IS_ONBOARDING_COMPLETED] ?: false
         }
 
+    /**
+     * Flow phát ra true nếu dấu phân cách hàng nghìn được bật, false nếu chưa
+     * Mặc định là true
+     */
+    val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
+        .map {preferences ->
+            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] ?: true
+        }
+
     // ── Ghi ──
 
     /**
@@ -55,6 +68,12 @@ class SettingPreferences(private val context: Context) {
     suspend fun saveOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[KEY_IS_ONBOARDING_COMPLETED] = true
+        }
+    }
+
+    suspend fun setThousandSeparatorEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] = enabled
         }
     }
 }
