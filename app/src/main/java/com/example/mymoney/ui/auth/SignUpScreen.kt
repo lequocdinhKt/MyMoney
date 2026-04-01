@@ -40,7 +40,6 @@ import com.example.mymoney.presentation.viewmodel.auth.AuthViewModel
 import com.example.mymoney.presentation.viewmodel.auth.auth.AuthEvent
 import com.example.mymoney.presentation.viewmodel.auth.auth.AuthNavEvent
 import com.example.mymoney.ui.auth.components.AuthTextField
-import com.example.mymoney.ui.auth.components.SocialLoginSection
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
@@ -93,7 +92,7 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Create Account",
+                text = "Tạo tài khoản",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -101,11 +100,11 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Username ──
+            // ── Tên người dùng ──
             AuthTextField(
                 value = uiState.username,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnUsernameChanged(it)) },
-                placeholder = "Choose a username",
+                placeholder = "Tên người dùng",
                 leadingIcon = Icons.Filled.Person,
                 keyboardType = KeyboardType.Text,
             )
@@ -116,18 +115,18 @@ fun SignUpScreen(
             AuthTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnEmailChanged(it)) },
-                placeholder = "your.email@example.com",
+                placeholder = "Email của bạn",
                 leadingIcon = Icons.Filled.Email,
                 keyboardType = KeyboardType.Email,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Password ──
+            // ── Mật khẩu ──
             AuthTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnPasswordChanged(it)) },
-                placeholder = "Password",
+                placeholder = "Mật khẩu",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true,
                 isPasswordVisible = uiState.isPasswordVisible,
@@ -139,11 +138,11 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Confirm Password ──
+            // ── Xác nhận mật khẩu ──
             AuthTextField(
                 value = uiState.confirmPassword,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnConfirmPasswordChanged(it)) },
-                placeholder = "Confirm Password",
+                placeholder = "Xác nhận mật khẩu",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true,
                 isPasswordVisible = uiState.isConfirmPasswordVisible,
@@ -155,7 +154,7 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Agree Terms ──
+            // ── Đồng ý điều khoản ──
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -167,12 +166,12 @@ fun SignUpScreen(
                     ),
                 )
                 Text(
-                    text = "I agree to the ",
+                    text = "Tôi đồng ý với ",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Terms of Service & Privacy Policy",
+                    text = "Điều khoản & Chính sách bảo mật",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -184,7 +183,7 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Nút CREATE ACCOUNT ──
+            // ── Nút ĐĂNG KÝ ──
             Button(
                 onClick = { viewModel.onEvent(AuthEvent.OnSignUpClicked) },
                 enabled = !uiState.isLoading,
@@ -204,14 +203,14 @@ fun SignUpScreen(
                     )
                 } else {
                     Text(
-                        text = "CREATE ACCOUNT",
+                        text = "ĐĂNG KÝ",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                 }
             }
 
-            // ── Error message ──
+            // ── Thông báo lỗi ──
             if (uiState.errorMessage != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -221,31 +220,23 @@ fun SignUpScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Social Login ──
-            SocialLoginSection(
-                onGoogleClick = { viewModel.onEvent(AuthEvent.OnGoogleLoginClicked) },
-                onFacebookClick = { viewModel.onEvent(AuthEvent.OnFacebookLoginClicked) },
-            )
-
             // ── Spacer đẩy text xuống dưới ──
             Spacer(modifier = Modifier.weight(1f))
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Already have an account? Sign In ──
+            // ── Đã có tài khoản? Đăng nhập ──
             Row(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Already have an account? ",
+                    text = "Đã có tài khoản? ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "Sign In",
+                    text = "Đăng nhập",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,

@@ -93,7 +93,7 @@ fun SignInScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Sign In",
+                text = "Đăng nhập",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -105,7 +105,7 @@ fun SignInScreen(
             AuthTextField(
                 value = uiState.email,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnEmailChanged(it)) },
-                placeholder = "your.email@example.com",
+                placeholder = "Email của bạn",
                 leadingIcon = Icons.Filled.Email,
                 keyboardType = KeyboardType.Email,
             )
@@ -116,7 +116,7 @@ fun SignInScreen(
             AuthTextField(
                 value = uiState.password,
                 onValueChange = { viewModel.onEvent(AuthEvent.OnPasswordChanged(it)) },
-                placeholder = "Password",
+                placeholder = "Mật khẩu",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true,
                 isPasswordVisible = uiState.isPasswordVisible,
@@ -126,9 +126,42 @@ fun SignInScreen(
                 keyboardType = KeyboardType.Password,
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Nút SIGN IN ──
+            // ── Remember me (trái) + Forgot Password (phải) ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(
+                    checked = uiState.rememberMe,
+                    onCheckedChange = { viewModel.onEvent(AuthEvent.OnToggleRememberMe) },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                    ),
+                )
+                Text(
+                    text = "Ghi nhớ đăng nhập",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                TextButton(
+                    onClick = { viewModel.onEvent(AuthEvent.OnForgotPasswordClicked) },
+                ) {
+                    Text(
+                        text = "Quên mật khẩu?",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Nút ĐĂNG NHẬP ──
             Button(
                 onClick = { viewModel.onEvent(AuthEvent.OnSignInClicked) },
                 enabled = !uiState.isLoading,
@@ -148,7 +181,7 @@ fun SignInScreen(
                     )
                 } else {
                     Text(
-                        text = "SIGN IN",
+                        text = "ĐĂNG NHẬP",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -165,25 +198,13 @@ fun SignInScreen(
                 )
             }
 
-            // ── Success message (VD: "Đã gửi email đặt lại mật khẩu") ──
+            // ── Success message ──
             if (uiState.successMessage != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = uiState.successMessage!!,
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            // ── Forgot Password ──
-            TextButton(
-                onClick = { viewModel.onEvent(AuthEvent.OnForgotPasswordClicked) },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(
-                    text = "Forgot Password?",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
@@ -195,41 +216,21 @@ fun SignInScreen(
                 onFacebookClick = { viewModel.onEvent(AuthEvent.OnFacebookLoginClicked) },
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Remember me ──
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(
-                    checked = uiState.rememberMe,
-                    onCheckedChange = { viewModel.onEvent(AuthEvent.OnToggleRememberMe) },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary,
-                    ),
-                )
-                Text(
-                    text = "Remember me",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-
             // ── Spacer đẩy text xuống dưới ──
             Spacer(modifier = Modifier.weight(1f))
 
-            // ── Don't have an account? Sign Up ──
+            // ── Chưa có tài khoản? Đăng ký ──
             Row(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Don't have an account? ",
+                    text = "Chưa có tài khoản? ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "Sign Up",
+                    text = "Đăng ký",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
