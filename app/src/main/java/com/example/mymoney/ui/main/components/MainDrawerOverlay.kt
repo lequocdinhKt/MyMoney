@@ -2,6 +2,8 @@ package com.example.mymoney.ui.main.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +58,26 @@ fun MainDrawerOverlay(
 
     AnimatedVisibility(
         visible = isOpen,
+        // Chỉ fade in/out scrim — không trượt
+        enter = fadeIn(animationSpec = tween(300)),
+        exit = fadeOut(animationSpec = tween(300))
+    ) {
+        // Scrim — nền tối phía sau drawer, nhấn để đóng
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClose
+                )
+        )
+    }
+
+    // Drawer content trượt độc lập — KHÔNG bị scrim che
+    AnimatedVisibility(
+        visible = isOpen,
         enter = slideInHorizontally(
             initialOffsetX = { -it },
             animationSpec = tween(300)
@@ -66,42 +87,23 @@ fun MainDrawerOverlay(
             animationSpec = tween(300)
         )
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            // Scrim — nền tối phía sau drawer, nhấn để đóng
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(300.dp)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onClose
-                    )
-            )
-
-            // Drawer content — trượt từ trái vào
-            // background đặt TRƯỚC statusBarsPadding để màu phủ cả vùng status bar
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(300.dp)
-                    .align(Alignment.TopStart)
-                    .background(MaterialTheme.colorScheme.background)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                ) {
-                    // Truyền viewModel xuống — không tạo lại mỗi lần mở drawer
-                    SettingScreen(
-                        onItemClick = onClose,
-                        onSignOut = onSignOut,
-                        viewModel = settingViewModel
-                    )
-                }
+                SettingScreen(
+                    onItemClick = onClose,
+                    onSignOut = onSignOut,
+                    viewModel = settingViewModel
+                )
             }
         }
     }
