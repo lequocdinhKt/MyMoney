@@ -4,12 +4,19 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,7 +29,9 @@ import com.example.mymoney.ui.main.components.CustomTopAppBar
 import com.example.mymoney.ui.navigation.BottomTab
 import com.example.mymoney.ui.other.OtherScreen
 import com.example.mymoney.ui.saving.SavingScreen
+import com.example.mymoney.ui.setting.SettingScreen
 import com.example.mymoney.ui.theme.MyMoneyTheme
+import kotlinx.coroutines.launch
 
 /**
  * Màn hình chính của ứng dụng – chứa Bottom Navigation và nội dung các tab.
@@ -40,6 +49,7 @@ fun MainScreen(
     // NavController riêng cho các tab bên trong MainScreen
     val tabNavController = rememberNavController()
 
+
     // Lấy route hiện tại để highlight tab đang chọn
     val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -47,76 +57,100 @@ fun MainScreen(
     // Xác định tab hiện tại → lấy title cho Top Bar
     val currentTab = BottomTab.fromRoute(currentRoute)
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        // Tắt màu nền mặc định của Scaffold – để content tự quản lý
-        containerColor = MaterialTheme.colorScheme.background,
-        // ── Top Bar: chỉ hiện khi tab có title (OtherScreen → title = null → ẩn) ──
-        topBar = {
-            currentTab?.title?.let { title ->
-                CustomTopAppBar(
-                    title = title,
-                    onSettingsClick = {
-                        // TODO: Mở màn hình cài đặt
-                    },
-                    onSearchClick = {
-                        // TODO: Mở tìm kiếm
-                    },
-                    onCalendarClick = {
-                        // TODO: Mở lịch
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // Bọc bằng ModalNavigationDrawer để có thể mở Setting Screen từ trài sang phải của Main Screen
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+
+        // Drawer content = SettingScreen
+        drawerContent = {
+            ModalDrawerSheet (
+                modifier = Modifier.width(300.dp)
+            ){
+                SettingScreen(
+                    onItemClick = {
+                        scope.launch { drawerState.close() }
                     }
                 )
             }
-        },
-        bottomBar = {
-            CustomBottomBar(
-                currentRoute = currentRoute,
-                onTabSelected = { tab ->
-                    // Điều hướng đến tab được chọn, tránh tạo nhiều bản sao trên stack
-                    tabNavController.navigate(tab.route) {
-                        popUpTo(tabNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onAddClick = {
-                    // Mở màn hình thêm giao dịch thông qua callback từ AppNavigation
-                    onAddTransactionClick()
-                }
-            )
         }
-    ) { innerPadding ->
-        // ── NavHost nội bộ: render nội dung tab tương ứng ──
-        NavHost(
-            navController = tabNavController,
-            startDestination = BottomTab.Home.route,
-            modifier = Modifier.padding(innerPadding),
-            // Tắt animation chuyển tab
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None }
-        ) {
-            // ── Tab: Trang chủ ──
-            composable(BottomTab.Home.route) {
-                HomeScreen()
+    ) {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            // Tắt màu nền mặc định của Scaffold – để content tự quản lý
+            containerColor = MaterialTheme.colorScheme.background,
+            // ── Top Bar: chỉ hiện khi tab có title (OtherScreen → title = null → ẩn) ──
+            topBar = {
+                currentTab?.title?.let { title ->
+                    CustomTopAppBar(
+                        title = title,
+                        onSettingsClick = {
+                            // TODO: Mở màn hình cài đặt
+                            scope.launch {
+                                drawerState.open()
+                            }
+                        },
+                        onSearchClick = {
+                            // TODO: Mở tìm kiếm
+                        },
+                        onCalendarClick = {
+                            // TODO: Mở lịch
+                        }
+                    )
+                }
+            },
+            bottomBar = {
+                CustomBottomBar(
+                    currentRoute = currentRoute,
+                    onTabSelected = { tab ->
+                        // Điều hướng đến tab được chọn, tránh tạo nhiều bản sao trên stack
+                        tabNavController.navigate(tab.route) {
+                            popUpTo(tabNavController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onAddClick = {
+                        // Mở màn hình thêm giao dịch thông qua callback từ AppNavigation
+                        onAddTransactionClick()
+                    }
+                )
             }
+        ) { innerPadding ->
+            // ── NavHost nội bộ: render nội dung tab tương ứng ──
+            NavHost(
+                navController = tabNavController,
+                startDestination = BottomTab.Home.route,
+                modifier = Modifier.padding(innerPadding),
+                // Tắt animation chuyển tab
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
+            ) {
+                // ── Tab: Trang chủ ──
+                composable(BottomTab.Home.route) {
+                    HomeScreen()
+                }
 
-            // ── Tab: Ngân sách ──
-            composable(BottomTab.Budget.route) {
-                BudgetScreen()
-            }
+                // ── Tab: Ngân sách ──
+                composable(BottomTab.Budget.route) {
+                    BudgetScreen()
+                }
 
-            // ── Tab: Tiết kiệm ──
-            composable(BottomTab.Saving.route) {
-                SavingScreen()
-            }
+                // ── Tab: Tiết kiệm ──
+                composable(BottomTab.Saving.route) {
+                    SavingScreen()
+                }
 
-            // ── Tab: Khác ──
-            composable(BottomTab.Other.route) {
-                OtherScreen()
+                // ── Tab: Khác ──
+                composable(BottomTab.Other.route) {
+                    OtherScreen()
+                }
             }
         }
     }
