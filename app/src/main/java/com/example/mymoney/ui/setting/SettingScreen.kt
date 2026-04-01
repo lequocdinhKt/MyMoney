@@ -1,7 +1,6 @@
 package com.example.mymoney.ui.setting
 
 import androidx.compose.material3.Switch
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,36 +11,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.R
 import com.example.mymoney.presentation.viewmodel.setting.SettingViewModel
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingItem
+import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
@@ -51,26 +42,39 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 
 @Composable
 fun SettingScreen(
-    onItemClick: () -> Unit = {}
-) {
-    val context = LocalContext.current
-    val viewModel: SettingViewModel = viewModel(
-        factory = SettingViewModel.factory(context)
+    onItemClick: () -> Unit = {},
+    onSignOut: () -> Unit = {},
+    viewModel: SettingViewModel = viewModel(
+        factory = SettingViewModel.factory(LocalContext.current)
     )
+) {
     val uiState by viewModel.uiState.collectAsState()
     val items = remember(uiState) {
         buildSettingItems(uiState)
     }
 
+    // Collect navigation side-effect — chạy 1 lần, lắng nghe liên tục
+    LaunchedEffect(Unit) {
+        viewModel.navEvent.collect { event ->
+            when (event) {
+                is SettingNavEvent.NavigateToSignIn -> onSignOut()
+            }
+        }
+    }
+
     SettingContent(
         items = items,
-        // Nối UI với ViewModel
+        username = uiState.username,
         onToggleThousandSeparator = {
-            viewModel.onEvent(
-                SettingEvent.ToggleThousandSeparator(it)
-            )
+            viewModel.onEvent(SettingEvent.ToggleThousandSeparator(it))
         },
-        onItemClick = onItemClick
+        onItemClick = { route ->
+            if (route == "logout") {
+                viewModel.onEvent(SettingEvent.SignOut)
+            } else {
+                onItemClick()
+            }
+        }
     )
 }
 
@@ -82,38 +86,25 @@ fun SettingScreen(
 fun SettingContent(
     items: List<SettingItem>,
     onToggleThousandSeparator: (Boolean) -> Unit,
-    onItemClick: () -> Unit
+    onItemClick: (route: String) -> Unit,
+    username: String = ""
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // ── Header: chỉ hiện username ──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Card(
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                elevation = CardDefaults.cardElevation(8.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "Ảnh",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
             Text(
-                text = "User's name",
+                text = if (username.isNotBlank()) username else "...",
                 color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.titleMedium
             )
         }
 
@@ -134,7 +125,7 @@ fun SettingContent(
                     is SettingItem.SettingNavigation -> {
                         SettingNavigationItem(
                             item = item,
-                            onItemClick = onItemClick
+                            onItemClick = { onItemClick(item.route) }
                         )
                     }
 
@@ -160,9 +151,7 @@ fun SettingNavigationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                onItemClick()
-            }
+            .clickable { onItemClick() }
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -207,22 +196,18 @@ private fun buildSettingItems(
     state: SettingUiState
 ): List<SettingItem> {
     return listOfNotNull(
-        SettingItem.SettingNavigation("Tài khoản", Icons.Default.KeyboardArrowRight, "account"),
-        SettingItem.SettingNavigation("Mã PIN", Icons.Default.KeyboardArrowRight, "pin"),
-        SettingItem.SettingNavigation("Giao diện", Icons.Default.KeyboardArrowRight, "theme"),
-        SettingItem.SettingNavigation("Đơn vị tiền tệ", Icons.Default.KeyboardArrowRight, "currency"),
+        SettingItem.SettingNavigation("Tài khoản", Icons.AutoMirrored.Filled.KeyboardArrowRight, "account"),
+        SettingItem.SettingNavigation("Mã PIN", Icons.AutoMirrored.Filled.KeyboardArrowRight, "pin"),
+        SettingItem.SettingNavigation("Giao diện", Icons.AutoMirrored.Filled.KeyboardArrowRight, "theme"),
+        SettingItem.SettingNavigation("Đơn vị tiền tệ", Icons.AutoMirrored.Filled.KeyboardArrowRight, "currency"),
         SettingItem.SettingToggle(title = "Dấu phân cách hàng nghìn", isChecked = state.isThousandSeparatorEnabled,),
 
         if (state.isThousandSeparatorEnabled)
-            SettingItem.SettingNavigation("Dạng hiển thị số", Icons.Default.KeyboardArrowRight, "number_format")
+            SettingItem.SettingNavigation("Dạng hiển thị số", Icons.AutoMirrored.Filled.KeyboardArrowRight, "number_format")
         else null,
 
-        SettingItem.SettingNavigation(
-            "Dữ liệu và sao lưu",
-            Icons.Default.KeyboardArrowRight,
-            "backup"
-        ),
-        SettingItem.SettingNavigation("Đăng xuất", Icons.Default.KeyboardArrowRight, "logout")
+        SettingItem.SettingNavigation("Dữ liệu và sao lưu", Icons.AutoMirrored.Filled.KeyboardArrowRight, "backup"),
+        SettingItem.SettingNavigation("Đăng xuất", Icons.AutoMirrored.Filled.KeyboardArrowRight, "logout")
     )
 }
 
@@ -233,62 +218,43 @@ private fun buildSettingItems(
 @Composable
 private fun SettingScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
+        val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
         val previewItems = listOf(
-            SettingItem.SettingNavigation("Tài khoản", Icons.Default.KeyboardArrowRight, "account"),
-            SettingItem.SettingNavigation("Mã PIN", Icons.Default.KeyboardArrowRight, "pin"),
-            SettingItem.SettingNavigation("Giao diện", Icons.Default.KeyboardArrowRight, "theme"),
-            SettingItem.SettingNavigation(
-                "Đơn vị tiền tệ",
-                Icons.Default.KeyboardArrowRight,
-                "currency"
-            ),
+            SettingItem.SettingNavigation("Tài khoản", arrow, "account"),
+            SettingItem.SettingNavigation("Mã PIN", arrow, "pin"),
+            SettingItem.SettingNavigation("Giao diện", arrow, "theme"),
+            SettingItem.SettingNavigation("Đơn vị tiền tệ", arrow, "currency"),
             SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = true),
-            SettingItem.SettingNavigation(
-                "Dạng hiển thị số",
-                Icons.Default.KeyboardArrowRight,
-                "number_format"
-            ),
-            SettingItem.SettingNavigation(
-                "Dữ liệu và sao lưu",
-                Icons.Default.KeyboardArrowRight,
-                "backup"
-            ),
-            SettingItem.SettingNavigation("Đăng xuất", Icons.Default.KeyboardArrowRight, "logout")
+            SettingItem.SettingNavigation("Dạng hiển thị số", arrow, "number_format"),
+            SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup"),
+            SettingItem.SettingNavigation("Đăng xuất", arrow, "logout")
         )
         SettingContent(
             items = previewItems,
             onToggleThousandSeparator = {},
-            onItemClick = {}
+            onItemClick = { _ -> }
         )
     }
 }
-
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun SettingScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
+        val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
         val previewItems = listOf(
-            SettingItem.SettingNavigation("Tài khoản", Icons.Default.KeyboardArrowRight, "account"),
-            SettingItem.SettingNavigation("Mã PIN", Icons.Default.KeyboardArrowRight, "pin"),
-            SettingItem.SettingNavigation("Giao diện", Icons.Default.KeyboardArrowRight, "theme"),
-            SettingItem.SettingNavigation(
-                "Đơn vị tiền tệ",
-                Icons.Default.KeyboardArrowRight,
-                "currency"
-            ),
+            SettingItem.SettingNavigation("Tài khoản", arrow, "account"),
+            SettingItem.SettingNavigation("Mã PIN", arrow, "pin"),
+            SettingItem.SettingNavigation("Giao diện", arrow, "theme"),
+            SettingItem.SettingNavigation("Đơn vị tiền tệ", arrow, "currency"),
             SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = false),
-            SettingItem.SettingNavigation(
-                "Dữ liệu và sao lưu",
-                Icons.Default.KeyboardArrowRight,
-                "backup"
-            ),
-            SettingItem.SettingNavigation("Đăng xuất", Icons.Default.KeyboardArrowRight, "logout")
+            SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup"),
+            SettingItem.SettingNavigation("Đăng xuất", arrow, "logout")
         )
         SettingContent(
             items = previewItems,
             onToggleThousandSeparator = {},
-            onItemClick = {}
+            onItemClick = { _ -> }
         )
     }
 }

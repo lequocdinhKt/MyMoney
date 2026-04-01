@@ -87,15 +87,21 @@ fun AppNavigation(
             )
         }
 
-        // ── Màn hình chính ──
-        composable(route = Screen.Main.route) {
-            MainScreen(
-                // Callback khi nhấn FAB (+) → navigate sang màn hình thêm giao dịch
-                onAddTransactionClick = {
-                    navController.navigate(Screen.AddTransaction.route)
-                }
-            )
+// ── Màn hình chính ──
+composable(route = Screen.Main.route) {
+    MainScreen(
+        // Callback khi nhấn FAB (+) → navigate sang màn hình thêm giao dịch
+        onAddTransactionClick = {
+            navController.navigate(Screen.AddTransaction.route)
+        },
+        // Callback khi đăng xuất → xóa toàn bộ back stack, về màn hình Sign In
+        onSignOut = {
+            navController.navigate(Screen.SignIn.route) {
+                popUpTo(0) { inclusive = true }
+            }
         }
+    )
+}
 
         // ── Màn hình chat AI thêm giao dịch ──
         composable(route = Screen.AddTransaction.route) {

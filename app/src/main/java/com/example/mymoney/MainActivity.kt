@@ -31,6 +31,10 @@ class MainActivity : ComponentActivity() {
                         .currentUserId
                         .collectAsState(initial = "loading") // "loading" = đang đọc DataStore
 
+                    // rememberNavController phải đặt ở đây (ngoài khối if)
+                    // để không bị tạo lại mỗi khi DataStore emit giá trị mới
+                    val navController = rememberNavController()
+
                 // Chờ DataStore đọc xong trước khi render NavHost (tránh flash màn hình sai)
                 // null/"loading" = đang tải → chưa render gì
                 if (isOnboardingCompleted == null || currentUserId == "loading") {
@@ -46,7 +50,6 @@ class MainActivity : ComponentActivity() {
                     else -> Screen.SignIn.route
                 }
 
-                val navController = rememberNavController()
                 AppNavigation(
                     navController = navController,
                     startDestination = startDestination,

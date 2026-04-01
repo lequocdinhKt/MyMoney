@@ -43,4 +43,10 @@ interface AuthRepository {
      * @return userId nếu đã đăng nhập, null nếu chưa
      */
     suspend fun getCurrentUserId(): String?
+
+    /**
+     * Lấy username của user hiện tại từ Supabase Auth metadata.
+     * @return username (chuỗi) nếu có, null nếu chưa đăng nhập hoặc chưa có metadata
+     */
+    suspend fun getCurrentUsername(): String?
 }

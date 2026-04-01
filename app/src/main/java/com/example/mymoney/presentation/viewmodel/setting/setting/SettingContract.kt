@@ -12,7 +12,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
  */
 data class SettingUiState(
     val isLoading: Boolean = false,
-    val isThousandSeparatorEnabled: Boolean = true // Lưu trạng thái của switch "Dấu phân cách hàng nghìn"
+    val isThousandSeparatorEnabled: Boolean = true,
+    val username: String = ""  // Tên hiển thị lấy từ Supabase Auth metadata
 )
 
 sealed class SettingItem {
@@ -33,4 +34,14 @@ sealed class SettingItem {
  */
 sealed interface SettingEvent {
     data class ToggleThousandSeparator(val enabled: Boolean) : SettingEvent
+    data object SignOut : SettingEvent
+}
+
+/**
+ * Navigation side-effect phát qua SharedFlow.
+ * UI collect 1 lần qua LaunchedEffect — không lưu trong UiState.
+ */
+sealed interface SettingNavEvent {
+    /** Đăng xuất thành công → về màn hình Sign In */
+    data object NavigateToSignIn : SettingNavEvent
 }

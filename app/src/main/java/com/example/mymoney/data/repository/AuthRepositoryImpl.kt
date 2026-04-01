@@ -92,4 +92,20 @@ class AuthRepositoryImpl : AuthRepository {
             null
         }
     }
+
+    // ── Get Current Username ──
+
+    override suspend fun getCurrentUsername(): String? {
+        return try {
+            // Lấy username từ user_metadata — được lưu lúc signUp
+            // key "username" khớp với data { put("username", ...) } trong signUpWithEmail()
+            val user = supabase.auth.currentUserOrNull() ?: return null
+            user.userMetadata
+                ?.get("username")
+                ?.toString()
+                ?.trim('"') // JSON string có dấu ngoặc kép → trim bỏ
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

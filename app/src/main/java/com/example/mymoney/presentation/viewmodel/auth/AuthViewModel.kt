@@ -140,6 +140,12 @@ class AuthViewModel(
                 // Đăng nhập thành công → lưu userId vào DataStore
                 settingPreferences.saveUserId(userId)
 
+                // Lưu username vào DataStore để đọc offline khi mở app lại
+                val username = authRepository.getCurrentUsername()
+                if (!username.isNullOrBlank()) {
+                    settingPreferences.saveUsername(username)
+                }
+
                 // Phát navigation event → UI sẽ navigate sang MainScreen
                 _uiState.update { it.copy(isLoading = false) }
                 _navEvent.emit(AuthNavEvent.NavigateToMain)
@@ -212,8 +218,9 @@ class AuthViewModel(
                 )
 
                 if (userId != null) {
-                    // Email confirm TẮT → có session ngay → lưu userId + navigate sang Main
+                    // Email confirm TẮT → có session ngay → lưu userId + username + navigate sang Main
                     settingPreferences.saveUserId(userId)
+                    settingPreferences.saveUsername(state.username.trim())
                     _uiState.update { it.copy(isLoading = false) }
                     _navEvent.emit(AuthNavEvent.NavigateToMain)
                 } else {

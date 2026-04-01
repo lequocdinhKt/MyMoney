@@ -38,6 +38,14 @@ class SettingPreferences(private val context: Context) {
         // Key lưu user ID từ Supabase Auth (UUID string)
         private val KEY_SUPABASE_USER_ID =
             stringPreferencesKey("SUPABASE_USER_ID")
+
+        // Key lưu username — lưu khi đăng nhập/đăng ký để đọc offline không cần network
+        private val KEY_USERNAME =
+            stringPreferencesKey("USERNAME")
+
+        // Key lưu trạng thái bật/tắt dấu phân cách hàng nghìn
+        private val KEY_IS_THOUSAND_SEPARATOR_ENABLED =
+            booleanPreferencesKey("IS_THOUSAND_SEPARATOR_ENABLED")
     }
 
     // ── Đọc ──
@@ -53,11 +61,19 @@ class SettingPreferences(private val context: Context) {
 
     /**
      * Flow phát ra user ID hiện tại (UUID string) hoặc null nếu chưa đăng nhập.
-     * Dùng để filter dữ liệu local theo user: WHERE user_id = :currentUserId
      */
     val currentUserId: Flow<String?> = context.dataStore.data
         .map { preferences ->
             preferences[KEY_SUPABASE_USER_ID]
+        }
+
+    /**
+     * Flow phát ra username đã lưu khi đăng nhập/đăng ký.
+     * Đọc từ DataStore — không cần network, luôn có ngay khi mở app.
+     */
+    val currentUsername: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[KEY_USERNAME] ?: ""
         }
 
     // ── Ghi ──
@@ -84,11 +100,48 @@ class SettingPreferences(private val context: Context) {
 
     /**
      * Xoá user ID khi đăng xuất.
-     * Gọi khi user sign out → dữ liệu local sẽ không filter được → cần sign in lại.
      */
     suspend fun clearUserId() {
         context.dataStore.edit { preferences ->
             preferences.remove(KEY_SUPABASE_USER_ID)
+        }
+    }
+
+    /**
+     * Lưu username vào DataStore ngay khi đăng nhập/đăng ký thành công.
+     * Đảm bảo username luôn có sẵn khi mở app lại — không cần gọi Supabase network.
+     */
+    suspend fun saveUsername(username: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_USERNAME] = username
+        }
+    }
+
+    /**
+     * Xóa username khi đăng xuất.
+     */
+    suspend fun clearUsername() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(KEY_USERNAME)
+        }
+    }
+
+    /**
+     * Flow phát ra true nếu dấu phân cách hàng nghìn đang bật, false nếu tắt.
+     * Mặc định = true (bật sẵn cho dễ đọc số tiền).
+     */
+    val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] ?: true
+        }
+
+    /**
+     * Lưu trạng thái bật/tắt dấu phân cách hàng nghìn.
+     * @param enabled true = bật, false = tắt
+     */
+    suspend fun setThousandSeparatorEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] = enabled
         }
     }
 }
