@@ -17,5 +17,6 @@ data class TransactionModel(
     val amount: Double,
     val type: String = "expense",          // "income" | "expense"
     val category: String = "Khác",
+    val walletId: Long = 0L,               // 0 = ví mặc định
     val timestamp: Long = System.currentTimeMillis()
 )

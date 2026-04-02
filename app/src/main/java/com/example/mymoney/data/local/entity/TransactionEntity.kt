@@ -16,40 +16,31 @@ import com.example.mymoney.domain.model.TransactionModel
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-
-    /** Ghi chú / mô tả giao dịch */
     val note: String,
-
-    /** Số tiền (VNĐ). Dương = thu, Âm = chi */
     val amount: Double,
-
-    /** Loại: "income" hoặc "expense" */
     val type: String,
-
-    /** Danh mục giao dịch */
     val category: String,
-
-    /** Thời điểm tạo giao dịch (epoch millis) */
+    val walletId: Long = 0L,   // 0 = chưa gán ví, > 0 = ID ví trong Room
     val timestamp: Long
 ) {
-    // ── Mapper: Entity → Domain ──
     fun toDomain(): TransactionModel = TransactionModel(
-        id = id,
-        note = note,
-        amount = amount,
-        type = type,
-        category = category,
+        id        = id,
+        note      = note,
+        amount    = amount,
+        type      = type,
+        category  = category,
+        walletId  = walletId,
         timestamp = timestamp
     )
 
     companion object {
-        // ── Mapper: Domain → Entity ──
         fun fromDomain(model: TransactionModel): TransactionEntity = TransactionEntity(
-            id = model.id,
-            note = model.note,
-            amount = model.amount,
-            type = model.type,
-            category = model.category,
+            id        = model.id,
+            note      = model.note,
+            amount    = model.amount,
+            type      = model.type,
+            category  = model.category,
+            walletId  = model.walletId,
             timestamp = model.timestamp
         )
     }

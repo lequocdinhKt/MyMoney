@@ -28,7 +28,7 @@ import com.example.mymoney.data.local.entity.WalletEntity
         CategoryEntity::class,
         ChatMessageEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -112,6 +112,14 @@ abstract class AppDatabase : RoomDatabase() {
          *
          * @param context Application context (KHÔNG dùng Activity context để tránh memory leak)
          */
+        /** Migration v2 → v3: thêm cột walletId cho bảng transactions */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Thêm cột walletId với default 0 (chưa gán ví)
+                db.execSQL("ALTER TABLE transactions ADD COLUMN walletId INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -119,7 +127,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mymoney_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
