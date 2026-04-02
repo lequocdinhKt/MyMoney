@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(
                     navController = navController,
                     startDestination = startDestination,
+                    userId = currentUserId ?: "",
                     // Callback không cần làm gì thêm — DataStore đã được lưu trong ViewModel
                     onOnboardingFinished = {}
                 )

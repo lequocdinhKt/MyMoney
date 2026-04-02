@@ -14,10 +14,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.TransactionRepositoryImpl
+import com.example.mymoney.data.repository.WalletRepositoryImpl
+import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
+import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
+import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
+import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.main.components.CustomTopAppBar
 import com.example.mymoney.ui.main.components.MainDrawerOverlay
@@ -42,13 +50,31 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
+    userId: String = "",
     onAddTransactionClick: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
+    // Build dependencies — sẽ thay bằng DI framework sau
+    val homeViewModelFactory = remember(userId) {
+        val db = AppDatabase.getInstance(context)
+        val transactionRepo = TransactionRepositoryImpl(db.transactionDao())
+        val walletRepo      = WalletRepositoryImpl(db.walletDao())
+        HomeViewModelFactory(
+            getTransactionsByPeriod = GetTransactionsByPeriodUseCase(transactionRepo),
+            getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
+            getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
+            userId                  = userId
+        )
+    }
+
     val tabNavController = rememberNavController()
     val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val currentTab = BottomTab.fromRoute(currentRoute)
+    // Fallback về Home khi currentTab null (frame đầu tiên trước khi NavHost emit route)
+    // → TopBar luôn hiển thị ngay lập tức, không bị flash trắng
+    val currentTab = BottomTab.fromRoute(currentRoute) ?: BottomTab.Home
 
     var isDrawerOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -76,14 +102,12 @@ fun MainScreen(
                 .drawerBlur(drawerProgress.value),   // ← iOS Backdrop Blur
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                currentTab?.title?.let { title ->
-                    CustomTopAppBar(
-                        title = title,
-                        onSettingsClick = { isDrawerOpen = true },
-                        onSearchClick = { /* TODO */ },
-                        onCalendarClick = { /* TODO */ }
-                    )
-                }
+                CustomTopAppBar(
+                    title = currentTab.title ?: currentTab.label,
+                    onSettingsClick = { isDrawerOpen = true },
+                    onSearchClick = { /* TODO */ },
+                    onCalendarClick = { /* TODO */ }
+                )
             },
             bottomBar = {
                 CustomBottomBar(
@@ -103,7 +127,8 @@ fun MainScreen(
         ) { innerPadding ->
             MainNavHost(
                 navController = tabNavController,
-                innerPadding = innerPadding
+                innerPadding = innerPadding,
+                homeViewModelFactory = homeViewModelFactory
             )
         }
 

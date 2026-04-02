@@ -34,7 +34,8 @@ fun AppNavigation(
     navController: NavHostController,
     startDestination: String,
     onOnboardingFinished: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userId: String = "",
 ) {
     NavHost(
         navController = navController,
@@ -90,11 +91,10 @@ fun AppNavigation(
 // ── Màn hình chính ──
 composable(route = Screen.Main.route) {
     MainScreen(
-        // Callback khi nhấn FAB (+) → navigate sang màn hình thêm giao dịch
+        userId = userId,
         onAddTransactionClick = {
             navController.navigate(Screen.AddTransaction.route)
         },
-        // Callback khi đăng xuất → xóa toàn bộ back stack, về màn hình Sign In
         onSignOut = {
             navController.navigate(Screen.SignIn.route) {
                 popUpTo(0) { inclusive = true }

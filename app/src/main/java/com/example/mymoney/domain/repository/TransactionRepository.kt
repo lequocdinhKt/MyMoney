@@ -20,6 +20,21 @@ interface TransactionRepository {
     fun getAllTransactions(): Flow<List<TransactionModel>>
 
     /**
+     * Lấy giao dịch trong khoảng thời gian [from, to) (mili giây).
+     */
+    fun getTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionModel>>
+
+    /**
+     * Lấy tổng thu nhập trong khoảng thời gian [from, to).
+     */
+    fun getTotalIncome(from: Long, to: Long): Flow<Double>
+
+    /**
+     * Lấy tổng chi tiêu trong khoảng thời gian [from, to).
+     */
+    fun getTotalExpense(from: Long, to: Long): Flow<Double>
+
+    /**
      * Thêm một giao dịch mới.
      * Suspend function — chạy trong coroutine scope.
      */

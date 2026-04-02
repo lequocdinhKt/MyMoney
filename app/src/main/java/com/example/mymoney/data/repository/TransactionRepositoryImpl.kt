@@ -29,6 +29,26 @@ class TransactionRepositoryImpl(
         }
 
     /**
+     * Lấy giao dịch theo khoảng thời gian — map Entity → Domain model.
+     */
+    override fun getTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionModel>> =
+        dao.getTransactionsByPeriod(from, to).map { entities ->
+            entities.map { it.toDomain() }
+        }
+
+    /**
+     * Lấy tổng thu nhập theo khoảng thời gian.
+     */
+    override fun getTotalIncome(from: Long, to: Long): Flow<Double> =
+        dao.getTotalIncome(from, to)
+
+    /**
+     * Lấy tổng chi phí theo khoảng thời gian.
+     */
+    override fun getTotalExpense(from: Long, to: Long): Flow<Double> =
+        dao.getTotalExpense(from, to)
+
+    /**
      * Thêm giao dịch — map Domain model → Entity rồi insert.
      */
     override suspend fun addTransaction(transaction: TransactionModel) {

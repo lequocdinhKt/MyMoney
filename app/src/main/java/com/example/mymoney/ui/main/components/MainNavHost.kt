@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.budget.BudgetScreen
 import com.example.mymoney.ui.home.HomeScreen
 import com.example.mymoney.ui.navigation.BottomTab
@@ -23,11 +24,13 @@ import com.example.mymoney.ui.saving.SavingScreen
  *
  * @param navController  NavController riêng của MainScreen (không phải navController gốc)
  * @param innerPadding   PaddingValues từ Scaffold để tránh bị che bởi TopBar/BottomBar
+ * @param homeViewModelFactory Factory đã có đủ dependencies để tạo HomeViewModel
  */
 @Composable
 fun MainNavHost(
     navController: NavHostController,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
+    homeViewModelFactory: HomeViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -38,7 +41,7 @@ fun MainNavHost(
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        composable(BottomTab.Home.route)   { HomeScreen() }
+        composable(BottomTab.Home.route)   { HomeScreen(factory = homeViewModelFactory) }
         composable(BottomTab.Budget.route) { BudgetScreen() }
         composable(BottomTab.Saving.route) { SavingScreen() }
         composable(BottomTab.Other.route)  { OtherScreen() }
