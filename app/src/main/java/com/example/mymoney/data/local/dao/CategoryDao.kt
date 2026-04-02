@@ -43,4 +43,16 @@ interface CategoryDao {
     /** Đếm số danh mục để biết đã seed chưa */
     @Query("SELECT COUNT(*) FROM categories WHERE isSystem = 1")
     suspend fun countSystemCategories(): Int
+
+    /** Lấy supabaseId theo name (để map khi backup lên Supabase) */
+    @Query("SELECT supabaseId FROM categories WHERE name = :name LIMIT 1")
+    suspend fun getSupabaseIdByName(name: String): String?
+
+    /** Update supabaseId cho category theo name */
+    @Query("UPDATE categories SET supabaseId = :supabaseId WHERE name = :name")
+    suspend fun updateSupabaseIdByName(name: String, supabaseId: String)
+
+    /** Lấy tất cả system categories (để sync supabaseId từ Supabase) */
+    @Query("SELECT * FROM categories WHERE isSystem = 1")
+    suspend fun getAllSystemCategories(): List<CategoryEntity>
 }

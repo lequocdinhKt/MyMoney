@@ -175,7 +175,7 @@ class SettingViewModel(
                         settingPreferences      = SettingPreferences(context.applicationContext),
                         authRepository          = AuthRepositoryImpl(),
                         transactionRepository   = TransactionRepositoryImpl(db.transactionDao()),
-                        supabaseTransactionRepo = SupabaseTransactionRepository()
+                        supabaseTransactionRepo = SupabaseTransactionRepository(db.categoryDao())
                     ) as T
                 }
             }

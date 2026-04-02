@@ -1,8 +1,5 @@
 package com.example.mymoney.ui.setting
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -44,6 +40,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.setting.SettingViewModel
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
@@ -166,12 +164,17 @@ fun SettingContent(
             }
         }
 
-        // ── Loading Overlay: phủ toàn màn hình, nằm ngoài Scaffold ──
-        AnimatedVisibility(
-            visible = uiState.isBackingUp,
-            enter   = fadeIn(),
-            exit    = fadeOut(),
-            modifier = Modifier.fillMaxSize()
+    }
+
+    // ── Loading Overlay: dùng Dialog để phủ toàn màn hình thực sự ──
+    if (uiState.isBackingUp) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(
+                dismissOnBackPress   = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
+            )
         ) {
             Box(
                 modifier = Modifier
