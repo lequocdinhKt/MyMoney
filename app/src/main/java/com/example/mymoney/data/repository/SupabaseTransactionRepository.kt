@@ -8,15 +8,15 @@ import kotlinx.serialization.Serializable
 
 /**
  * Repository giao tiếp với Supabase cho bảng "transactions".
- * Dùng trong SettingViewModel (backup) và AddTransactionViewModel (insert mới).
+ * Dùng trong AddTransactionViewModel (insert đơn) và SettingViewModel (backup batch).
  */
 class SupabaseTransactionRepository {
 
     private val TAG = "SupabaseTxRepo"
 
     @Serializable
-    data class TransactionUpsertDto(
-        @SerialName("user_id")   val userId: String,
+    private data class TransactionUpsertDto(
+        @SerialName("user_id")    val userId: String,
         val note: String,
         val amount: Double,
         val type: String,
@@ -25,8 +25,8 @@ class SupabaseTransactionRepository {
     )
 
     /**
-     * Insert 1 giao dịch mới từ AI chat.
-     * @return Supabase UUID của row vừa tạo, null nếu lỗi
+     * Insert 1 giao dịch mới từ AI chat lên Supabase.
+     * @return true nếu thành công, false nếu lỗi (non-fatal — không crash app)
      */
     suspend fun insertTransaction(
         userId: String,
@@ -36,17 +36,16 @@ class SupabaseTransactionRepository {
         category: String,
         timestampMillis: Long
     ): Boolean = try {
-        val iso = millisToIso(timestampMillis)
         val dto = TransactionUpsertDto(
             userId    = userId,
             note      = note,
             amount    = amount,
             type      = type,
             category  = category,
-            createdAt = iso
+            createdAt = millisToIso(timestampMillis)
         )
         SupabaseClient.client.postgrest["transactions"].insert(dto)
-        Log.d(TAG, "Inserted 1 transaction to Supabase")
+        Log.d(TAG, "Inserted 1 transaction to Supabase: $note $amount")
         true
     } catch (e: Exception) {
         Log.e(TAG, "Insert failed: ${e.message}", e)
@@ -54,8 +53,8 @@ class SupabaseTransactionRepository {
     }
 
     /**
-     * Upsert toàn bộ danh sách giao dịch từ Room lên Supabase.
-     * Dùng insert batch — Supabase RLS policy tự xử lý duplicate nếu có unique constraint.
+     * Batch insert toàn bộ danh sách giao dịch từ Room lên Supabase (dùng cho backup).
+     * Supabase RLS policy tự xử lý duplicate nếu có unique constraint.
      * @return Số lượng giao dịch đã upload thành công
      */
     suspend fun upsertAll(
@@ -76,13 +75,13 @@ class SupabaseTransactionRepository {
         }
 
         return try {
-            // Insert batch toàn bộ trong 1 request
+            // Batch insert toàn bộ trong 1 request
             SupabaseClient.client.postgrest["transactions"].insert(dtos)
-            Log.d(TAG, "Inserted ${dtos.size} transactions to Supabase")
+            Log.d(TAG, "Batch inserted ${dtos.size} transactions to Supabase")
             dtos.size
         } catch (e: Exception) {
             Log.e(TAG, "Batch insert failed, trying one-by-one: ${e.message}")
-            // Fallback: insert từng cái một, bỏ qua lỗi individual (duplicate, v.v.)
+            // Fallback: insert từng cái, bỏ qua lỗi individual (duplicate, v.v.)
             var successCount = 0
             dtos.forEach { dto ->
                 try {
@@ -97,13 +96,11 @@ class SupabaseTransactionRepository {
         }
     }
 
-    // Helper: epoch millis → ISO 8601 string
-    private fun millisToIso(millis: Long): String {
-        val instant = java.time.Instant.ofEpochMilli(millis)
-        return instant.toString()   // "2026-04-02T07:00:00Z"
-    }
+    /** epoch millis → ISO 8601 string (ví dụ: "2026-04-02T07:00:00Z") */
+    private fun millisToIso(millis: Long): String =
+        java.time.Instant.ofEpochMilli(millis).toString()
 
-    /** Lightweight model để truyền dữ liệu từ Room vào repository */
+    /** Lightweight model truyền dữ liệu từ Room vào repository khi backup */
     data class TransactionItem(
         val note: String,
         val amount: Double,

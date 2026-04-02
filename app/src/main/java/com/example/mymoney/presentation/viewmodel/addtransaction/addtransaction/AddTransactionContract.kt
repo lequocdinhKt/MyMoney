@@ -44,7 +44,9 @@ data class AddTransactionUiState(
     val isLoading: Boolean = false,
     val isEmpty: Boolean = true,
     val walletName: String = "Ví chính",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** ID phiên chat — dùng làm key lưu Room, tạo 1 lần khi mở màn hình */
+    val sessionId: String = java.util.UUID.randomUUID().toString()
 )
 
 /**
