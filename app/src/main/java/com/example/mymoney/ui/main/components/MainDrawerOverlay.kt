@@ -1,9 +1,7 @@
 package com.example.mymoney.ui.main.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,36 +9,49 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.setting.SettingViewModel
 import com.example.mymoney.ui.setting.SettingScreen
+import kotlin.math.roundToInt
+
+private val DRAWER_WIDTH = 300.dp
+
+/** Blur tối đa (px) khi drawer mở hoàn toàn — giống iOS ~16–20px */
+private const val MAX_BLUR_RADIUS = 18f
 
 /**
- * Drawer overlay tự viết — thay thế ModalNavigationDrawer của Material3.
+ * Drawer overlay với 3 Z-layer độc lập + Backdrop Blur kiểu iOS.
  *
- * Tại sao không dùng ModalNavigationDrawer:
- *   Material3 ModalNavigationDrawer luôn compose drawerContent ngay frame đầu tiên
- *   → gây flash drawer khi app khởi động dù drawer đang đóng.
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │  Layer 3 — Drawer Panel   (trượt từ trái theo X)           │
+ * ├─────────────────────────────────────────────────────────────┤
+ * │  Layer 2 — Scrim          (tối dần theo X)                 │
+ * ├─────────────────────────────────────────────────────────────┤
+ * │  Layer 1 — Main Content   (blur dần theo X) ← iOS effect   │
+ * └─────────────────────────────────────────────────────────────┘
  *
- * Tại sao SettingViewModel được tạo ở đây (ngoài AnimatedVisibility):
- *   AnimatedVisibility add/remove SettingScreen khỏi composition mỗi lần mở/đóng.
- *   Nếu ViewModel tạo bên trong SettingScreen → bị recreate mỗi lần → loadUsername()
- *   gọi lại Supabase network → UI bị delay hoặc treo.
- *   Giải pháp: tạo ViewModel ở đây, truyền xuống → ViewModel sống cùng MainScreen.
+ * Biến X ∈ [0f, 1f] điều khiển đồng thời cả 3 layer:
  *
- * @param isOpen      true = drawer đang mở
- * @param onClose     callback khi user đóng drawer (nhấn scrim hoặc item)
- * @param onSignOut   callback khi đăng xuất thành công → navigate về SignIn
+ *   Layer 1 blurRadius  = X × 18px   (mờ dần khi drawer mở)
+ *   Layer 2 scrimAlpha  = X × 0.5    (tối dần khi drawer mở)
+ *   Layer 3 offsetX     = -300dp × (1 - X) (trượt từ trái vào)
+ *
+ * Yêu cầu: minSdk ≥ 31 (Android 12). Project dùng minSdk=33 ✅
  */
 @Composable
 fun MainDrawerOverlay(
@@ -48,61 +59,106 @@ fun MainDrawerOverlay(
     onClose: () -> Unit,
     onSignOut: () -> Unit = {}
 ) {
-    // ViewModel tạo ở đây — ngoài AnimatedVisibility
-    // → tồn tại suốt vòng đời MainScreen, loadUsername() chỉ chạy 1 lần
     val context = LocalContext.current
     val settingViewModel: SettingViewModel = viewModel(
         factory = SettingViewModel.factory(context)
     )
 
-    AnimatedVisibility(
-        visible = isOpen,
-        enter = slideInHorizontally(
-            initialOffsetX = { -it },
-            animationSpec = tween(300)
-        ),
-        exit = slideOutHorizontally(
-            targetOffsetX = { -it },
-            animationSpec = tween(300)
+    // ── X: biến duy nhất điều khiển toàn bộ 3 layer ──
+    val drawerProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(isOpen) {
+        drawerProgress.animateTo(
+            targetValue = if (isOpen) 1f else 0f,
+            animationSpec = tween(durationMillis = 320)
         )
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    }
 
-            // Scrim — nền tối phía sau drawer, nhấn để đóng
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onClose
-                    )
+    val x = drawerProgress.value
+
+    // Không render gì khi drawer đóng hoàn toàn
+    if (x == 0f && !isOpen) return
+
+    // ─────────────────────────────────────────────────────────────────
+    // LAYER 2 — Scrim
+    //
+    // Công thức: alpha = X × 0.5
+    //   X=0.0 → alpha=0.00 (trong suốt)
+    //   X=0.5 → alpha=0.25 (tối 25%)
+    //   X=1.0 → alpha=0.50 (tối 50%)
+    // ─────────────────────────────────────────────────────────────────
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = x * 0.5f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClose
             )
+    )
 
-            // Drawer content — trượt từ trái vào
-            // background đặt TRƯỚC statusBarsPadding để màu phủ cả vùng status bar
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(300.dp)
-                    .align(Alignment.TopStart)
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                ) {
-                    // Truyền viewModel xuống — không tạo lại mỗi lần mở drawer
-                    SettingScreen(
-                        onItemClick = onClose,
-                        onSignOut = onSignOut,
-                        viewModel = settingViewModel
-                    )
-                }
-            }
+    // ─────────────────────────────────────────────────────────────────
+    // LAYER 3 — Drawer Panel
+    //
+    // Công thức: offsetX = -DRAWER_WIDTH × (1 - X)
+    //   X=0.0 → offsetX = -300dp (khuất hoàn toàn bên trái)
+    //   X=0.5 → offsetX = -150dp (hiện một nửa)
+    //   X=1.0 → offsetX =    0dp (hiển thị đầy đủ)
+    // ─────────────────────────────────────────────────────────────────
+    val drawerWidthPx = with(LocalDensity.current) { DRAWER_WIDTH.toPx() }
+    val offsetX = (-drawerWidthPx * (1f - x)).roundToInt()
+
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(DRAWER_WIDTH)
+            .offset { IntOffset(x = offsetX, y = 0) }
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            SettingScreen(
+                onItemClick = onClose,
+                onSignOut = onSignOut,
+                viewModel = settingViewModel
+            )
         }
+    }
+}
+
+/**
+ * Modifier áp dụng Backdrop Blur kiểu iOS lên Layer 1 (Main Content).
+ *
+ * Cách dùng trong MainScreen:
+ * ```kotlin
+ * Box(modifier = Modifier.drawerBlur(drawerProgress)) {
+ *     // Main content ở đây
+ * }
+ * ```
+ *
+ * @param progress  drawerProgress ∈ [0f, 1f] — 0 = không blur, 1 = blur tối đa
+ * @param maxBlur   Blur radius tối đa tính bằng pixel (mặc định 18px, giống iOS)
+ *
+ * Công thức:
+ *   blurRadius = progress × maxBlur
+ *   progress=0.0 → blur=0px  (sắc nét hoàn toàn)
+ *   progress=0.5 → blur=9px  (mờ vừa)
+ *   progress=1.0 → blur=18px (mờ tối đa, giống kính mờ iOS)
+ */
+fun Modifier.drawerBlur(
+    progress: Float,
+    maxBlur: Float = MAX_BLUR_RADIUS
+): Modifier {
+    if (progress <= 0f) return this
+    val blurRadius = (progress * maxBlur).coerceAtLeast(0.01f)
+    return this.graphicsLayer {
+        renderEffect = android.graphics.RenderEffect
+            .createBlurEffect(blurRadius, blurRadius, android.graphics.Shader.TileMode.CLAMP)
+            .asComposeRenderEffect()
     }
 }
