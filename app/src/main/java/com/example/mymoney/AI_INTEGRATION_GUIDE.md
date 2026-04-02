@@ -51,7 +51,7 @@ implementation(libs.google.generativeai)
 ### Bước 3: Tạo AI Service
 
 ```kotlin
-// data/remote/GeminiService.kt
+// data/remote/GroqService.kt
 package com.example.mymoney.data.remote
 
 import com.google.ai.client.generativeai.GenerativeModel
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
 app/src/main/java/com/example/mymoney/
 ├── data/
 │   └── remote/
-│       └── GeminiService.kt          ← NEW: Gọi Gemini API
+│       └── GroqService.kt          ← NEW: Gọi Gemini API
 ├── presentation/
 │   └── viewmodel/
 │       └── addtransaction/
