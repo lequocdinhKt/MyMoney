@@ -10,7 +10,9 @@ import kotlinx.coroutines.flow.Flow
  */
 interface ChatRepository {
     fun getMessagesBySession(sessionId: String): Flow<List<ChatMessageModel>>
+    fun getAllMessagesByUser(userId: String): Flow<List<ChatMessageModel>>
+    suspend fun getLatestSessionId(userId: String): String?
     suspend fun saveMessage(message: ChatMessageModel): Long
-    suspend fun deleteOldMessages()          // xóa tin nhắn > 48h
+    suspend fun deleteOldMessages()
     suspend fun deleteSession(sessionId: String)
 }

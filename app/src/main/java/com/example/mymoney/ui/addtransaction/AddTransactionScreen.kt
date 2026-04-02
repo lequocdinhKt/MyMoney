@@ -164,7 +164,7 @@ private fun AIChatContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp),
+                        .padding(bottom = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -192,6 +192,17 @@ private fun AIChatContent(
                         }
                     }
                 }
+
+                // ── Thông báo tự xóa tin nhắn sau 48h ──
+                Text(
+                    text = "🕐 Tin nhắn sẽ tự xóa sau 48 giờ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
             }
         }
 

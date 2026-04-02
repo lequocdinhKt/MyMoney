@@ -70,16 +70,63 @@ class AddTransactionViewModel(
     private val _navEvent = MutableSharedFlow<AddTransactionNavEvent>()
     val navEvent: SharedFlow<AddTransactionNavEvent> = _navEvent.asSharedFlow()
 
+    // sessionId là field của ViewModel — KHÔNG nằm trong UiState
+    // → tạo 1 lần duy nhất, không mất khi recompose
+    // → restore = dùng lại sessionId cũ nhất của user
+    private var sessionId: String = java.util.UUID.randomUUID().toString()
+
     private var messageIdCounter = 0L
     private var isWaitingForAI = false
     private var submitDebounceJob: Job? = null
 
     init {
-        // Xóa tin nhắn cũ > 48h khi mở màn hình
         viewModelScope.launch {
+            // 1. Xóa tin nhắn cũ > 48h
             runCatching { chatRepository.deleteOldMessages() }
+
+            val userId = settingPreferences.currentUserId.first() ?: return@launch
+
+            // 2. Restore sessionId của phiên gần nhất (nếu có)
+            val latestSession = runCatching {
+                chatRepository.getLatestSessionId(userId)
+            }.getOrNull()
+
+            if (latestSession != null) {
+                // Có lịch sử → dùng lại session cũ
+                sessionId = latestSession
+            }
+            // Nếu null → giữ sessionId mới tạo (lần đầu dùng app)
+
+            // 3. Load tất cả tin nhắn từ Room (subscribe Flow → tự cập nhật khi có tin mới)
+            _uiState.update { it.copy(isLoading = true) }
+
+            chatRepository.getAllMessagesByUser(userId).collect { stored ->
+                val chatMessages = stored.map { model ->
+                    ChatMessage(
+                        id        = model.id,
+                        content   = model.content,
+                        sender    = if (model.sender == "user") ChatSender.USER else ChatSender.AI,
+                        timestamp = model.timestamp
+                    )
+                }
+                // Chỉ cập nhật messages từ Room nếu AI không đang gõ
+                // (tránh overwrite bubble "•••" đang hiển thị)
+                if (!isWaitingForAI) {
+                    messageIdCounter = (chatMessages.maxOfOrNull { it.id } ?: 0L)
+                    _uiState.update { state ->
+                        state.copy(
+                            messages  = chatMessages,
+                            isEmpty   = chatMessages.isEmpty(),
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
+                }
+            }
         }
-        // Load tên ví mặc định cho chip header
+
+        // 4. Load tên ví mặc định cho chip header
         viewModelScope.launch {
             val userId = settingPreferences.currentUserId.first() ?: return@launch
             val wallet = runCatching { ensureDefaultWallet(userId) }.getOrNull()
@@ -118,8 +165,7 @@ class AddTransactionViewModel(
 
     private suspend fun processUserMessage(noteText: String) {
         isWaitingForAI = true
-        val sessionId = _uiState.value.sessionId
-        val now       = System.currentTimeMillis()
+        val now = System.currentTimeMillis()
 
         // ── Step 1: Hiển thị bubble user + typing indicator ──
         val userMsgId    = ++messageIdCounter

@@ -14,11 +14,16 @@ class ChatRepositoryImpl(
     override fun getMessagesBySession(sessionId: String): Flow<List<ChatMessageModel>> =
         dao.getMessagesBySession(sessionId).map { it.map { e -> e.toDomain() } }
 
+    override fun getAllMessagesByUser(userId: String): Flow<List<ChatMessageModel>> =
+        dao.getAllMessagesByUser(userId).map { it.map { e -> e.toDomain() } }
+
+    override suspend fun getLatestSessionId(userId: String): String? =
+        dao.getLatestSessionId(userId)
+
     override suspend fun saveMessage(message: ChatMessageModel): Long =
         dao.insertMessage(ChatMessageEntity.fromDomain(message))
 
     override suspend fun deleteOldMessages() {
-        // 48h = 48 * 60 * 60 * 1000 ms
         val cutoff = System.currentTimeMillis() - 48L * 60 * 60 * 1000
         dao.deleteOldMessages(cutoff)
     }

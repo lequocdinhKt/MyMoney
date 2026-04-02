@@ -41,12 +41,10 @@ data class ChatMessage(
 data class AddTransactionUiState(
     val messages: List<ChatMessage> = emptyList(),
     val noteInput: String = "",
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,        // true từ đầu → không flash màn trống khi restore từ Room
     val isEmpty: Boolean = true,
     val walletName: String = "Ví chính",
-    val errorMessage: String? = null,
-    /** ID phiên chat — dùng làm key lưu Room, tạo 1 lần khi mở màn hình */
-    val sessionId: String = java.util.UUID.randomUUID().toString()
+    val errorMessage: String? = null
 )
 
 /**

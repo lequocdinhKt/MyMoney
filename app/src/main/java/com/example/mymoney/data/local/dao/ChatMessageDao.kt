@@ -14,6 +14,14 @@ interface ChatMessageDao {
     @Query("SELECT * FROM chat_messages WHERE sessionId = :sessionId ORDER BY timestamp ASC")
     fun getMessagesBySession(sessionId: String): Flow<List<ChatMessageEntity>>
 
+    /** Lấy TẤT CẢ tin nhắn của user không phân session, sắp xếp tăng dần */
+    @Query("SELECT * FROM chat_messages WHERE userId = :userId ORDER BY timestamp ASC")
+    fun getAllMessagesByUser(userId: String): Flow<List<ChatMessageEntity>>
+
+    /** Lấy sessionId mới nhất của user để restore phiên chat gần nhất */
+    @Query("SELECT sessionId FROM chat_messages WHERE userId = :userId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestSessionId(userId: String): String?
+
     /**
      * Lấy danh sách session IDs của user, sắp xếp theo tin nhắn mới nhất.
      * Dùng GROUP BY + MAX() thay vì DISTINCT để tránh lỗi aggregate.
