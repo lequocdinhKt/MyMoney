@@ -112,88 +112,90 @@ fun SettingContent(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // ── Nội dung chính ──
-            Column(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { innerPadding ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+                    .padding(innerPadding)
             ) {
-                // Header username
-                Row(
+                // ── Nội dung chính ──
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
-                    Text(
-                        text  = if (uiState.username.isNotBlank()) uiState.username else "...",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.titleMedium
+                    // Header username
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text  = if (uiState.username.isNotBlank()) uiState.username else "...",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
                     )
-                }
 
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant)
-                )
-
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(items) { item ->
-                        when (item) {
-                            is SettingItem.SettingNavigation -> SettingNavigationItem(
-                                item       = item,
-                                onItemClick = { onItemClick(item.route) }
-                            )
-                            is SettingItem.SettingToggle -> SettingToggleItem(
-                                item            = item,
-                                onCheckedChange = { onEvent(SettingEvent.ToggleThousandSeparator(it)) }
-                            )
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(items) { item ->
+                            when (item) {
+                                is SettingItem.SettingNavigation -> SettingNavigationItem(
+                                    item       = item,
+                                    onItemClick = { onItemClick(item.route) }
+                                )
+                                is SettingItem.SettingToggle -> SettingToggleItem(
+                                    item            = item,
+                                    onCheckedChange = { onEvent(SettingEvent.ToggleThousandSeparator(it)) }
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
 
-            // ── Loading Overlay: vòng tròn chặn tương tác khi đang backup ──
-            AnimatedVisibility(
-                visible = uiState.isBackingUp,
-                enter   = fadeIn(),
-                exit    = fadeOut(),
-                modifier = Modifier.fillMaxSize()
+        // ── Loading Overlay: phủ toàn màn hình, nằm ngoài Scaffold ──
+        AnimatedVisibility(
+            visible = uiState.isBackingUp,
+            enter   = fadeIn(),
+            exit    = fadeOut(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(32.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .padding(32.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp),
-                            color    = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text  = "Đang sao lưu dữ liệu...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color    = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text  = "Đang sao lưu dữ liệu...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
