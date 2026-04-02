@@ -1,9 +1,12 @@
 package com.example.mymoney.ui.setting
 
-import androidx.compose.material3.Switch
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,23 +14,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.setting.SettingViewModel
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
@@ -49,9 +65,7 @@ fun SettingScreen(
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val items = remember(uiState) {
-        buildSettingItems(uiState)
-    }
+    val items = remember(uiState) { buildSettingItems(uiState) }
 
     // Collect navigation side-effect — chạy 1 lần, lắng nghe liên tục
     LaunchedEffect(Unit) {
@@ -63,16 +77,14 @@ fun SettingScreen(
     }
 
     SettingContent(
-        items = items,
-        username = uiState.username,
-        onToggleThousandSeparator = {
-            viewModel.onEvent(SettingEvent.ToggleThousandSeparator(it))
-        },
+        uiState  = uiState,
+        items    = items,
+        onEvent  = viewModel::onEvent,
         onItemClick = { route ->
-            if (route == "logout") {
-                viewModel.onEvent(SettingEvent.SignOut)
-            } else {
-                onItemClick()
+            when (route) {
+                "logout" -> viewModel.onEvent(SettingEvent.SignOut)
+                "backup" -> viewModel.onEvent(SettingEvent.BackupToSupabaseClicked)
+                else     -> onItemClick()
             }
         }
     )
@@ -84,62 +96,136 @@ fun SettingScreen(
 
 @Composable
 fun SettingContent(
+    uiState: SettingUiState,
     items: List<SettingItem>,
-    onToggleThousandSeparator: (Boolean) -> Unit,
-    onItemClick: (route: String) -> Unit,
-    username: String = ""
+    onEvent: (SettingEvent) -> Unit,
+    onItemClick: (route: String) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // ── Header: chỉ hiện username ──
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = if (username.isNotBlank()) username else "...",
-                color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.titleMedium
-            )
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Khi có resultMessage → hiện Snackbar
+    LaunchedEffect(uiState.backupResultMessage) {
+        val msg = uiState.backupResultMessage
+        if (!msg.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(msg)
+            onEvent(SettingEvent.DismissBackupResult)
         }
+    }
 
-        // Divider
-        Spacer(
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant)
-        )
-
-        // LIST MENU
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            items(items) { item ->
-                when (item) {
-                    is SettingItem.SettingNavigation -> {
-                        SettingNavigationItem(
-                            item = item,
-                            onItemClick = { onItemClick(item.route) }
-                        )
-                    }
+            // ── Nội dung chính ──
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                // Header username
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text  = if (uiState.username.isNotBlank()) uiState.username else "...",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
 
-                    is SettingItem.SettingToggle -> {
-                        SettingToggleItem(
-                            item = item,
-                            onCheckedChange = { isChecked ->
-                                onToggleThousandSeparator(isChecked)
-                            }
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(items) { item ->
+                        when (item) {
+                            is SettingItem.SettingNavigation -> SettingNavigationItem(
+                                item       = item,
+                                onItemClick = { onItemClick(item.route) }
+                            )
+                            is SettingItem.SettingToggle -> SettingToggleItem(
+                                item            = item,
+                                onCheckedChange = { onEvent(SettingEvent.ToggleThousandSeparator(it)) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Loading Overlay: vòng tròn chặn tương tác khi đang backup ──
+            AnimatedVisibility(
+                visible = uiState.isBackingUp,
+                enter   = fadeIn(),
+                exit    = fadeOut(),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(32.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color    = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text  = "Đang sao lưu dữ liệu...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
             }
         }
+    }
+
+    // ── Dialog xác nhận backup ──
+    if (uiState.showBackupConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { onEvent(SettingEvent.BackupDismissed) },
+            title = {
+                Text(
+                    text       = "Sao lưu dữ liệu",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text  = "Tất cả giao dịch trong thiết bị sẽ được đồng bộ lên đám mây (Supabase).\nBạn có muốn tiếp tục?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(onClick = { onEvent(SettingEvent.BackupConfirmed) }) {
+                    Text("Sao lưu ngay")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { onEvent(SettingEvent.BackupDismissed) }) {
+                    Text("Huỷ")
+                }
+            }
+        )
     }
 }
 
@@ -156,14 +242,11 @@ fun SettingNavigationItem(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
-            text = item.title,
+            text  = item.title,
             color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.bodyLarge,
         )
-        Icon(
-            imageVector = item.icon,
-            contentDescription = null
-        )
+        Icon(imageVector = item.icon, contentDescription = null)
     }
 }
 
@@ -177,17 +260,14 @@ fun SettingToggleItem(
             .fillMaxWidth()
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment     = Alignment.CenterVertically
     ) {
         Text(
-            text = item.title,
+            text  = item.title,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Switch(
-            checked = item.isChecked,
-            onCheckedChange = onCheckedChange
-        )
+        Switch(checked = item.isChecked, onCheckedChange = onCheckedChange)
     }
 }
 
@@ -195,66 +275,71 @@ fun SettingToggleItem(
 private fun buildSettingItems(
     state: SettingUiState
 ): List<SettingItem> {
+    val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
     return listOfNotNull(
-        SettingItem.SettingNavigation("Tài khoản", Icons.AutoMirrored.Filled.KeyboardArrowRight, "account"),
-        SettingItem.SettingNavigation("Mã PIN", Icons.AutoMirrored.Filled.KeyboardArrowRight, "pin"),
-        SettingItem.SettingNavigation("Giao diện", Icons.AutoMirrored.Filled.KeyboardArrowRight, "theme"),
-        SettingItem.SettingNavigation("Đơn vị tiền tệ", Icons.AutoMirrored.Filled.KeyboardArrowRight, "currency"),
-        SettingItem.SettingToggle(title = "Dấu phân cách hàng nghìn", isChecked = state.isThousandSeparatorEnabled,),
-
+        SettingItem.SettingNavigation("Tài khoản",                 arrow, "account"),
+        SettingItem.SettingNavigation("Mã PIN",                    arrow, "pin"),
+        SettingItem.SettingNavigation("Giao diện",                 arrow, "theme"),
+        SettingItem.SettingNavigation("Đơn vị tiền tệ",            arrow, "currency"),
+        SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = state.isThousandSeparatorEnabled),
         if (state.isThousandSeparatorEnabled)
-            SettingItem.SettingNavigation("Dạng hiển thị số", Icons.AutoMirrored.Filled.KeyboardArrowRight, "number_format")
+            SettingItem.SettingNavigation("Dạng hiển thị số",      arrow, "number_format")
         else null,
-
-        SettingItem.SettingNavigation("Dữ liệu và sao lưu", Icons.AutoMirrored.Filled.KeyboardArrowRight, "backup"),
-        SettingItem.SettingNavigation("Đăng xuất", Icons.AutoMirrored.Filled.KeyboardArrowRight, "logout")
+        SettingItem.SettingNavigation("Dữ liệu và sao lưu",        arrow, "backup"),
+        SettingItem.SettingNavigation("Đăng xuất",                 arrow, "logout")
     )
 }
 
 
-/** Sau này sẽ xóa đi */
 // ── Previews ──
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun SettingScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
-        val previewItems = listOf(
-            SettingItem.SettingNavigation("Tài khoản", arrow, "account"),
-            SettingItem.SettingNavigation("Mã PIN", arrow, "pin"),
-            SettingItem.SettingNavigation("Giao diện", arrow, "theme"),
-            SettingItem.SettingNavigation("Đơn vị tiền tệ", arrow, "currency"),
-            SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = true),
-            SettingItem.SettingNavigation("Dạng hiển thị số", arrow, "number_format"),
-            SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup"),
-            SettingItem.SettingNavigation("Đăng xuất", arrow, "logout")
-        )
         SettingContent(
-            items = previewItems,
-            onToggleThousandSeparator = {},
-            onItemClick = { _ -> }
+            uiState = SettingUiState(username = "Nguyễn Văn A", isThousandSeparatorEnabled = true),
+            items   = listOf(
+                SettingItem.SettingNavigation("Tài khoản",             arrow, "account"),
+                SettingItem.SettingNavigation("Dữ liệu và sao lưu",    arrow, "backup"),
+                SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = true),
+                SettingItem.SettingNavigation("Đăng xuất",             arrow, "logout")
+            ),
+            onEvent     = {},
+            onItemClick = {}
         )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun SettingScreenDarkPreview() {
+private fun SettingBackupLoadingPreview() {
     MyMoneyTheme(darkTheme = true) {
         val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
-        val previewItems = listOf(
-            SettingItem.SettingNavigation("Tài khoản", arrow, "account"),
-            SettingItem.SettingNavigation("Mã PIN", arrow, "pin"),
-            SettingItem.SettingNavigation("Giao diện", arrow, "theme"),
-            SettingItem.SettingNavigation("Đơn vị tiền tệ", arrow, "currency"),
-            SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = false),
-            SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup"),
-            SettingItem.SettingNavigation("Đăng xuất", arrow, "logout")
-        )
         SettingContent(
-            items = previewItems,
-            onToggleThousandSeparator = {},
-            onItemClick = { _ -> }
+            uiState = SettingUiState(username = "Test User", isBackingUp = true),
+            items   = listOf(
+                SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup")
+            ),
+            onEvent     = {},
+            onItemClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun SettingBackupDialogPreview() {
+    MyMoneyTheme(darkTheme = false) {
+        val arrow = Icons.AutoMirrored.Filled.KeyboardArrowRight
+        SettingContent(
+            uiState = SettingUiState(username = "Test User", showBackupConfirmDialog = true),
+            items   = listOf(
+                SettingItem.SettingNavigation("Dữ liệu và sao lưu", arrow, "backup")
+            ),
+            onEvent     = {},
+            onItemClick = {}
         )
     }
 }
