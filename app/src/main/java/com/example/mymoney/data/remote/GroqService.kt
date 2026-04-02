@@ -107,16 +107,40 @@ object GroqService {
      * Giao diện giữ nguyên tên "GroqService.chat()" để không cần sửa ViewModel.
      */
     suspend fun chat(userMessage: String): String {
+        return chatWithParsing(userMessage).displayText
+    }
+
+    /**
+     * Kết quả parse từ Groq: text hiển thị + danh sách giao dịch đã parse.
+     */
+    data class ChatResult(
+        val displayText: String,
+        val transactions: List<ParsedTransaction> = emptyList()
+    )
+
+    /**
+     * Giao dịch đã được AI parse ra từ tin nhắn.
+     */
+    data class ParsedTransaction(
+        val note: String,
+        val amount: Double,
+        val type: String,       // "income" | "expense"
+        val category: String
+    )
+
+    /**
+     * Gửi tin nhắn, parse JSON giao dịch từ response nếu có.
+     * Trả về [ChatResult] gồm text hiển thị + list giao dịch đã parse.
+     */
+    suspend fun chatWithParsing(userMessage: String): ChatResult {
         val apiKey = BuildConfig.GROQ_API_KEY
         if (apiKey.isBlank()) {
-            Log.e(TAG, "⚠️ GROQ_API_KEY trống! Vào https://console.groq.com/keys để lấy key miễn phí")
+            Log.e(TAG, "⚠️ GROQ_API_KEY trống!")
             throw IllegalStateException("GROQ_API_KEY chưa cấu hình. Thêm vào local.properties")
         }
 
-        return try {
-            Log.d(TAG, "Sending to Groq: $userMessage")
-
-            val httpResponse = client.post(GROQ_URL) {
+        val httpResponse = try {
+            client.post(GROQ_URL) {
                 header("Authorization", "Bearer $apiKey")
                 contentType(ContentType.Application.Json)
                 setBody(
@@ -129,28 +153,64 @@ object GroqService {
                     )
                 )
             }
-
-            val rawBody = httpResponse.bodyAsText()
-            Log.d(TAG, "HTTP ${httpResponse.status.value}: $rawBody")
-
-            if (!httpResponse.status.isSuccess()) {
-                // Parse lỗi từ Groq
-                val errorWrapper = runCatching { json.decodeFromString<ErrorWrapper>(rawBody) }.getOrNull()
-                val errorMsg = errorWrapper?.error?.message ?: "HTTP ${httpResponse.status.value}"
-                throw Exception(errorMsg)
-            }
-
-            // Parse success
-            val response = json.decodeFromString<ChatResponse>(rawBody)
-            val result = response.choices.firstOrNull()?.message?.content
-                ?: "Xin lỗi, mình chưa hiểu ý bạn. Thử lại nhé! 😊"
-
-            Log.d(TAG, "Groq response received")
-            result
-
         } catch (e: Exception) {
-            Log.e(TAG, "Error calling Groq API: ${e.message}", e)
+            Log.e(TAG, "Network error: ${e.message}", e)
             throw e
         }
+
+        val rawBody = httpResponse.bodyAsText()
+        Log.d(TAG, "HTTP ${httpResponse.status.value}: $rawBody")
+
+        if (!httpResponse.status.isSuccess()) {
+            val errorWrapper = runCatching { json.decodeFromString<ErrorWrapper>(rawBody) }.getOrNull()
+            val errorMsg = errorWrapper?.error?.message ?: "HTTP ${httpResponse.status.value}"
+            throw Exception(errorMsg)
+        }
+
+        val response = json.decodeFromString<ChatResponse>(rawBody)
+        val fullText = response.choices.firstOrNull()?.message?.content
+            ?: "Xin lỗi, mình chưa hiểu ý bạn. Thử lại nhé! 😊"
+
+        // Tách phần text hiển thị (bỏ JSON block)
+        val displayText = fullText
+            .replace(Regex("```json[\\s\\S]*?```"), "")
+            .trim()
+            .ifBlank { "✅ Đã ghi nhận giao dịch!" }
+
+        // Tìm và parse JSON block nếu có
+        val jsonMatch = Regex("```json([\\s\\S]*?)```").find(fullText)
+        val transactions = if (jsonMatch != null) {
+            try {
+                val jsonBlock = jsonMatch.groupValues[1].trim()
+                val parsed = json.decodeFromString<TransactionListWrapper>(jsonBlock)
+                parsed.transactions.map { dto ->
+                    ParsedTransaction(
+                        note     = dto.note,
+                        amount   = dto.amount,
+                        type     = dto.type,
+                        category = dto.category
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse transaction JSON: ${e.message}")
+                emptyList()
+            }
+        } else emptyList()
+
+        Log.d(TAG, "Parsed ${transactions.size} transaction(s)")
+        return ChatResult(displayText = displayText, transactions = transactions)
     }
+
+    @Serializable
+    private data class TransactionListWrapper(
+        val transactions: List<ParsedTransactionDto> = emptyList()
+    )
+
+    @Serializable
+    private data class ParsedTransactionDto(
+        val note: String = "",
+        val amount: Double = 0.0,
+        val type: String = "expense",
+        val category: String = "Khác"
+    )
 }
