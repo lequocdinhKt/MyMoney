@@ -15,6 +15,7 @@ import com.example.mymoney.ui.home.HomeScreen
 import com.example.mymoney.ui.navigation.BottomTab
 import com.example.mymoney.ui.other.OtherScreen
 import com.example.mymoney.ui.saving.SavingScreen
+import com.example.mymoney.ui.search.SearchScreen
 
 /**
  * NavHost nội bộ cho các tab trong MainScreen.
@@ -45,5 +46,6 @@ fun MainNavHost(
         composable(BottomTab.Budget.route) { BudgetScreen() }
         composable(BottomTab.Saving.route) { SavingScreen() }
         composable(BottomTab.Other.route)  { OtherScreen() }
+        composable ("search") { SearchScreen() }
     }
 }

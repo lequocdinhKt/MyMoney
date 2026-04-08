@@ -105,24 +105,28 @@ fun MainScreen(
                 CustomTopAppBar(
                     title = currentTab.title ?: currentTab.label,
                     onSettingsClick = { isDrawerOpen = true },
-                    onSearchClick = { /* TODO */ },
+                    showback = currentRoute == "search",
+                    onBackClick = { tabNavController.popBackStack() },
+                    onSearchClick = { tabNavController.navigate("search") },
                     onCalendarClick = { /* TODO */ }
                 )
             },
             bottomBar = {
-                CustomBottomBar(
-                    currentRoute = currentRoute,
-                    onTabSelected = { tab ->
-                        tabNavController.navigate(tab.route) {
-                            popUpTo(tabNavController.graph.findStartDestination().id) {
-                                saveState = true
+                if (currentRoute != "search"){
+                    CustomBottomBar(
+                        currentRoute = currentRoute,
+                        onTabSelected = { tab ->
+                            tabNavController.navigate(tab.route) {
+                                popUpTo(tabNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onAddClick = { onAddTransactionClick() }
-                )
+                        },
+                        onAddClick = { onAddTransactionClick() }
+                    )
+                }
             }
         ) { innerPadding ->
             MainNavHost(
