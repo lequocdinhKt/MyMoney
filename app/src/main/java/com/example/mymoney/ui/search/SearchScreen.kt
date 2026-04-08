@@ -42,6 +42,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.statusBarsPadding
+import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.components.EmptyStateComposable
 
 /**
@@ -51,8 +52,9 @@ import com.example.mymoney.ui.components.EmptyStateComposable
 @Composable
 fun SearchScreen (
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel = viewModel()
+    factory: SearchViewModelFactory
 ) {
+    val viewModel: SearchViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
 
     SearchContent(
@@ -73,10 +75,10 @@ private fun SearchContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp).
-            statusBarsPadding()
+            .padding(16.dp)
+            .statusBarsPadding()
     ) {
 
         // Search Bar
@@ -88,14 +90,14 @@ private fun SearchContent(
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Tìm kiếm...") },
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null)
+                Icon(Icons.Default.Search, contentDescription = "Search")
             },
             trailingIcon = {
                 if (uiState.query.isNotEmpty()) {
                     IconButton(onClick = {
                         onEvent(SearchEvent.onQueryChange(""))
                     }) {
-                        Icon(Icons.Default.Clear, contentDescription = null)
+                        Icon(Icons.Default.Clear, contentDescription = "Clear")
                     }
                 }
             },
@@ -235,4 +237,16 @@ private fun SearchScreenDarkPreview() {
             onEvent = {}
         )
     }
+}
+
+/** Dữ liệu mẫu chỉ dùng trong Preview */
+@Preview
+@Composable
+fun PreviewSearch() {
+    val fakeState = SearchUiState()
+
+    SearchContent(
+        uiState = fakeState,
+        onEvent = {}
+    )
 }

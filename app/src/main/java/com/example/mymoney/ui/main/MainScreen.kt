@@ -25,7 +25,9 @@ import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
+import com.example.mymoney.domain.usecase.GetTransactionsUseCase
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
+import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.main.components.CustomTopAppBar
 import com.example.mymoney.ui.main.components.MainDrawerOverlay
@@ -66,6 +68,15 @@ fun MainScreen(
             getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
             getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
             userId                  = userId
+        )
+    }
+
+    val searchViewModelFactory = remember {
+        val db = AppDatabase.getInstance(context)
+        val repo = TransactionRepositoryImpl(db.transactionDao())
+
+        SearchViewModelFactory(
+            getTransactionsUseCase = GetTransactionsUseCase(repo)
         )
     }
 
@@ -132,7 +143,8 @@ fun MainScreen(
             MainNavHost(
                 navController = tabNavController,
                 innerPadding = innerPadding,
-                homeViewModelFactory = homeViewModelFactory
+                homeViewModelFactory = homeViewModelFactory,
+                searchViewModelFactory = searchViewModelFactory
             )
         }
 

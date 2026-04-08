@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
+import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.budget.BudgetScreen
 import com.example.mymoney.ui.home.HomeScreen
 import com.example.mymoney.ui.navigation.BottomTab
@@ -31,7 +32,8 @@ import com.example.mymoney.ui.search.SearchScreen
 fun MainNavHost(
     navController: NavHostController,
     innerPadding: PaddingValues,
-    homeViewModelFactory: HomeViewModelFactory
+    homeViewModelFactory: HomeViewModelFactory,
+    searchViewModelFactory: SearchViewModelFactory
 ) {
     NavHost(
         navController = navController,
@@ -46,6 +48,6 @@ fun MainNavHost(
         composable(BottomTab.Budget.route) { BudgetScreen() }
         composable(BottomTab.Saving.route) { SavingScreen() }
         composable(BottomTab.Other.route)  { OtherScreen() }
-        composable ("search") { SearchScreen() }
+        composable("search") {SearchScreen(factory = searchViewModelFactory)}
     }
 }
