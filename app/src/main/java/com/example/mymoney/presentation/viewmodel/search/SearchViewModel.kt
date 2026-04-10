@@ -12,6 +12,9 @@ import com.example.mymoney.presentation.viewmodel.search.search.SearchEvent
 import com.example.mymoney.presentation.viewmodel.search.search.SearchUiState
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
 import com.example.mymoney.presentation.viewmodel.search.search.FilterType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
 
@@ -35,6 +38,7 @@ class SearchViewModel(
      * Lưu lại để filter nhanh hơn
      * */
     private var allTransactions: List<TransactionModel> = emptyList()
+    private var searchJob: Job? = null
 
     init {
         observeTransactions()
@@ -57,7 +61,11 @@ class SearchViewModel(
              */
             is SearchEvent.onQueryChange -> {
                 _uistate.update { it.copy(query = event.query) }
-                filter(allTransactions)
+                searchJob?.cancel()
+                searchJob = viewModelScope.launch {
+                    delay(300) //  debounce
+                    filter(allTransactions)
+                }
             }
 
             /**
@@ -74,11 +82,13 @@ class SearchViewModel(
     private fun filter(all: List<TransactionModel>) {
         val state = _uistate.value
 
-        val result = all.filter {
-            match(it, state.query, state.selectedFilter)
-        }
+        viewModelScope.launch(Dispatchers.Default) {
+            val result = all.filter {
+                match(it, state.query, state.selectedFilter)
+            }
 
-        _uistate.update { it.copy(transactions = result) }
+            _uistate.update { it.copy(transactions = result) }
+        }
     }
 
     /** Hàm kiểm tra có khớp  */

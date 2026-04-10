@@ -113,14 +113,18 @@ fun MainScreen(
                 .drawerBlur(drawerProgress.value),   // ← iOS Backdrop Blur
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                CustomTopAppBar(
-                    title = currentTab.title ?: currentTab.label,
-                    onSettingsClick = { isDrawerOpen = true },
-                    showback = currentRoute == "search",
-                    onBackClick = { tabNavController.popBackStack() },
-                    onSearchClick = { tabNavController.navigate("search") },
-                    onCalendarClick = { /* TODO */ }
-                )
+                if(currentRoute != "search") {
+                    CustomTopAppBar(
+                        title = currentTab.title ?: currentTab.label,
+                        onSettingsClick = { isDrawerOpen = true },
+                        showback = currentRoute == "search",
+                        onBackClick = { tabNavController.popBackStack() },
+                        onSearchClick = { tabNavController.navigate("search") {
+                            launchSingleTop = true
+                        } },
+                        onCalendarClick = { /* TODO */ }
+                    )
+                }
             },
             bottomBar = {
                 if (currentRoute != "search"){

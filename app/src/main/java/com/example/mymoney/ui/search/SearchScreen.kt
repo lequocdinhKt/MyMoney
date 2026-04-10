@@ -2,6 +2,7 @@ package com.example.mymoney.ui.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +43,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.Alignment
 import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.components.EmptyStateComposable
 
@@ -52,7 +55,8 @@ import com.example.mymoney.ui.components.EmptyStateComposable
 @Composable
 fun SearchScreen (
     modifier: Modifier = Modifier,
-    factory: SearchViewModelFactory
+    factory: SearchViewModelFactory,
+    onBackClick: () -> Unit
 ) {
     val viewModel: SearchViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
@@ -60,7 +64,8 @@ fun SearchScreen (
     SearchContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
-        modifier = modifier
+        modifier = modifier,
+        onBackClick = onBackClick
     )
 }
 
@@ -72,6 +77,7 @@ fun SearchScreen (
 private fun SearchContent(
     uiState: SearchUiState,
     onEvent: (SearchEvent) -> Unit,
+    onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -80,7 +86,23 @@ private fun SearchContent(
             .padding(16.dp)
             .statusBarsPadding()
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
 
+            // Title
+            Text(
+                text = "Tìm kiếm",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
         // Search Bar
         OutlinedTextField(
             value = uiState.query,
@@ -134,7 +156,10 @@ private fun SearchContent(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(uiState.transactions) { tx ->
+                    items(
+                        uiState.transactions,
+                        key = {it.id}
+                    ) { tx ->
                         TransactionItem(tx)
                     }
                 }
@@ -223,7 +248,8 @@ private fun SearchScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         SearchContent(
             uiState = SearchUiState(),
-            onEvent = {}
+            onEvent = {},
+            onBackClick = {}
         )
     }
 }
@@ -234,7 +260,8 @@ private fun SearchScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
         SearchContent(
             uiState = SearchUiState(),
-            onEvent = {}
+            onEvent = {},
+            onBackClick = {}
         )
     }
 }
@@ -247,6 +274,7 @@ fun PreviewSearch() {
 
     SearchContent(
         uiState = fakeState,
-        onEvent = {}
+        onEvent = {},
+        onBackClick = {}
     )
 }
