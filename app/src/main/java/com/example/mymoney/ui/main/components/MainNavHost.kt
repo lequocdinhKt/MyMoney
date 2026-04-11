@@ -5,20 +5,16 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
-import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.budget.BudgetScreen
 import com.example.mymoney.ui.home.HomeScreen
 import com.example.mymoney.ui.navigation.BottomTab
 import com.example.mymoney.ui.other.OtherScreen
 import com.example.mymoney.ui.saving.SavingScreen
-import com.example.mymoney.ui.search.SearchScreen
 
 /**
  * NavHost nội bộ cho các tab trong MainScreen.
@@ -35,31 +31,19 @@ fun MainNavHost(
     navController: NavHostController,
     innerPadding: PaddingValues,
     homeViewModelFactory: HomeViewModelFactory,
-    searchViewModelFactory: SearchViewModelFactory
 ) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
     NavHost(
         navController = navController,
         startDestination = BottomTab.Home.route,
-        modifier = if (currentRoute == "search") {
-            Modifier // Không padding
-        } else {
-            Modifier.padding(innerPadding) // chỉ áp dụng cho screen thường
-        },
+        modifier = Modifier.padding(innerPadding),
         enterTransition = { EnterTransition.None },
         exitTransition = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        composable(BottomTab.Home.route)   { HomeScreen(factory = homeViewModelFactory) }
+        composable(BottomTab.Home.route) { HomeScreen(factory = homeViewModelFactory) }
         composable(BottomTab.Budget.route) { BudgetScreen() }
         composable(BottomTab.Saving.route) { SavingScreen() }
-        composable(BottomTab.Other.route)  { OtherScreen() }
-        composable("search") {SearchScreen(
-            factory = searchViewModelFactory,
-            onBackClick = {navController.popBackStack()}
-        )}
+        composable(BottomTab.Other.route) { OtherScreen() }
     }
 }

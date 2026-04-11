@@ -25,9 +25,7 @@ import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
-import com.example.mymoney.domain.usecase.GetTransactionsUseCase
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
-import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.main.components.CustomTopAppBar
 import com.example.mymoney.ui.main.components.MainDrawerOverlay
@@ -54,7 +52,8 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     userId: String = "",
     onAddTransactionClick: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    onSearchClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -62,21 +61,12 @@ fun MainScreen(
     val homeViewModelFactory = remember(userId) {
         val db = AppDatabase.getInstance(context)
         val transactionRepo = TransactionRepositoryImpl(db.transactionDao())
-        val walletRepo      = WalletRepositoryImpl(db.walletDao())
+        val walletRepo = WalletRepositoryImpl(db.walletDao())
         HomeViewModelFactory(
             getTransactionsByPeriod = GetTransactionsByPeriodUseCase(transactionRepo),
-            getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
-            getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
-            userId                  = userId
-        )
-    }
-
-    val searchViewModelFactory = remember {
-        val db = AppDatabase.getInstance(context)
-        val repo = TransactionRepositoryImpl(db.transactionDao())
-
-        SearchViewModelFactory(
-            getTransactionsUseCase = GetTransactionsUseCase(repo)
+            getPeriodSummary = GetPeriodSummaryUseCase(transactionRepo),
+            getTotalBalance = GetTotalBalanceUseCase(walletRepo),
+            userId = userId
         )
     }
 
@@ -113,42 +103,34 @@ fun MainScreen(
                 .drawerBlur(drawerProgress.value),   // ← iOS Backdrop Blur
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                if(currentRoute != "search") {
-                    CustomTopAppBar(
-                        title = currentTab.title ?: currentTab.label,
-                        onSettingsClick = { isDrawerOpen = true },
-                        showback = currentRoute == "search",
-                        onBackClick = { tabNavController.popBackStack() },
-                        onSearchClick = { tabNavController.navigate("search") {
-                            launchSingleTop = true
-                        } },
-                        onCalendarClick = { /* TODO */ }
-                    )
-                }
+                CustomTopAppBar(
+                    title = currentTab.title ?: currentTab.label,
+                    onSettingsClick = { isDrawerOpen = true },
+                    onBackClick = { tabNavController.popBackStack() },
+                    onSearchClick = { onSearchClick() },
+                    onCalendarClick = { /* TODO */ }
+                )
             },
             bottomBar = {
-                if (currentRoute != "search"){
-                    CustomBottomBar(
-                        currentRoute = currentRoute,
-                        onTabSelected = { tab ->
-                            tabNavController.navigate(tab.route) {
-                                popUpTo(tabNavController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                CustomBottomBar(
+                    currentRoute = currentRoute,
+                    onTabSelected = { tab ->
+                        tabNavController.navigate(tab.route) {
+                            popUpTo(tabNavController.graph.findStartDestination().id) {
+                                saveState = true
                             }
-                        },
-                        onAddClick = { onAddTransactionClick() }
-                    )
-                }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onAddClick = { onAddTransactionClick() }
+                )
             }
         ) { innerPadding ->
             MainNavHost(
                 navController = tabNavController,
                 innerPadding = innerPadding,
                 homeViewModelFactory = homeViewModelFactory,
-                searchViewModelFactory = searchViewModelFactory
             )
         }
 

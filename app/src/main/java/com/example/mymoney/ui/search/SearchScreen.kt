@@ -92,7 +92,11 @@ private fun SearchContent(
                 .padding(vertical = 8.dp),
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             // Title
@@ -100,7 +104,8 @@ private fun SearchContent(
                 text = "Tìm kiếm",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center),
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
         // Search Bar
@@ -132,7 +137,7 @@ private fun SearchContent(
 
         //Filter Chips
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(FilterType.values()) { filter ->
+            items(FilterType.entries) { filter ->
                 FilterChip(
                     selected = uiState.selectedFilter == filter,
                     onClick = {
