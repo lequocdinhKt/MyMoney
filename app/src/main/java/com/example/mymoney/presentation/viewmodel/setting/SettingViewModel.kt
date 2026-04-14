@@ -34,6 +34,10 @@ private data class BackupViewState(
     val resultMsg: String? = null
 )
 
+private data class UiViewState(
+    val showThemeSheet: Boolean = false
+)
+
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Cài đặt.
  */
@@ -49,15 +53,21 @@ class SettingViewModel(
     // ── UI state: merge DataStore flows + backup state ──
     private val _backupState = MutableStateFlow(BackupViewState())
 
+    private val _uiState = MutableStateFlow(UiViewState())
+
     val uiState: StateFlow<SettingUiState> =
         combine(
             settingPreferences.isThousandSeparatorEnabled,
             settingPreferences.currentUsername,
-            _backupState
-        ) { enabled, username, backup ->
+            settingPreferences.themeMode,
+            _backupState,
+            _uiState
+        ) { enabled, username, theme, backup, ui ->
             SettingUiState(
                 isThousandSeparatorEnabled = enabled,
                 username                   = username,
+                selectedTheme              = theme,
+                showThemeSheet             = ui.showThemeSheet,
                 isBackingUp                = backup.isBackingUp,
                 showBackupConfirmDialog    = backup.showDialog,
                 backupResultMessage        = backup.resultMsg
@@ -106,6 +116,23 @@ class SettingViewModel(
             is SettingEvent.DismissBackupResult -> {
                 _backupState.update { it.copy(resultMsg = null) }
             }
+
+            // Nhấn item " Giao diện" -> Mở Bottom Sheet Theme
+            is SettingEvent.ThemeClicked -> {
+                _uiState.update { it.copy(showThemeSheet = true) }
+            }
+            // Đóng Bottom Sheet Theme
+            is SettingEvent.ThemeDismissed -> {
+                _uiState.update { it.copy(showThemeSheet = false) }
+            }
+            // Xác nhận Theme + Đóng Sheet
+            is SettingEvent.ThemeSelected -> {
+                viewModelScope.launch {
+                    settingPreferences.setThemeMode(event.mode)
+                }
+                _uiState.update { it.copy(showThemeSheet = false) }
+            }
+
         }
     }
 

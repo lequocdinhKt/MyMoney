@@ -1,11 +1,14 @@
 package com.example.mymoney.presentation.viewmodel.setting.setting
 
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.mymoney.domain.model.ThemeMode
 
 data class SettingUiState(
     val isLoading: Boolean = false,
     val isThousandSeparatorEnabled: Boolean = true,
     val username: String = "",
+    val selectedTheme: ThemeMode = ThemeMode.SYSTEM, // Chế độ có được chọn ko
+    val showThemeSheet: Boolean = false, // Hiện hay ẩn màn hình lựa chọn chế độ
     // ── Backup ──
     val isBackingUp: Boolean = false,           // đang upload → hiện loading
     val backupResultMessage: String? = null,    // kết quả: "✅ Đã sao lưu 12 giao dịch" hoặc lỗi
@@ -32,6 +35,12 @@ sealed interface SettingEvent {
     data object BackupConfirmed : SettingEvent            // xác nhận trong dialog
     data object BackupDismissed : SettingEvent            // đóng dialog
     data object DismissBackupResult : SettingEvent        // đóng snackbar/thông báo kết quả
+
+    data object ThemeClicked : SettingEvent               // nhấn "Giao diện"
+
+    data class ThemeSelected(val mode: ThemeMode) : SettingEvent // xác nhận chế độ được chọn
+
+    data object ThemeDismissed : SettingEvent             // đóng ô lựa chọn giao diện
 }
 
 sealed interface SettingNavEvent {

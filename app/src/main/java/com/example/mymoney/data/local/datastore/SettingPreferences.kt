@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.mymoney.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -46,6 +47,10 @@ class SettingPreferences(private val context: Context) {
         // Key lưu trạng thái bật/tắt dấu phân cách hàng nghìn
         private val KEY_IS_THOUSAND_SEPARATOR_ENABLED =
             booleanPreferencesKey("IS_THOUSAND_SEPARATOR_ENABLED")
+
+        // Key lưu trạng thái giao diện (Sáng/Tối/Hệ thống)
+        private val KEY_THEME_MODE =
+            stringPreferencesKey("THEME_MODE")
     }
 
     // ── Đọc ──
@@ -74,6 +79,24 @@ class SettingPreferences(private val context: Context) {
     val currentUsername: Flow<String> = context.dataStore.data
         .map { preferences ->
             preferences[KEY_USERNAME] ?: ""
+        }
+
+    /**
+     * Flow phát ra true nếu dấu phân cách hàng nghìn đang bật, false nếu tắt.
+     * Mặc định = true (bật sẵn cho dễ đọc số tiền).
+     */
+    val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
+            .map { preferences ->
+                preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] ?: true
+            }
+
+    val themeMode: Flow<ThemeMode> = context.dataStore.data
+        .map {preferences ->
+            when(preferences[KEY_THEME_MODE]) {
+                "LIGHT" -> ThemeMode.LIGHT
+                "DARK" -> ThemeMode.DARK
+                else -> ThemeMode.SYSTEM
+            }
         }
 
     // ── Ghi ──
@@ -127,21 +150,22 @@ class SettingPreferences(private val context: Context) {
     }
 
     /**
-     * Flow phát ra true nếu dấu phân cách hàng nghìn đang bật, false nếu tắt.
-     * Mặc định = true (bật sẵn cho dễ đọc số tiền).
-     */
-    val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] ?: true
-        }
-
-    /**
      * Lưu trạng thái bật/tắt dấu phân cách hàng nghìn.
      * @param enabled true = bật, false = tắt
      */
     suspend fun setThousandSeparatorEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] = enabled
+        }
+    }
+
+    /**
+     * Lưu trạng thái giao diện app (Sáng/Tối/Hệ thống).
+     * @param
+     */
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THEME_MODE] = mode.name
         }
     }
 }

@@ -1,3 +1,5 @@
+// Thêm dòng này để dùng ModalBottomSheet,...(Material3 API experimental)
+@file:OptIn(ExperimentalMaterial3Api::class)
 package com.example.mymoney.ui.setting
 
 import androidx.compose.foundation.background
@@ -20,9 +22,12 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mymoney.domain.model.ThemeMode
 import com.example.mymoney.presentation.viewmodel.setting.SettingViewModel
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingItem
@@ -82,6 +88,7 @@ fun SettingScreen(
             when (route) {
                 "logout" -> viewModel.onEvent(SettingEvent.SignOut)
                 "backup" -> viewModel.onEvent(SettingEvent.BackupToSupabaseClicked)
+                "theme"  -> viewModel.onEvent(SettingEvent.ThemeClicked)
                 else     -> onItemClick()
             }
         }
@@ -232,6 +239,35 @@ fun SettingContent(
             }
         )
     }
+
+    if(uiState.showThemeSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { onEvent(SettingEvent.ThemeDismissed) }
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                ThemeOption(
+                    "Sáng",
+                    uiState.selectedTheme == ThemeMode.LIGHT
+                ) {
+                    onEvent(SettingEvent.ThemeSelected(ThemeMode.LIGHT))
+                }
+
+                ThemeOption(
+                    "Tối",
+                    uiState.selectedTheme == ThemeMode.DARK
+                ) {
+                    onEvent(SettingEvent.ThemeSelected(ThemeMode.DARK))
+                }
+
+                ThemeOption(
+                    "Theo hệ thống",
+                    uiState.selectedTheme == ThemeMode.SYSTEM
+                ) {
+                    onEvent(SettingEvent.ThemeSelected(ThemeMode.SYSTEM))
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -273,6 +309,26 @@ fun SettingToggleItem(
             color = MaterialTheme.colorScheme.onBackground,
         )
         Switch(checked = item.isChecked, onCheckedChange = onCheckedChange)
+    }
+}
+
+// Hàm tạo các lựa chọn chế độ
+@Composable
+fun ThemeOption(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title)
+        RadioButton(selected = selected, onClick = onClick)
     }
 }
 
