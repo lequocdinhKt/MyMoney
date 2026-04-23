@@ -10,8 +10,11 @@ import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.AuthRepositoryImpl
 import com.example.mymoney.data.repository.SupabaseTransactionRepository
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
+import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import com.example.mymoney.domain.repository.AuthRepository
 import com.example.mymoney.domain.repository.TransactionRepository
+import com.example.mymoney.presentation.viewmodel.setting.setting.CurrencyMode
+import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
@@ -34,8 +37,18 @@ private data class BackupViewState(
     val resultMsg: String? = null
 )
 
+private data class BaseState(
+    val enabled: Boolean,
+    val username: String,
+    val theme: ThemeMode,
+    val currency: CurrencyMode,
+    val numberFormat: NumberFormat
+)
+
 private data class UiViewState(
-    val showThemeSheet: Boolean = false
+    val showThemeSheet: Boolean = false,
+    val showCurrencySheet: Boolean = false,
+    val showNumberFormatSheet: Boolean = false
 )
 
 /**
@@ -55,19 +68,32 @@ class SettingViewModel(
 
     private val _uiState = MutableStateFlow(UiViewState())
 
+    private val baseFlow = combine(
+        settingPreferences.isThousandSeparatorEnabled,
+        settingPreferences.currentUsername,
+        settingPreferences.themeMode,
+        settingPreferences.currencyMode,
+        settingPreferences.numberFormat
+    ) {
+        enabled, username, theme, currency, numberFormat ->
+        BaseState(enabled, username, theme, currency, numberFormat)
+    }
+
     val uiState: StateFlow<SettingUiState> =
         combine(
-            settingPreferences.isThousandSeparatorEnabled,
-            settingPreferences.currentUsername,
-            settingPreferences.themeMode,
+            baseFlow,
             _backupState,
             _uiState
-        ) { enabled, username, theme, backup, ui ->
+        ) { base, backup, ui ->
             SettingUiState(
-                isThousandSeparatorEnabled = enabled,
-                username                   = username,
-                selectedTheme              = theme,
+                isThousandSeparatorEnabled = base.enabled,
+                username                   = base.username,
+                selectedTheme              = base.theme,
+                selectedCurrency           = base.currency,
+                selectedNumberFormat       = base.numberFormat,
                 showThemeSheet             = ui.showThemeSheet,
+                showCurrencySheet          = ui.showCurrencySheet,
+                showNumberFormat           = ui.showNumberFormatSheet,
                 isBackingUp                = backup.isBackingUp,
                 showBackupConfirmDialog    = backup.showDialog,
                 backupResultMessage        = backup.resultMsg
@@ -99,6 +125,8 @@ class SettingViewModel(
                     _navEvent.emit(SettingNavEvent.NavigateToSignIn)
                 }
             }
+
+            /** Sao lưu dữ liệu **/
             // Nhấn item "Dữ liệu và sao lưu" → hiện dialog xác nhận
             is SettingEvent.BackupToSupabaseClicked -> {
                 _backupState.update { it.copy(showDialog = true) }
@@ -117,6 +145,7 @@ class SettingViewModel(
                 _backupState.update { it.copy(resultMsg = null) }
             }
 
+            /** Giao diện **/
             // Nhấn item " Giao diện" -> Mở Bottom Sheet Theme
             is SettingEvent.ThemeClicked -> {
                 _uiState.update { it.copy(showThemeSheet = true) }
@@ -133,6 +162,33 @@ class SettingViewModel(
                 _uiState.update { it.copy(showThemeSheet = false) }
             }
 
+            /** Đơn vị tiền tệ **/
+            is SettingEvent.CurrencyClicked -> {
+                _uiState.update { it.copy(showCurrencySheet = true) }
+            }
+            is SettingEvent.CurrencyDismissed -> {
+                _uiState.update { it.copy(showCurrencySheet = false) }
+            }
+            is SettingEvent.CurrencySelected -> {
+                viewModelScope.launch {
+                    settingPreferences.setCurrencyMode(event.currency)
+                }
+                _uiState.update { it.copy(showCurrencySheet = false) }
+            }
+
+            /** Định dạng số **/
+            is SettingEvent.NumberFormatClicked -> {
+                _uiState.update { it.copy(showNumberFormatSheet = true) }
+            }
+            is SettingEvent.NumberFormatDismissed -> {
+                _uiState.update { it.copy(showNumberFormatSheet = false) }
+            }
+            is SettingEvent.NumberFormatSelected -> {
+                viewModelScope.launch {
+                    settingPreferences.setNumberFormatMode(event.numberformat)
+                }
+                _uiState.update { it.copy(showNumberFormatSheet = false) }
+            }
         }
     }
 

@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.example.mymoney.domain.model.ThemeMode
+import com.example.mymoney.presentation.viewmodel.setting.setting.CurrencyMode
+import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
+import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -51,6 +53,12 @@ class SettingPreferences(private val context: Context) {
         // Key lưu trạng thái giao diện (Sáng/Tối/Hệ thống)
         private val KEY_THEME_MODE =
             stringPreferencesKey("THEME_MODE")
+
+        private val KEY_CURRENCY_MODE =
+            stringPreferencesKey("CURRENCY_MODE")
+
+        private val KEY_NUMBER_FORMAT_MODE =
+            stringPreferencesKey("NUMBER_FORMAT_MODE")
     }
 
     // ── Đọc ──
@@ -96,6 +104,22 @@ class SettingPreferences(private val context: Context) {
                 "LIGHT" -> ThemeMode.LIGHT
                 "DARK" -> ThemeMode.DARK
                 else -> ThemeMode.SYSTEM
+            }
+        }
+
+    val currencyMode: Flow<CurrencyMode> = context.dataStore.data
+        .map { preferences ->
+            when(preferences[KEY_CURRENCY_MODE]) {
+                // ──  ──
+                else -> CurrencyMode.VND
+            }
+        }
+
+    val numberFormat: Flow<NumberFormat> = context.dataStore.data
+        .map { preferences ->
+            when(preferences[KEY_NUMBER_FORMAT_MODE]) {
+                // ── ──
+                else -> NumberFormat.COMMA
             }
         }
 
@@ -166,6 +190,18 @@ class SettingPreferences(private val context: Context) {
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[KEY_THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun setCurrencyMode(currency: CurrencyMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CURRENCY_MODE] = currency.name
+        }
+    }
+
+    suspend fun setNumberFormatMode(numerFormat: NumberFormat) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_NUMBER_FORMAT_MODE] = numerFormat.name
         }
     }
 }

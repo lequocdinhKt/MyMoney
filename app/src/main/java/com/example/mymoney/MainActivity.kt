@@ -8,7 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.rememberNavController
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.domain.model.ThemeMode
+import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import com.example.mymoney.ui.navigation.AppNavigation
 import com.example.mymoney.ui.navigation.Screen
 import com.example.mymoney.ui.theme.MyMoneyTheme
