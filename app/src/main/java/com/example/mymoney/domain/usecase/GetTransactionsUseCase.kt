@@ -17,6 +17,6 @@ class GetTransactionsUseCase(
      * Trả về Flow chứa danh sách giao dịch sắp xếp theo thời gian mới nhất.
      * Mỗi khi dữ liệu Room thay đổi, Flow sẽ tự động phát giá trị mới.
      */
-    operator fun invoke(): Flow<List<TransactionModel>> =
-        repository.getAllTransactions()
+    operator fun invoke(userId: String): Flow<List<TransactionModel>> =
+        repository.getAllTransactions(userId)
 }

@@ -13,10 +13,14 @@ package com.example.mymoney.domain.model
  */
 data class TransactionModel(
     val id: Long = 0L,
+    val userId: String = "",
     val note: String,
     val amount: Double,
-    val type: String = "expense",          // "income" | "expense"
-    val category: String = "Khác",
-    val walletId: Long = 0L,               // 0 = ví mặc định
-    val timestamp: Long = System.currentTimeMillis()
+    val type: String = "expense",           // "income" | "expense"
+    val category: String = "Khác",          // tên danh mục (display)
+    val categoryId: Long? = null,           // FK → CategoryEntity (null = chưa liên kết)
+    val walletId: Long = 0L,
+    val aiGenerated: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+    val supabaseId: String? = null
 )

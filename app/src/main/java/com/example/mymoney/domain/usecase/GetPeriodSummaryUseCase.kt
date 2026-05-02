@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.Flow
 class GetPeriodSummaryUseCase(
     private val repository: TransactionRepository
 ) {
-    fun getIncome(from: Long, to: Long): Flow<Double> =
-        repository.getTotalIncome(from, to)
+    fun getIncome(userId: String, from: Long, to: Long): Flow<Double> =
+        repository.getTotalIncome(userId, from, to)
 
-    fun getExpense(from: Long, to: Long): Flow<Double> =
-        repository.getTotalExpense(from, to)
+    fun getExpense(userId: String, from: Long, to: Long): Flow<Double> =
+        repository.getTotalExpense(userId, from, to)
 }

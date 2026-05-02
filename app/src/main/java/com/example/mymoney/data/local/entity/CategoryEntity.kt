@@ -1,55 +1,22 @@
 package com.example.mymoney.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.mymoney.domain.model.CategoryModel
 
-/**
- * Room Entity cho bảng "categories".
- * Danh mục giao dịch — system (is_system=true) hoặc do user tự tạo.
- */
 @Entity(tableName = "categories")
 data class CategoryEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
-    val userId: String? = null,         // null = danh mục hệ thống
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "supabase_id") val supabaseId: String? = null,
+    @ColumnInfo(name = "user_id") val userId: String,
     val name: String,
+    val type: String,
     val icon: String,
     val color: String,
-    val type: String,                   // "expense", "income", "both"
-    val isSystem: Boolean = false,
-    val isArchived: Boolean = false,
-    val sortOrder: Int = 0,
-    val createdAt: Long = System.currentTimeMillis(),
-    val supabaseId: String? = null
-) {
-    fun toDomain(): CategoryModel = CategoryModel(
-        id = id,
-        userId = userId,
-        name = name,
-        icon = icon,
-        color = color,
-        type = type,
-        isSystem = isSystem,
-        isArchived = isArchived,
-        sortOrder = sortOrder,
-        createdAt = createdAt,
-        supabaseId = supabaseId
-    )
+    @ColumnInfo(name = "is_system") val isSystem: Boolean = false,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false,
+    @ColumnInfo(name = "sync_status") val syncStatus: Int = SyncStatus.PENDING_INSERT
+)
 
-    companion object {
-        fun fromDomain(model: CategoryModel): CategoryEntity = CategoryEntity(
-            id = model.id,
-            userId = model.userId,
-            name = model.name,
-            icon = model.icon,
-            color = model.color,
-            type = model.type,
-            isSystem = model.isSystem,
-            isArchived = model.isArchived,
-            sortOrder = model.sortOrder,
-            createdAt = model.createdAt,
-            supabaseId = model.supabaseId
-        )
-    }
-}

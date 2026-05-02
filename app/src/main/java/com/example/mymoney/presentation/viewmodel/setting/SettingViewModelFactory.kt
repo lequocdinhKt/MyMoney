@@ -17,8 +17,7 @@ import com.example.mymoney.data.repository.TransactionRepositoryImpl
  * @param userId   ID người dùng hiện tại — dùng để filter Room queries theo user
  */
 class SettingViewModelFactory(
-    private val context: Context,
-    private val userId: String
+    private val context: Context
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -32,8 +31,11 @@ class SettingViewModelFactory(
         return SettingViewModel(
             settingPreferences      = SettingPreferences(appCtx),
             authRepository          = AuthRepositoryImpl(),
-            transactionRepository   = TransactionRepositoryImpl(db.transactionDao(), userId),
-            supabaseTransactionRepo = SupabaseTransactionRepository(db.categoryDao())
+            transactionRepository   = TransactionRepositoryImpl(db.transactionDao()),
+            supabaseTransactionRepo = SupabaseTransactionRepository(
+                categoryDao = db.categoryDao(),
+                walletDao   = db.walletDao()
+            )
         ) as T
     }
 }

@@ -10,138 +10,81 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// ────────────────────────────────────────────────────────────
-// DataStore singleton — 1 instance duy nhất cho toàn app
-// Khai báo extension property tại top-level của file
-// ────────────────────────────────────────────────────────────
-private val Context.dataStore: DataStore<Preferences>
-        by preferencesDataStore(name = "app_settings")
+// Singleton DataStore per-Context theo khuyến nghị của Jetpack
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "setting_prefs")
 
 /**
- * Lớp quản lý tất cả các preference liên quan đến cài đặt ứng dụng.
- * Dùng DataStore (thay thế SharedPreferences) — hỗ trợ coroutine và Flow.
+ * Quản lý toàn bộ cài đặt người dùng bằng DataStore Preferences.
  *
- * Cách dùng:
- * ```
- * val prefs = SettingPreferences(context)
- * prefs.saveOnboardingCompleted()   // ghi
- * prefs.isOnboardingCompleted       // đọc (Flow)
- * ```
+ * Dữ liệu được lưu vào bộ nhớ trong app, không mất khi tắt ứng dụng,
+ * chỉ bị xóa khi gỡ cài đặt hoặc xóa dữ liệu ứng dụng.
+ *
+ * @param context ApplicationContext
  */
 class SettingPreferences(private val context: Context) {
 
-    companion object {
-        // Key lưu trạng thái đã xem hết onboarding
-        private val KEY_IS_ONBOARDING_COMPLETED =
-            booleanPreferencesKey("IS_ONBOARDING_COMPLETED")
-
-        // Key lưu user ID từ Supabase Auth (UUID string)
-        private val KEY_SUPABASE_USER_ID =
-            stringPreferencesKey("SUPABASE_USER_ID")
-
-        // Key lưu username — lưu khi đăng nhập/đăng ký để đọc offline không cần network
-        private val KEY_USERNAME =
-            stringPreferencesKey("USERNAME")
-
-        // Key lưu trạng thái bật/tắt dấu phân cách hàng nghìn
-        private val KEY_IS_THOUSAND_SEPARATOR_ENABLED =
-            booleanPreferencesKey("IS_THOUSAND_SEPARATOR_ENABLED")
+    // ── Keys ──────────────────────────────────────────────────────────────────
+    private companion object {
+        val KEY_ONBOARDING_COMPLETED     = booleanPreferencesKey("onboarding_completed")
+        val KEY_USER_ID                  = stringPreferencesKey("user_id")
+        val KEY_USERNAME                 = stringPreferencesKey("username")
+        val KEY_THOUSAND_SEPARATOR       = booleanPreferencesKey("thousand_separator_enabled")
     }
 
-    // ── Đọc ──
+    // ── Read Flows ─────────────────────────────────────────────────────────────
 
-    /**
-     * Flow phát ra true nếu người dùng đã hoàn thành onboarding, false nếu chưa.
-     * Mặc định = false (lần đầu cài app chưa có giá trị).
-     */
+    /** false = chưa xem onboarding (bao gồm lần đầu cài app) */
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[KEY_IS_ONBOARDING_COMPLETED] ?: false
-        }
+        .map { prefs -> prefs[KEY_ONBOARDING_COMPLETED] ?: false }
 
-    /**
-     * Flow phát ra user ID hiện tại (UUID string) hoặc null nếu chưa đăng nhập.
-     */
+    /** null = chưa đăng nhập */
     val currentUserId: Flow<String?> = context.dataStore.data
-        .map { preferences ->
-            preferences[KEY_SUPABASE_USER_ID]
-        }
+        .map { prefs -> prefs[KEY_USER_ID] }
 
-    /**
-     * Flow phát ra username đã lưu khi đăng nhập/đăng ký.
-     * Đọc từ DataStore — không cần network, luôn có ngay khi mở app.
-     */
-    val currentUsername: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            preferences[KEY_USERNAME] ?: ""
-        }
+    val currentUsername: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[KEY_USERNAME] }
 
-    // ── Ghi ──
-
-    /**
-     * Lưu trạng thái đã hoàn thành onboarding vào DataStore.
-     * Gọi suspend nên phải chạy trong coroutine scope (ViewModel dùng viewModelScope).
-     */
-    suspend fun saveOnboardingCompleted() {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_IS_ONBOARDING_COMPLETED] = true
-        }
-    }
-
-    /**
-     * Lưu user ID sau khi đăng nhập/đăng ký thành công.
-     * @param userId UUID string từ Supabase auth.uid()
-     */
-    suspend fun saveUserId(userId: String) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_SUPABASE_USER_ID] = userId
-        }
-    }
-
-    /**
-     * Xoá user ID khi đăng xuất.
-     */
-    suspend fun clearUserId() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(KEY_SUPABASE_USER_ID)
-        }
-    }
-
-    /**
-     * Lưu username vào DataStore ngay khi đăng nhập/đăng ký thành công.
-     * Đảm bảo username luôn có sẵn khi mở app lại — không cần gọi Supabase network.
-     */
-    suspend fun saveUsername(username: String) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_USERNAME] = username
-        }
-    }
-
-    /**
-     * Xóa username khi đăng xuất.
-     */
-    suspend fun clearUsername() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(KEY_USERNAME)
-        }
-    }
-
-    /**
-     * Flow phát ra true nếu dấu phân cách hàng nghìn đang bật, false nếu tắt.
-     * Mặc định = true (bật sẵn cho dễ đọc số tiền).
-     */
+    /** Mặc định bật phân tách hàng nghìn */
     val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
-        .map { preferences ->
-            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] ?: true
-        }
+        .map { prefs -> prefs[KEY_THOUSAND_SEPARATOR] ?: true }
 
-    /**
-     * Lưu trạng thái bật/tắt dấu phân cách hàng nghìn.
-     * @param enabled true = bật, false = tắt
-     */
+    // ── Write ──────────────────────────────────────────────────────────────────
+
+    suspend fun saveOnboardingCompleted() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ONBOARDING_COMPLETED] = true
+        }
+    }
+
+    suspend fun saveUserId(userId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_USER_ID] = userId
+        }
+    }
+
+    suspend fun saveUsername(username: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_USERNAME] = username
+        }
+    }
+
     suspend fun setThousandSeparatorEnabled(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[KEY_IS_THOUSAND_SEPARATOR_ENABLED] = enabled
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THOUSAND_SEPARATOR] = enabled
+        }
+    }
+
+    suspend fun clearUserId() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KEY_USER_ID)
+        }
+    }
+
+    suspend fun clearUsername() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(KEY_USERNAME)
         }
     }
 }
+
+

@@ -5,38 +5,43 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.mymoney.data.local.entity.SyncStatus
 import com.example.mymoney.data.local.entity.WalletEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalletDao {
 
-    /** Lấy tất cả ví của user, ví mặc định lên đầu */
-    @Query("SELECT * FROM wallets WHERE userId = :userId AND isArchived = 0 ORDER BY isDefault DESC, createdAt ASC")
-    fun getWallets(userId: String): Flow<List<WalletEntity>>
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_deleted = 0 ORDER BY is_default DESC, name ASC")
+    fun observeWallets(userId: String): Flow<List<WalletEntity>>
 
-    /** Lấy ví mặc định của user */
-    @Query("SELECT * FROM wallets WHERE userId = :userId AND isDefault = 1 LIMIT 1")
-    suspend fun getDefaultWallet(userId: String): WalletEntity?
-
-    /** Lấy ví theo id */
-    @Query("SELECT * FROM wallets WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM wallets WHERE id = :id AND is_deleted = 0")
     suspend fun getWalletById(id: Long): WalletEntity?
 
-    /** Tổng số dư tất cả ví của user */
-    @Query("SELECT COALESCE(SUM(balance), 0.0) FROM wallets WHERE userId = :userId AND isArchived = 0")
-    fun getTotalBalance(userId: String): Flow<Double>
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_default = 1 AND is_deleted = 0 LIMIT 1")
+    suspend fun getDefaultWallet(userId: String): WalletEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWallet(entity: WalletEntity): Long
+    suspend fun insert(wallet: WalletEntity): Long
 
     @Update
-    suspend fun updateWallet(entity: WalletEntity)
+    suspend fun update(wallet: WalletEntity)
 
-    /** Cập nhật số dư ví */
-    @Query("UPDATE wallets SET balance = :newBalance, updatedAt = :now WHERE id = :walletId")
-    suspend fun updateBalance(walletId: Long, newBalance: Double, now: Long = System.currentTimeMillis())
+    /** Soft-delete: đánh dấu is_deleted = 1, sync_status = PENDING_DELETE */
+    @Query("UPDATE wallets SET is_deleted = 1, sync_status = ${SyncStatus.PENDING_DELETE}, updated_at = :now WHERE id = :id")
+    suspend fun softDelete(id: Long, now: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM wallets WHERE id = :id")
-    suspend fun deleteWalletById(id: Long)
+    /** Trả về tất cả wallets của user (kể cả đã sync) */
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_deleted = 0")
+    suspend fun getWalletsByUser(userId: String): List<WalletEntity>
+
+    /** Trả về tất cả wallets chưa được sync lên Supabase */
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND sync_status != ${SyncStatus.SYNCED}")
+    suspend fun getPendingSync(userId: String): List<WalletEntity>
+
+    /** Đánh dấu đã sync xong sau khi upsert Supabase thành công */
+    @Query("UPDATE wallets SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
+    suspend fun markSynced(localId: Long, supabaseId: String)
 }
+
+

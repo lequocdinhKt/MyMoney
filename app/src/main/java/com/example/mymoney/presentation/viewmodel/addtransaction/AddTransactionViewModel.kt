@@ -1,17 +1,12 @@
 package com.example.mymoney.presentation.viewmodel.addtransaction
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.local.dao.CategoryDao
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.remote.GroqService
-import com.example.mymoney.data.repository.ChatRepositoryImpl
 import com.example.mymoney.data.repository.SupabaseTransactionRepository
-import com.example.mymoney.data.repository.TransactionRepositoryImpl
-import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.model.ChatMessageModel
 import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.domain.repository.ChatRepository
@@ -32,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -59,7 +55,8 @@ class AddTransactionViewModel(
     private val ensureDefaultWallet: EnsureDefaultWalletUseCase,
     private val chatRepository: ChatRepository,
     private val supabaseTransactionRepo: SupabaseTransactionRepository,
-    private val settingPreferences: SettingPreferences
+    private val settingPreferences: SettingPreferences,
+    private val categoryDao: CategoryDao
 ) : ViewModel() {
 
     private val TAG = "AddTransactionVM"
@@ -86,6 +83,12 @@ class AddTransactionViewModel(
 
             val userId = settingPreferences.currentUserId.first() ?: return@launch
 
+            // 2. Seed danh mục mặc định nếu chưa có (idempotent)
+            runCatching {
+                com.example.mymoney.data.repository.CategoryRepositoryImpl(categoryDao)
+                    .seedDefaultCategories(userId)
+            }
+
             // 2. Restore sessionId của phiên gần nhất (nếu có)
             val latestSession = runCatching {
                 chatRepository.getLatestSessionId(userId)
@@ -97,21 +100,22 @@ class AddTransactionViewModel(
             }
             // Nếu null → giữ sessionId mới tạo (lần đầu dùng app)
 
-            // 3. Load tất cả tin nhắn từ Room (subscribe Flow → tự cập nhật khi có tin mới)
+            // 3. Load lịch sử tin nhắn từ Room một lần (take(1)) khi khởi động
+            // Sau đó, _uiState.messages là source of truth duy nhất (in-memory)
+            // → tránh race condition giữa optimistic update và Room Flow emit
             _uiState.update { it.copy(isLoading = true) }
 
-            chatRepository.getAllMessagesByUser(userId).collect { stored ->
-                val chatMessages = stored.map { model ->
-                    ChatMessage(
-                        id        = model.id,
-                        content   = model.content,
-                        sender    = if (model.sender == "user") ChatSender.USER else ChatSender.AI,
-                        timestamp = model.timestamp
-                    )
-                }
-                // Chỉ cập nhật messages từ Room nếu AI không đang gõ
-                // (tránh overwrite bubble "•••" đang hiển thị)
-                if (!isWaitingForAI) {
+            chatRepository.getAllMessagesByUser(userId)
+                .take(1)
+                .collect { stored ->
+                    val chatMessages = stored.map { model ->
+                        ChatMessage(
+                            id        = model.id,
+                            content   = model.content,
+                            sender    = if (model.sender == "user") ChatSender.USER else ChatSender.AI,
+                            timestamp = model.timestamp
+                        )
+                    }
                     messageIdCounter = (chatMessages.maxOfOrNull { it.id } ?: 0L)
                     _uiState.update { state ->
                         state.copy(
@@ -120,10 +124,7 @@ class AddTransactionViewModel(
                             isLoading = false
                         )
                     }
-                } else {
-                    _uiState.update { it.copy(isLoading = false) }
                 }
-            }
         }
 
         // 4. Load tên ví mặc định cho chip header
@@ -259,12 +260,21 @@ class AddTransactionViewModel(
                             return@forEach  // bỏ qua giao dịch này
                         }
 
+                        // Resolve category name → id (fallback to "Khác" nếu không tìm thấy)
+                        val resolvedCategoryId = runCatching {
+                            categoryDao.getCategoryByName(userId, parsed.category, parsed.type)?.id
+                                ?: categoryDao.getDefaultCategory(userId, parsed.type)?.id
+                        }.getOrNull()
+
                         val transaction = TransactionModel(
+                            userId    = userId,
                             note      = parsed.note,
                             amount    = parsed.amount,
                             type      = parsed.type,
                             category  = parsed.category,
+                            categoryId = resolvedCategoryId,
                             walletId  = wallet.id,
+                            aiGenerated = true,
                             timestamp = now
                         )
 
@@ -297,7 +307,8 @@ class AddTransactionViewModel(
                                     amount          = parsed.amount,
                                     type            = parsed.type,
                                     category        = parsed.category,
-                                    timestampMillis = now
+                                    timestampMillis = now,
+                                    walletSupabaseId = wallet.supabaseId  // null nếu ví chưa sync
                                 )
                             }.onFailure { Log.w(TAG, "Supabase insert failed (non-critical): ${it.message}") }
                         }
@@ -387,28 +398,7 @@ class AddTransactionViewModel(
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Factory
-    // ──────────────────────────────────────────────────────────────────────────
-
     companion object {
-        fun factory(context: Context): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val db         = AppDatabase.getInstance(context.applicationContext)
-                    val txRepo     = TransactionRepositoryImpl(db.transactionDao())
-                    val walletRepo = WalletRepositoryImpl(db.walletDao())
-                    return AddTransactionViewModel(
-                        getTransactionsUseCase  = GetTransactionsUseCase(txRepo),
-                        addTransactionUseCase   = AddTransactionUseCase(txRepo),
-                        walletRepository        = walletRepo,
-                        ensureDefaultWallet     = EnsureDefaultWalletUseCase(walletRepo),
-                        chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
-                        supabaseTransactionRepo = SupabaseTransactionRepository(),
-                        settingPreferences      = SettingPreferences(context.applicationContext)
-                    ) as T
-                }
-            }
+        fun factory(context: android.content.Context) = AddTransactionViewModelFactory(context)
     }
 }

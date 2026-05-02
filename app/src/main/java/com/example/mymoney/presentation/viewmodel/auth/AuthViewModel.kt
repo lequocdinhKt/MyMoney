@@ -2,10 +2,8 @@ package com.example.mymoney.presentation.viewmodel.auth
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.data.repository.AuthRepositoryImpl
 import com.example.mymoney.domain.repository.AuthRepository
 import com.example.mymoney.presentation.viewmodel.auth.auth.AuthEvent
 import com.example.mymoney.presentation.viewmodel.auth.auth.AuthNavEvent
@@ -359,28 +357,10 @@ class AuthViewModel(
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Factory: tạo ViewModel với dependencies
-    // Dùng thủ công khi chưa có DI framework (Hilt/Koin)
+    // Dùng AuthViewModelFactory để tạo ViewModel với dependencies.
     // ─────────────────────────────────────────────────────────────────────────
 
     companion object {
-        /**
-         * Tạo [ViewModelProvider.Factory] nhận [Context].
-         *
-         * Cách dùng trong Composable:
-         * ```kotlin
-         * val ctx = LocalContext.current
-         * val vm: AuthViewModel = viewModel(factory = AuthViewModel.factory(ctx))
-         * ```
-         */
-        fun factory(context: Context): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    AuthViewModel(
-                        authRepository = AuthRepositoryImpl(),
-                        settingPreferences = SettingPreferences(context.applicationContext),
-                    ) as T
-            }
+        fun factory(context: Context) = AuthViewModelFactory(context)
     }
 }

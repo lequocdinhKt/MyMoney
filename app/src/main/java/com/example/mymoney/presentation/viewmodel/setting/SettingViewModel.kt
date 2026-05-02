@@ -3,13 +3,9 @@ package com.example.mymoney.presentation.viewmodel.setting
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.data.local.db.AppDatabase
-import com.example.mymoney.data.repository.AuthRepositoryImpl
 import com.example.mymoney.data.repository.SupabaseTransactionRepository
-import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.domain.repository.AuthRepository
 import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
@@ -57,7 +53,7 @@ class SettingViewModel(
         ) { enabled, username, backup ->
             SettingUiState(
                 isThousandSeparatorEnabled = enabled,
-                username                   = username,
+                username                   = username ?: "",
                 isBackingUp                = backup.isBackingUp,
                 showBackupConfirmDialog    = backup.showDialog,
                 backupResultMessage        = backup.resultMsg
@@ -126,8 +122,8 @@ class SettingViewModel(
                     return@launch
                 }
 
-                // 3. Đọc tất cả giao dịch từ Room (lấy 1 snapshot, không subscribe)
-                val transactions = transactionRepository.getAllTransactions().first()
+                // 3. Đọc tất cả giao dịch của userId từ Room (1 snapshot)
+                val transactions = transactionRepository.getAllTransactions(userId).first()
 
                 if (transactions.isEmpty()) {
                     _backupState.update { BackupViewState(resultMsg = "ℹ️ Không có giao dịch nào để sao lưu.") }
@@ -141,7 +137,9 @@ class SettingViewModel(
                         amount          = tx.amount,
                         type            = tx.type,
                         category        = tx.category,
-                        timestampMillis = tx.timestamp
+                        timestampMillis = tx.timestamp,
+                        walletId        = tx.walletId,   // local Room ID → resolved to UUID by repo
+                        aiGenerated     = tx.aiGenerated
                     )
                 }
 
@@ -166,18 +164,6 @@ class SettingViewModel(
     }
 
     companion object {
-        fun factory(context: Context): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    val db = AppDatabase.getInstance(context.applicationContext)
-                    return SettingViewModel(
-                        settingPreferences      = SettingPreferences(context.applicationContext),
-                        authRepository          = AuthRepositoryImpl(),
-                        transactionRepository   = TransactionRepositoryImpl(db.transactionDao()),
-                        supabaseTransactionRepo = SupabaseTransactionRepository(db.categoryDao())
-                    ) as T
-                }
-            }
+        fun factory(context: Context) = SettingViewModelFactory(context)
     }
 }

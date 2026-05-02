@@ -28,43 +28,40 @@ class CategoryRepositoryImpl(
         categoryDao.softDelete(id)
 
     override suspend fun seedDefaultCategories(userId: String) {
+        // Idempotent guard: nếu đã có system-category thì skip.
+        // An toàn khi gọi lại sau cài đặt lại app hoặc login trên thiết bị mới.
+        if (categoryDao.countSystemCategories(userId) > 0) return
+
         val now = System.currentTimeMillis()
-        val defaults = listOf(
-            // Expense
-            triple("Ăn uống",    "expense", "🍜", "#FF6B6B"),
-            triple("Di chuyển",  "expense", "🚗", "#4ECDC4"),
-            triple("Mua sắm",    "expense", "🛍", "#45B7D1"),
-            triple("Giải trí",   "expense", "🎮", "#96CEB4"),
-            triple("Sức khỏe",   "expense", "💊", "#FFEAA7"),
-            triple("Giáo dục",   "expense", "📚", "#DDA0DD"),
-            triple("Hóa đơn",    "expense", "📄", "#98D8C8"),
-            triple("Khác",       "expense", "📦", "#B0B0B0"),
-            // Income
-            triple("Thu nhập",   "income",  "💰", "#55EFC4"),
-            triple("Thưởng",     "income",  "🎁", "#FDCB6E"),
-            triple("Đầu tư",     "income",  "📈", "#6C5CE7"),
-            triple("Khác",       "income",  "💼", "#A29BFE")
-        ).map { (name, type, icon, color) ->
+        data class Seed(val name: String, val type: String, val icon: String, val color: String)
+        val seeds = listOf(
+            Seed("Ăn uống",   "expense", "🍜", "#FF6B6B"),
+            Seed("Di chuyển", "expense", "🚗", "#4ECDC4"),
+            Seed("Mua sắm",   "expense", "🛍", "#45B7D1"),
+            Seed("Giải trí",  "expense", "🎮", "#96CEB4"),
+            Seed("Sức khỏe",  "expense", "💊", "#FFEAA7"),
+            Seed("Giáo dục",  "expense", "📚", "#DDA0DD"),
+            Seed("Hóa đơn",   "expense", "📄", "#98D8C8"),
+            Seed("Khác",      "expense", "📦", "#B0B0B0"),
+            Seed("Thu nhập",  "income",  "💰", "#55EFC4"),
+            Seed("Thưởng",    "income",  "🎁", "#FDCB6E"),
+            Seed("Đầu tư",    "income",  "📈", "#6C5CE7"),
+            Seed("Khác",      "income",  "💼", "#A29BFE")
+        )
+        categoryDao.insertAll(seeds.map { s ->
             CategoryEntity(
                 userId     = userId,
-                name       = name,
-                type       = type,
-                icon       = icon,
-                color      = color,
+                name       = s.name,
+                type       = s.type,
+                icon       = s.icon,
+                color      = s.color,
                 isSystem   = true,
                 createdAt  = now,
                 updatedAt  = now,
                 syncStatus = SyncStatus.PENDING_INSERT
             )
-        }
-        categoryDao.insertAll(defaults)
+        })
     }
-
-    private fun triple(a: String, b: String, c: String, d: String) = listOf(a, b, c, d)
-        .let { (name, type, icon, color) -> Triple(Triple(name, type, icon), color, Unit) }
-        .let { (inner, color, _) -> Triple(inner.first, inner.second, inner.third) to color }
-        .let { (t, color) -> listOf(t.first, t.second, t.third, color) }
-        .let { it[0] to it[1] to it[2] to it[3] }
 
     // ── Mappers ──
 
@@ -99,4 +96,5 @@ class CategoryRepositoryImpl(
         )
     }
 }
+
 

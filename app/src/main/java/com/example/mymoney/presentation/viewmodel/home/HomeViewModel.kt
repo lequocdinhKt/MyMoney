@@ -55,9 +55,9 @@ class HomeViewModel(
                 val label = PeriodRangeUtil.getLabelFor(period)
 
                 combine(
-                    getTransactionsByPeriod(range.from, range.to),
-                    getPeriodSummary.getIncome(range.from, range.to),
-                    getPeriodSummary.getExpense(range.from, range.to),
+                    getTransactionsByPeriod(userId, range.from, range.to),
+                    getPeriodSummary.getIncome(userId, range.from, range.to),
+                    getPeriodSummary.getExpense(userId, range.from, range.to),
                     getTotalBalance(userId)
                 ) { transactions, income, expense, totalBalance ->
 

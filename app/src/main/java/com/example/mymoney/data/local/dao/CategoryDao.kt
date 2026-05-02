@@ -4,55 +4,56 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.mymoney.data.local.entity.CategoryEntity
+import com.example.mymoney.data.local.entity.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
 
-    /** Lấy tất cả danh mục: hệ thống + của user theo type */
-    @Query("""
-        SELECT * FROM categories 
-        WHERE (userId IS NULL OR userId = :userId)
-        AND isArchived = 0
-        AND (type = :type OR type = 'both')
-        ORDER BY isSystem DESC, sortOrder ASC, name ASC
-    """)
-    fun getCategoriesByType(userId: String, type: String): Flow<List<CategoryEntity>>
+    @Query("SELECT * FROM categories WHERE user_id = :userId AND is_deleted = 0 ORDER BY name ASC")
+    fun observeCategories(userId: String): Flow<List<CategoryEntity>>
 
-    /** Lấy tất cả danh mục (cả chi tiêu lẫn thu nhập) */
-    @Query("""
-        SELECT * FROM categories 
-        WHERE (userId IS NULL OR userId = :userId) AND isArchived = 0
-        ORDER BY isSystem DESC, sortOrder ASC, name ASC
-    """)
-    fun getAllCategories(userId: String): Flow<List<CategoryEntity>>
+    @Query("SELECT * FROM categories WHERE user_id = :userId AND type = :type AND is_deleted = 0 ORDER BY name ASC")
+    fun observeCategoriesByType(userId: String, type: String): Flow<List<CategoryEntity>>
 
-    @Query("SELECT * FROM categories WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM categories WHERE id = :id AND is_deleted = 0")
     suspend fun getCategoryById(id: Long): CategoryEntity?
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(entities: List<CategoryEntity>)
+    /** Tìm category theo tên và type — dùng để resolve AI category name → id */
+    @Query("SELECT * FROM categories WHERE user_id = :userId AND name = :name AND type = :type AND is_deleted = 0 LIMIT 1")
+    suspend fun getCategoryByName(userId: String, name: String, type: String): CategoryEntity?
+
+    /** Lấy category "Khác" làm fallback khi không resolve được tên */
+    @Query("SELECT * FROM categories WHERE user_id = :userId AND name = 'Khác' AND type = :type AND is_deleted = 0 LIMIT 1")
+    suspend fun getDefaultCategory(userId: String, type: String): CategoryEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCategory(entity: CategoryEntity): Long
+    suspend fun insert(category: CategoryEntity): Long
 
-    @Query("DELETE FROM categories WHERE id = :id AND isSystem = 0")
-    suspend fun deleteCategoryById(id: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(categories: List<CategoryEntity>)
 
-    /** Đếm số danh mục để biết đã seed chưa */
-    @Query("SELECT COUNT(*) FROM categories WHERE isSystem = 1")
-    suspend fun countSystemCategories(): Int
+    @Update
+    suspend fun update(category: CategoryEntity)
 
-    /** Lấy supabaseId theo name (để map khi backup lên Supabase) */
-    @Query("SELECT supabaseId FROM categories WHERE name = :name LIMIT 1")
-    suspend fun getSupabaseIdByName(name: String): String?
+    /** Soft-delete — chỉ cho phép nếu không còn giao dịch tham chiếu (RESTRICT được enforce ở FK) */
+    @Query("UPDATE categories SET is_deleted = 1, sync_status = ${SyncStatus.PENDING_DELETE}, updated_at = :now WHERE id = :id")
+    suspend fun softDelete(id: Long, now: Long = System.currentTimeMillis())
 
-    /** Update supabaseId cho category theo name */
-    @Query("UPDATE categories SET supabaseId = :supabaseId WHERE name = :name")
+    /** Đếm số system-category chưa bị xóa của user — dùng để guard seed */
+    @Query("SELECT COUNT(*) FROM categories WHERE user_id = :userId AND is_system = 1 AND is_deleted = 0")
+    suspend fun countSystemCategories(userId: String): Int
+
+    @Query("SELECT * FROM categories WHERE user_id = :userId AND sync_status != ${SyncStatus.SYNCED}")
+    suspend fun getPendingSync(userId: String): List<CategoryEntity>
+
+    @Query("UPDATE categories SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
+    suspend fun markSynced(localId: Long, supabaseId: String)
+
+    /** Cập nhật supabase_id theo tên category — dùng khi sync từ Supabase xuống */
+    @Query("UPDATE categories SET supabase_id = :supabaseId WHERE name = :name AND is_deleted = 0")
     suspend fun updateSupabaseIdByName(name: String, supabaseId: String)
-
-    /** Lấy tất cả system categories (để sync supabaseId từ Supabase) */
-    @Query("SELECT * FROM categories WHERE isSystem = 1")
-    suspend fun getAllSystemCategories(): List<CategoryEntity>
 }
+

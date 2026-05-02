@@ -21,8 +21,7 @@ import com.example.mymoney.domain.usecase.GetTransactionsUseCase
  * @param userId   ID người dùng hiện tại từ DataStore (đọc trước khi tạo factory)
  */
 class AddTransactionViewModelFactory(
-    private val context: Context,
-    private val userId: String
+    private val context: Context
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -32,7 +31,7 @@ class AddTransactionViewModelFactory(
         }
         val appCtx    = context.applicationContext
         val db        = AppDatabase.getInstance(appCtx)
-        val txRepo    = TransactionRepositoryImpl(db.transactionDao(), userId)
+        val txRepo    = TransactionRepositoryImpl(db.transactionDao())
         val walletRepo = WalletRepositoryImpl(db.walletDao())
 
         return AddTransactionViewModel(
@@ -42,7 +41,8 @@ class AddTransactionViewModelFactory(
             ensureDefaultWallet     = EnsureDefaultWalletUseCase(walletRepo),
             chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
             supabaseTransactionRepo = SupabaseTransactionRepository(),
-            settingPreferences      = SettingPreferences(appCtx)
+            settingPreferences      = SettingPreferences(appCtx),
+            categoryDao             = db.categoryDao()
         ) as T
     }
 }

@@ -14,34 +14,34 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionRepository {
 
     /**
-     * Lấy tất cả giao dịch, sắp xếp theo thời gian mới nhất trước.
-     * Trả về Flow để UI tự động cập nhật khi dữ liệu thay đổi.
+     * Lấy tất cả giao dịch của [userId], sắp xếp theo thời gian mới nhất trước.
+     * userId truyền qua tham số để Repository có thể là Singleton – không cần
+     * khởi tạo lại khi đổi tài khoản.
      */
-    fun getAllTransactions(): Flow<List<TransactionModel>>
+    fun getAllTransactions(userId: String): Flow<List<TransactionModel>>
 
     /**
-     * Lấy giao dịch trong khoảng thời gian [from, to) (mili giây).
+     * Lấy giao dịch của [userId] trong khoảng thời gian [from, to) (mili giây).
      */
-    fun getTransactionsByPeriod(from: Long, to: Long): Flow<List<TransactionModel>>
+    fun getTransactionsByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>>
 
     /**
-     * Lấy tổng thu nhập trong khoảng thời gian [from, to).
+     * Lấy tổng thu nhập của [userId] trong khoảng thời gian [from, to).
      */
-    fun getTotalIncome(from: Long, to: Long): Flow<Double>
+    fun getTotalIncome(userId: String, from: Long, to: Long): Flow<Double>
 
     /**
-     * Lấy tổng chi tiêu trong khoảng thời gian [from, to).
+     * Lấy tổng chi tiêu của [userId] trong khoảng thời gian [from, to).
      */
-    fun getTotalExpense(from: Long, to: Long): Flow<Double>
+    fun getTotalExpense(userId: String, from: Long, to: Long): Flow<Double>
 
     /**
-     * Thêm một giao dịch mới.
-     * Suspend function — chạy trong coroutine scope.
+     * Thêm một giao dịch mới (userId lấy từ TransactionModel.userId).
      */
     suspend fun addTransaction(transaction: TransactionModel)
 
     /**
-     * Xoá một giao dịch theo id.
+     * Xoá một giao dịch theo id (soft-delete).
      */
     suspend fun deleteTransaction(id: Long)
 }
