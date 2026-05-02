@@ -16,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mymoney.ui.theme.MyMoneyTheme
 
 @Composable
 fun <T> SelectionBottomSheet (
@@ -55,5 +57,40 @@ fun <T> SelectionBottomSheet (
                 }
             }
         }
+    }
+}
+
+//  ── Previews ──
+val sampleOptions = listOf(
+    SelectionOption("Option 1", 1),
+    SelectionOption("Option 2", 2),
+    SelectionOption("Option 3", 3)
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun SelectionBottomSheetLightPreview() {
+    MyMoneyTheme(darkTheme = false) {
+        SelectionBottomSheet(
+            title = "Chọn",
+            options = sampleOptions,
+            selected = 1,
+            onSelected = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SelectionBottomSheetDarkPreview() {
+    MyMoneyTheme(darkTheme = true) {
+        SelectionBottomSheet(
+            title = "Chọn",
+            options = sampleOptions,
+            selected = 1,
+            onSelected = {},
+            onDismiss = {}
+        )
     }
 }
