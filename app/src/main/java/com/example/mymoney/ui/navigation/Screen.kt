@@ -28,7 +28,19 @@ sealed class Screen(val route: String) {
     data object Main : Screen("main")
 
     // ── Màn hình thêm giao dịch (mở từ FAB trong Bottom Bar) ──
-    data object AddTransaction : Screen("add_transaction")
+    // walletId = 0  → fallback về ví mặc định
+    // walletId > 0  → dùng ví đang được chọn trên HomeScreen
+    data object AddTransaction : Screen("add_transaction/{walletId}") {
+        fun createRoute(walletId: Long = 0L) = "add_transaction/$walletId"
+    }
+
+    // ── Màn hình thiết lập ví ──
+    // walletId = -1  → tạo mới
+    // walletId > 0   → chỉnh sửa ví có id đó
+    data object WalletSetup : Screen("wallet_setup/{userId}/{walletId}") {
+        fun createRoute(userId: String, walletId: Long = -1L) =
+            "wallet_setup/$userId/$walletId"
+    }
 }
 
 /**

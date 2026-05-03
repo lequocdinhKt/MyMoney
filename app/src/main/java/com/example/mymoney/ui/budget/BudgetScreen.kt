@@ -11,8 +11,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModel
+import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModelFactory
 import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
@@ -23,8 +25,12 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun BudgetScreen(
     modifier: Modifier = Modifier,
-    viewModel: BudgetViewModel = viewModel()
+    userId: String = "",
 ) {
+    val context = LocalContext.current
+    val viewModel: BudgetViewModel = viewModel(
+        factory = BudgetViewModelFactory(context, userId)
+    )
     val uiState by viewModel.uiState.collectAsState()
 
     BudgetContent(

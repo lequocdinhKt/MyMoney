@@ -2,6 +2,7 @@ package com.example.mymoney.presentation.viewmodel.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
@@ -13,6 +14,7 @@ class HomeViewModelFactory(
     private val getTransactionsByPeriod: GetTransactionsByPeriodUseCase,
     private val getPeriodSummary: GetPeriodSummaryUseCase,
     private val getTotalBalance: GetTotalBalanceUseCase,
+    private val walletRepository: WalletRepository,
     private val userId: String
 ) : ViewModelProvider.Factory {
 
@@ -23,6 +25,7 @@ class HomeViewModelFactory(
             getTransactionsByPeriod = getTransactionsByPeriod,
             getPeriodSummary        = getPeriodSummary,
             getTotalBalance         = getTotalBalance,
+            walletRepository        = walletRepository,
             userId                  = userId
         ) as T
     }

@@ -25,15 +25,14 @@ interface TransactionRepository {
      */
     fun getTransactionsByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>>
 
-    /**
-     * Lấy tổng thu nhập của [userId] trong khoảng thời gian [from, to).
-     */
-    fun getTotalIncome(userId: String, from: Long, to: Long): Flow<Double>
+    /** Lấy giao dịch của [userId] theo [walletId] trong khoảng thời gian [from, to). */
+    fun getTransactionsByWalletAndPeriod(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>>
 
-    /**
-     * Lấy tổng chi tiêu của [userId] trong khoảng thời gian [from, to).
-     */
+    fun getTotalIncome(userId: String, from: Long, to: Long): Flow<Double>
     fun getTotalExpense(userId: String, from: Long, to: Long): Flow<Double>
+
+    fun getTotalIncomeByWallet(userId: String, walletId: Long, from: Long, to: Long): Flow<Double>
+    fun getTotalExpenseByWallet(userId: String, walletId: Long, from: Long, to: Long): Flow<Double>
 
     /**
      * Thêm một giao dịch mới (userId lấy từ TransactionModel.userId).

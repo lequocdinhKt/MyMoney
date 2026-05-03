@@ -56,7 +56,9 @@ class AddTransactionViewModel(
     private val chatRepository: ChatRepository,
     private val supabaseTransactionRepo: SupabaseTransactionRepository,
     private val settingPreferences: SettingPreferences,
-    private val categoryDao: CategoryDao
+    private val categoryDao: CategoryDao,
+    /** ID ví đang active trên HomeScreen. 0L = chưa chọn → fallback về ví mặc định. */
+    private val selectedWalletId: Long = 0L
 ) : ViewModel() {
 
     private val TAG = "AddTransactionVM"
@@ -127,10 +129,17 @@ class AddTransactionViewModel(
                 }
         }
 
-        // 4. Load tên ví mặc định cho chip header
+        // 4. Load tên ví đang active cho chip header
         viewModelScope.launch {
             val userId = settingPreferences.currentUserId.first() ?: return@launch
-            val wallet = runCatching { ensureDefaultWallet(userId) }.getOrNull()
+            // Dùng selectedWalletId nếu được truyền, không thì fallback về ví mặc định
+            val wallet = if (selectedWalletId != 0L) {
+                runCatching { walletRepository.getWalletById(selectedWalletId) }.getOrNull()
+                    ?: runCatching { ensureDefaultWallet(userId) }.getOrNull()
+            } else {
+                runCatching { ensureDefaultWallet(userId) }.getOrNull()
+            }
+            Log.d(TAG, "Init: selectedWalletId=$selectedWalletId → loaded wallet id=${wallet?.id} name=${wallet?.name}")
             if (wallet != null) {
                 _uiState.update { it.copy(walletName = wallet.name) }
             }
@@ -221,15 +230,32 @@ class AddTransactionViewModel(
             // ── Step 5 & 6: Xử lý từng giao dịch parse được ──
             if (result.transactions.isNotEmpty() && userId.isNotBlank()) {
                 viewModelScope.launch {
-                    // Lấy ví mặc định một lần dùng cho tất cả giao dịch trong batch
-                    val wallet = runCatching { ensureDefaultWallet(userId) }.getOrElse {
-                        Log.e(TAG, "Cannot get/create wallet: ${it.message}")
-                        return@launch
+                    // Resolve đúng ví đang active (không fallback ngầm về ví mặc định)
+                    val wallet = if (selectedWalletId != 0L) {
+                        runCatching { walletRepository.getWalletById(selectedWalletId) }.getOrElse { null }
+                            ?: run {
+                                Log.w(TAG, "selectedWalletId=$selectedWalletId not found, falling back to default")
+                                runCatching { ensureDefaultWallet(userId) }.getOrElse {
+                                    Log.e(TAG, "Cannot get/create wallet: ${it.message}")
+                                    return@launch
+                                }
+                            }
+                    } else {
+                        runCatching { ensureDefaultWallet(userId) }.getOrElse {
+                            Log.e(TAG, "Cannot get/create wallet: ${it.message}")
+                            return@launch
+                        }
                     }
 
+                    Log.d(TAG, "▶ Processing batch: selectedWalletId=$selectedWalletId → using wallet id=${wallet.id} name='${wallet.name}'")
+
                     result.transactions.forEach { parsed ->
-                        // ── Kiểm tra số dư trước khi lưu expense ──
-                        val currentBalance = walletRepository.getTotalBalance(userId).first()
+                        // ── Lấy số dư hiện tại của ĐÚNG ví (không cộng dồn tất cả ví) ──
+                        val currentBalance = runCatching {
+                            walletRepository.getWalletById(wallet.id)?.balance ?: 0.0
+                        }.getOrElse { 0.0 }
+
+                        Log.d(TAG, "  TX payload: note='${parsed.note}' amount=${parsed.amount} type=${parsed.type} walletId=${wallet.id} currentBalance=$currentBalance")
 
                         if (parsed.type == "expense" && currentBalance < parsed.amount) {
                             // Số dư không đủ → KHÔNG lưu, thêm bubble cảnh báo
@@ -399,6 +425,7 @@ class AddTransactionViewModel(
     }
 
     companion object {
-        fun factory(context: android.content.Context) = AddTransactionViewModelFactory(context)
+        fun factory(context: android.content.Context, walletId: Long = 0L) =
+            AddTransactionViewModelFactory(context, walletId)
     }
 }

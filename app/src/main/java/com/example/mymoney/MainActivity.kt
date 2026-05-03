@@ -4,8 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.ui.navigation.AppNavigation
@@ -22,48 +30,43 @@ class MainActivity : ComponentActivity() {
         ChatCleanupWorker.schedule(this)
 
         setContent {
-                MyMoneyTheme {
-                    val prefs = SettingPreferences(this)
+            // Màu primary động theo ví đang active — survive recomposition
+            var primaryHex by rememberSaveable { mutableStateOf("#0088F0") }
 
-                    // Đọc trạng thái onboarding từ DataStore
-                    // Flow<Boolean> — emit false nếu chưa set (lần đầu cài app)
-                    // initial = null để phân biệt "DataStore chưa emit" vs "đã emit false"
-                    val isOnboardingCompleted by prefs
-                        .isOnboardingCompleted
-                        .collectAsState(initial = null)
+            MyMoneyTheme(primaryHex = primaryHex) {
+                val prefs = SettingPreferences(this)
 
-                    // Đọc userId từ DataStore — nếu có nghĩa là đã đăng nhập trước đó
-                    // "loading" = sentinel trước khi DataStore emit lần đầu
-                    val currentUserId by prefs
-                        .currentUserId
-                        .collectAsState(initial = "loading")
+                val isOnboardingCompleted by prefs
+                    .isOnboardingCompleted
+                    .collectAsState(initial = null)
 
-                    // rememberNavController phải đặt ở đây (ngoài khối if)
-                    // để không bị tạo lại mỗi khi DataStore emit giá trị mới
-                    val navController = rememberNavController()
+                val currentUserId by prefs
+                    .currentUserId
+                    .collectAsState(initial = "loading")
 
-                // Chờ DataStore emit xong mới render NavHost.
-                // isOnboardingCompleted == null  → Flow<Boolean> chưa emit lần nào
-                // currentUserId == "loading"     → Flow<String?> chưa emit lần nào
-                // Sau khi cả hai emit (dù chỉ vài ms), điều kiện này trở thành false.
+                val navController = rememberNavController()
+
                 if (isOnboardingCompleted == null || currentUserId == "loading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    )
                     return@MyMoneyTheme
                 }
 
                 val startDestination: String = when {
-                    // Chưa xem onboarding (false từ DataStore) → hiện Onboarding
                     isOnboardingCompleted == false -> Screen.Onboarding.route
-                    // Đã đăng nhập (userId != null và != "loading") → vào thẳng Main
                     currentUserId != null -> Screen.Main.route
-                    // Đã xem onboarding nhưng chưa đăng nhập → hiện Sign In
                     else -> Screen.SignIn.route
                 }
 
                 AppNavigation(
-                    navController = navController,
-                    startDestination = startDestination,
-                    userId = currentUserId ?: "",
-                    onOnboardingFinished = {}
+                    navController        = navController,
+                    startDestination     = startDestination,
+                    userId               = currentUserId ?: "",
+                    onOnboardingFinished = {},
+                    onWalletColorChanged = { hex -> primaryHex = hex }
                 )
             }
         }

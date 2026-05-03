@@ -35,6 +35,15 @@ interface TransactionDao {
     )
     fun observeByDateRange(userId: String, startMs: Long, endMs: Long): Flow<List<TransactionEntity>>
 
+    @Query(
+        """SELECT * FROM transactions 
+           WHERE user_id = :userId AND wallet_id = :walletId
+             AND transaction_date BETWEEN :startMs AND :endMs 
+             AND is_deleted = 0 
+           ORDER BY transaction_date DESC"""
+    )
+    fun observeByWalletAndDateRange(userId: String, walletId: Long, startMs: Long, endMs: Long): Flow<List<TransactionEntity>>
+
     @Query("SELECT * FROM transactions WHERE id = :id AND is_deleted = 0")
     suspend fun getTransactionById(id: Long): TransactionEntity?
 

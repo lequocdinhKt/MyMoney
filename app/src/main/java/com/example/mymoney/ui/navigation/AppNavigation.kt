@@ -7,11 +7,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.mymoney.ui.addtransaction.AIChatScreen
 import com.example.mymoney.ui.auth.SignInScreen
 import com.example.mymoney.ui.auth.SignUpScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
+import com.example.mymoney.ui.wallet.WalletSetupScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -36,6 +39,7 @@ fun AppNavigation(
     onOnboardingFinished: () -> Unit,
     modifier: Modifier = Modifier,
     userId: String = "",
+    onWalletColorChanged: (colorHex: String) -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -92,9 +96,16 @@ fun AppNavigation(
 composable(route = Screen.Main.route) {
     MainScreen(
         userId = userId,
-        onAddTransactionClick = {
-            navController.navigate(Screen.AddTransaction.route)
+        onAddTransactionClick = { walletId ->
+            navController.navigate(Screen.AddTransaction.createRoute(walletId))
         },
+        onNavigateToAddWallet = {
+            navController.navigate(Screen.WalletSetup.createRoute(userId))
+        },
+        onNavigateToEditWallet = { walletId ->
+            navController.navigate(Screen.WalletSetup.createRoute(userId, walletId))
+        },
+        onWalletColorChanged = onWalletColorChanged,
         onSignOut = {
             navController.navigate(Screen.SignIn.route) {
                 popUpTo(0) { inclusive = true }
@@ -104,11 +115,35 @@ composable(route = Screen.Main.route) {
 }
 
         // ── Màn hình chat AI thêm giao dịch ──
-        composable(route = Screen.AddTransaction.route) {
+        composable(
+            route = Screen.AddTransaction.route,
+            arguments = listOf(
+                navArgument("walletId") { type = NavType.LongType; defaultValue = 0L }
+            )
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
             AIChatScreen(
+                walletId = walletId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        // ── Màn hình thiết lập ví ──
+        composable(
+            route     = Screen.WalletSetup.route,
+            arguments = listOf(
+                navArgument("userId")   { type = NavType.StringType },
+                navArgument("walletId") { type = NavType.LongType   }
+            )
+        ) { backStackEntry ->
+            val uid  = backStackEntry.arguments?.getString("userId") ?: userId
+            val wId  = backStackEntry.arguments?.getLong("walletId") ?: -1L
+            WalletSetupScreen(
+                userId         = uid,
+                walletId       = if (wId == -1L) null else wId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

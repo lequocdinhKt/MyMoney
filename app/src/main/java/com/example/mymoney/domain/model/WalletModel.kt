@@ -15,5 +15,6 @@ data class WalletModel(
     val isArchived: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val supabaseId: String? = null
+    val supabaseId: String? = null,
+    val sortOrder: Int = 0
 )

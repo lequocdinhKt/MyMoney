@@ -30,6 +30,7 @@ import com.example.mymoney.presentation.viewmodel.home.home.HomeEvent
 import com.example.mymoney.presentation.viewmodel.home.home.HomeUiState
 import com.example.mymoney.presentation.viewmodel.home.home.TimePeriod
 import com.example.mymoney.presentation.viewmodel.home.home.TransactionItem
+import com.example.mymoney.presentation.viewmodel.home.home.WalletItem
 import com.example.mymoney.ui.components.EmptyStateComposable
 import com.example.mymoney.ui.home.components.BalanceSection
 import com.example.mymoney.ui.home.components.TimePeriodFilter
@@ -57,15 +58,31 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun HomeScreen(
     factory: HomeViewModelFactory,
+    onNavigateToAddWallet: () -> Unit = {},
+    onNavigateToEditWallet: (walletId: Long) -> Unit = {},
+    onWalletColorChanged: (colorHex: String) -> Unit = {},
+    onSelectedWalletIdChanged: (walletId: Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
 
+    // Báo màu active wallet lên MainScreen mỗi khi thay đổi
+    androidx.compose.runtime.LaunchedEffect(uiState.activeWalletColor) {
+        onWalletColorChanged(uiState.activeWalletColor)
+    }
+
+    // Báo selectedWalletId lên MainScreen để dùng khi navigate AddTransaction
+    androidx.compose.runtime.LaunchedEffect(uiState.selectedWalletId) {
+        onSelectedWalletIdChanged(uiState.selectedWalletId)
+    }
+
     HomeContent(
-        uiState   = uiState,
-        onEvent   = viewModel::onEvent,
-        modifier  = modifier
+        uiState                = uiState,
+        onEvent                = viewModel::onEvent,
+        onNavigateToAddWallet  = onNavigateToAddWallet,
+        onNavigateToEditWallet = onNavigateToEditWallet,
+        modifier               = modifier
     )
 }
 
@@ -77,6 +94,8 @@ fun HomeScreen(
 private fun HomeContent(
     uiState: HomeUiState,
     onEvent: (HomeEvent) -> Unit,
+    onNavigateToAddWallet: () -> Unit = {},
+    onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -101,10 +120,14 @@ private fun HomeContent(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // ── 1. Thẻ số dư + Nút "+" ──
+                // ── 1. Thẻ ví cuộn ngang + Nút "+" ──
                 BalanceSection(
-                    formattedBalance = uiState.formattedBalance,
-                    onAddClick = { onEvent(HomeEvent.AddTransactionClick) }
+                    wallets          = uiState.wallets,
+                    selectedWalletId = uiState.selectedWalletId,
+                    onSelectWallet   = { id -> onEvent(HomeEvent.SelectWallet(id)) },
+                    onAddClick       = { onNavigateToAddWallet() },
+                    onEditWallet     = { walletId -> onNavigateToEditWallet(walletId) },
+                    onReorderWallets = { orderedIds -> onEvent(HomeEvent.ReorderWallets(orderedIds)) }
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
@@ -169,14 +192,14 @@ private fun HomeScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         HomeContent(
             uiState = HomeUiState(
-                isLoading        = false,
-                formattedBalance = "1.000.000 vnđ",
-                selectedPeriod   = TimePeriod.DAY,
-                groupLabel       = "Hôm nay, 02 tháng 4",
-                totalIncome      = "1.000.000",
-                totalExpense     = "1.000.000",
-                totalBalance     = "1.000.000",
-                transactions     = previewTransactions()
+                isLoading      = false,
+                wallets        = listOf(WalletItem(1L, "Ví chính", "1.000.000 vnđ", "#0088F0")),
+                selectedPeriod = TimePeriod.DAY,
+                groupLabel     = "Hôm nay, 02 tháng 4",
+                totalIncome    = "1.000.000",
+                totalExpense   = "1.000.000",
+                totalBalance   = "1.000.000",
+                transactions   = previewTransactions()
             ),
             onEvent = {}
         )
@@ -189,14 +212,17 @@ private fun HomeScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
         HomeContent(
             uiState = HomeUiState(
-                isLoading        = false,
-                formattedBalance = "1.000.000 vnđ",
-                selectedPeriod   = TimePeriod.MONTH,
-                groupLabel       = "Tháng 4, 2026",
-                totalIncome      = "5.000.000",
-                totalExpense     = "3.000.000",
-                totalBalance     = "2.000.000",
-                transactions     = previewTransactions()
+                isLoading      = false,
+                wallets        = listOf(
+                    WalletItem(1L, "Ví chính",  "1.000.000 vnđ", "#0088F0"),
+                    WalletItem(2L, "Tiết kiệm", "5.000.000 vnđ", "#FF8C00")
+                ),
+                selectedPeriod = TimePeriod.MONTH,
+                groupLabel     = "Tháng 4, 2026",
+                totalIncome    = "5.000.000",
+                totalExpense   = "3.000.000",
+                totalBalance   = "2.000.000",
+                transactions   = previewTransactions()
             ),
             onEvent = {}
         )

@@ -17,11 +17,12 @@ import com.example.mymoney.domain.usecase.GetTransactionsUseCase
  * Factory inject toàn bộ dependency chain:
  *   AppDatabase → DAO → RepositoryImpl → UseCase → AddTransactionViewModel
  *
- * @param context  ApplicationContext (hoặc Activity context — sẽ lấy applicationContext)
- * @param userId   ID người dùng hiện tại từ DataStore (đọc trước khi tạo factory)
+ * @param context    ApplicationContext (hoặc Activity context — sẽ lấy applicationContext)
+ * @param walletId   ID ví đang được chọn trên HomeScreen (0L = fallback về ví mặc định)
  */
 class AddTransactionViewModelFactory(
-    private val context: Context
+    private val context: Context,
+    private val walletId: Long = 0L
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -42,7 +43,8 @@ class AddTransactionViewModelFactory(
             chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
             supabaseTransactionRepo = SupabaseTransactionRepository(),
             settingPreferences      = SettingPreferences(appCtx),
-            categoryDao             = db.categoryDao()
+            categoryDao             = db.categoryDao(),
+            selectedWalletId        = walletId
         ) as T
     }
 }

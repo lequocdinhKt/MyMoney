@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WalletDao {
 
-    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_deleted = 0 ORDER BY is_default DESC, name ASC")
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_deleted = 0 ORDER BY sort_order ASC, is_default DESC, name ASC")
     fun observeWallets(userId: String): Flow<List<WalletEntity>>
 
     @Query("SELECT * FROM wallets WHERE id = :id AND is_deleted = 0")
@@ -38,6 +38,10 @@ interface WalletDao {
     /** Trả về tất cả wallets chưa được sync lên Supabase */
     @Query("SELECT * FROM wallets WHERE user_id = :userId AND sync_status != ${SyncStatus.SYNCED}")
     suspend fun getPendingSync(userId: String): List<WalletEntity>
+
+    /** Cập nhật sort_order để duy trì thứ tự sau drag & drop */
+    @Query("UPDATE wallets SET sort_order = :sortOrder WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, sortOrder: Int)
 
     /** Đánh dấu đã sync xong sau khi upsert Supabase thành công */
     @Query("UPDATE wallets SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")

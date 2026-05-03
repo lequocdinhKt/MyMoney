@@ -51,7 +51,10 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 fun MainScreen(
     modifier: Modifier = Modifier,
     userId: String = "",
-    onAddTransactionClick: () -> Unit = {},
+    onAddTransactionClick: (walletId: Long) -> Unit = {},
+    onNavigateToAddWallet: () -> Unit = {},
+    onNavigateToEditWallet: (walletId: Long) -> Unit = {},
+    onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -65,6 +68,7 @@ fun MainScreen(
             getTransactionsByPeriod = GetTransactionsByPeriodUseCase(transactionRepo),
             getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
             getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
+            walletRepository        = walletRepo,
             userId                  = userId
         )
     }
@@ -77,6 +81,9 @@ fun MainScreen(
     val currentTab = BottomTab.fromRoute(currentRoute) ?: BottomTab.Home
 
     var isDrawerOpen by rememberSaveable { mutableStateOf(false) }
+
+    // Track ví đang được chọn trên HomeScreen để truyền đúng walletId khi navigate AddTransaction
+    var selectedWalletId by rememberSaveable { mutableStateOf(0L) }
 
     // ── drawerProgress: biến X chia sẻ giữa Layer 1 (blur) và Overlay (scrim + drawer) ──
     // Layer 1 cần X để tính blurRadius = X × 18px
@@ -121,14 +128,19 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
-                    onAddClick = { onAddTransactionClick() }
+                    onAddClick = { onAddTransactionClick(selectedWalletId) }
                 )
             }
         ) { innerPadding ->
             MainNavHost(
-                navController = tabNavController,
-                innerPadding = innerPadding,
-                homeViewModelFactory = homeViewModelFactory
+                navController             = tabNavController,
+                innerPadding              = innerPadding,
+                homeViewModelFactory      = homeViewModelFactory,
+                userId                    = userId,
+                onNavigateToAddWallet     = onNavigateToAddWallet,
+                onNavigateToEditWallet    = onNavigateToEditWallet,
+                onSelectedWalletIdChanged = { walletId -> selectedWalletId = walletId },
+                onWalletColorChanged      = onWalletColorChanged
             )
         }
 

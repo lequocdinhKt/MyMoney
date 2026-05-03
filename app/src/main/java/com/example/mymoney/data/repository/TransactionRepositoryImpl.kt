@@ -22,6 +22,9 @@ class TransactionRepositoryImpl(
     override fun getTransactionsByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>> =
         transactionDao.observeByDateRange(userId, from, to).map { list -> list.map { it.toModel() } }
 
+    override fun getTransactionsByWalletAndPeriod(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>> =
+        transactionDao.observeByWalletAndDateRange(userId, walletId, from, to).map { list -> list.map { it.toModel() } }
+
     override fun getTotalIncome(userId: String, from: Long, to: Long): Flow<Double> =
         transactionDao.observeByDateRange(userId, from, to).map { list ->
             list.filter { it.type == "income" }.sumOf { it.amount }
@@ -29,6 +32,16 @@ class TransactionRepositoryImpl(
 
     override fun getTotalExpense(userId: String, from: Long, to: Long): Flow<Double> =
         transactionDao.observeByDateRange(userId, from, to).map { list ->
+            list.filter { it.type == "expense" }.sumOf { it.amount }
+        }
+
+    override fun getTotalIncomeByWallet(userId: String, walletId: Long, from: Long, to: Long): Flow<Double> =
+        transactionDao.observeByWalletAndDateRange(userId, walletId, from, to).map { list ->
+            list.filter { it.type == "income" }.sumOf { it.amount }
+        }
+
+    override fun getTotalExpenseByWallet(userId: String, walletId: Long, from: Long, to: Long): Flow<Double> =
+        transactionDao.observeByWalletAndDateRange(userId, walletId, from, to).map { list ->
             list.filter { it.type == "expense" }.sumOf { it.amount }
         }
 

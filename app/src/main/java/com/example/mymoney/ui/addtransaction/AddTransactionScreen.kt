@@ -76,15 +76,18 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 /**
  * Màn hình chat AI — entry point có ViewModel.
  * Người dùng nhắn "bữa tối 20k" → AI phản hồi và thêm giao dịch tự động.
+ *
+ * @param walletId  ID ví đang active trên HomeScreen (0L = fallback về ví mặc định)
  */
 @Composable
 fun AIChatScreen(
     onNavigateBack: () -> Unit,
+    walletId: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val viewModel: AddTransactionViewModel = viewModel(
-        factory = AddTransactionViewModel.factory(context)
+        factory = AddTransactionViewModel.factory(context, walletId)
     )
     val uiState by viewModel.uiState.collectAsState()
 

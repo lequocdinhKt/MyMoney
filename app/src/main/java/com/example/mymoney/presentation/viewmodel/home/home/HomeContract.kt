@@ -30,14 +30,29 @@ data class TransactionItem(
 )
 
 /**
+ * Model đại diện cho một ví trong BalanceSection.
+ */
+@Immutable
+data class WalletItem(
+    val id: Long,
+    val name: String,
+    val formattedBalance: String,
+    val color: String       // hex, ví dụ "#0088F0"
+)
+
+/**
  * Trạng thái giao diện của màn hình Trang chủ.
  * Dùng data class bất biến – cập nhật bằng copy().
  */
 @Immutable
 data class HomeUiState(
-    val isLoading: Boolean = true,          // true = đang load, tránh flash dữ liệu cũ
+    val isLoading: Boolean = true,
     val balance: Long = 0L,
     val formattedBalance: String = "0 vnđ",
+    val walletName: String = "",
+    val wallets: List<WalletItem> = emptyList(),
+    val selectedWalletId: Long = 0L,
+    val activeWalletColor: String = "#0088F0",   // hex của ví đang chọn → đổi theme
     val selectedPeriod: TimePeriod = TimePeriod.DAY,
     val groupLabel: String = "",
     val totalIncome: String = "0",
@@ -51,5 +66,10 @@ data class HomeUiState(
  */
 sealed interface HomeEvent {
     data class SelectPeriod(val period: TimePeriod) : HomeEvent
+    data class SelectWallet(val walletId: Long) : HomeEvent
     data object AddTransactionClick : HomeEvent
+    data object AddWalletClick : HomeEvent
+    data class EditWalletClick(val walletId: Long) : HomeEvent
+    /** Sau khi drag & drop kết thúc: danh sách id ví theo thứ tự mới */
+    data class ReorderWallets(val orderedIds: List<Long>) : HomeEvent
 }

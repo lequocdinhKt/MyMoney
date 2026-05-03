@@ -18,11 +18,23 @@ class WalletRepositoryImpl(
     override fun getTotalBalance(userId: String): Flow<Double> =
         walletDao.observeWallets(userId).map { list -> list.sumOf { it.balance } }
 
+    override suspend fun getWalletById(walletId: Long): WalletModel? =
+        walletDao.getWalletById(walletId)?.toModel()
+
     override suspend fun getDefaultWallet(userId: String): WalletModel? =
         walletDao.getDefaultWallet(userId)?.toModel()
 
     override suspend fun addWallet(wallet: WalletModel): Long =
         walletDao.insert(wallet.toEntity())
+
+    override suspend fun updateWallet(wallet: WalletModel) {
+        walletDao.update(
+            wallet.toEntity().copy(
+                updatedAt  = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING_UPDATE
+            )
+        )
+    }
 
     override suspend fun updateWalletBalance(walletId: Long, newBalance: Double) {
         val entity = walletDao.getWalletById(walletId) ?: return
@@ -37,6 +49,10 @@ class WalletRepositoryImpl(
 
     override suspend fun deleteWallet(id: Long) =
         walletDao.softDelete(id)
+
+    override suspend fun updateSortOrders(orders: List<Pair<Long, Int>>) {
+        orders.forEach { (id, sortOrder) -> walletDao.updateSortOrder(id, sortOrder) }
+    }
 
     // ── Mappers ──
 

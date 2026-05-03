@@ -17,6 +17,7 @@ data class WalletEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false,
-    @ColumnInfo(name = "sync_status") val syncStatus: Int = SyncStatus.PENDING_INSERT
+    @ColumnInfo(name = "sync_status") val syncStatus: Int = SyncStatus.PENDING_INSERT,
+    @ColumnInfo(name = "sort_order") val sortOrder: Int = 0
 )
 

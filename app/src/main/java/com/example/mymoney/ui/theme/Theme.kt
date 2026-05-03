@@ -2,7 +2,9 @@ package com.example.mymoney.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.core.graphics.toColorInt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -64,9 +66,16 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun MyMoneyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    primaryHex: String = "#0088F0",
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val base = if (darkTheme) DarkColorScheme else LightColorScheme
+    // Parse màu HEX của ví đang active → override primary trong scheme
+    val primary = remember(primaryHex) {
+        runCatching { Color(primaryHex.toColorInt()) }
+            .getOrElse { if (darkTheme) Blue50 else Blue40 }
+    }
+    val colorScheme = base.copy(primary = primary)
 
     val view = LocalView.current
     if (!view.isInEditMode) {

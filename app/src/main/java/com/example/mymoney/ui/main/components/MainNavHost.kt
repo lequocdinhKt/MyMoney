@@ -30,7 +30,12 @@ import com.example.mymoney.ui.saving.SavingScreen
 fun MainNavHost(
     navController: NavHostController,
     innerPadding: PaddingValues,
-    homeViewModelFactory: HomeViewModelFactory
+    homeViewModelFactory: HomeViewModelFactory,
+    userId: String = "",
+    onNavigateToAddWallet: () -> Unit = {},
+    onNavigateToEditWallet: (walletId: Long) -> Unit = {},
+    onSelectedWalletIdChanged: (walletId: Long) -> Unit = {},
+    onWalletColorChanged: (colorHex: String) -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -41,8 +46,16 @@ fun MainNavHost(
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None }
     ) {
-        composable(BottomTab.Home.route)   { HomeScreen(factory = homeViewModelFactory) }
-        composable(BottomTab.Budget.route) { BudgetScreen() }
+        composable(BottomTab.Home.route) {
+            HomeScreen(
+                factory = homeViewModelFactory,
+                onNavigateToAddWallet = onNavigateToAddWallet,
+                onNavigateToEditWallet = onNavigateToEditWallet,
+                onSelectedWalletIdChanged = onSelectedWalletIdChanged,
+                onWalletColorChanged = onWalletColorChanged
+            )
+        }
+        composable(BottomTab.Budget.route) { BudgetScreen(userId = userId) }
         composable(BottomTab.Saving.route) { SavingScreen() }
         composable(BottomTab.Other.route)  { OtherScreen() }
     }
