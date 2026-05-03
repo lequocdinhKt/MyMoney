@@ -1,9 +1,5 @@
 package com.example.mymoney.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,14 +7,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,7 +26,9 @@ import com.example.mymoney.presentation.viewmodel.home.home.TimePeriod
 import com.example.mymoney.presentation.viewmodel.home.home.TransactionItem
 import com.example.mymoney.presentation.viewmodel.home.home.WalletItem
 import com.example.mymoney.ui.components.EmptyStateComposable
+import com.example.mymoney.ui.components.shimmer.UiStateContainer
 import com.example.mymoney.ui.home.components.BalanceSection
+import com.example.mymoney.ui.home.components.HomeSkeletonScreen
 import com.example.mymoney.ui.home.components.TimePeriodFilter
 import com.example.mymoney.ui.home.components.TransactionItemRow
 import com.example.mymoney.ui.home.components.TransactionSummaryHeader
@@ -98,27 +94,15 @@ private fun HomeContent(
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-
-        // ── Skeleton / spinner: hiển thị khi đang load lần đầu ──
-        // Dùng AnimatedVisibility + fadeOut để transition mượt, không flash
-        AnimatedVisibility(
-            visible = uiState.isLoading,
-            enter = fadeIn(),
-            exit  = fadeOut()
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
-        }
-
-        // ── Nội dung thực: chỉ hiện sau khi load xong ──
-        AnimatedVisibility(
-            visible = !uiState.isLoading,
-            enter = fadeIn(),
-            exit  = fadeOut()
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+    // UiStateContainer tự động crossfade skeleton ↔ content dựa trên isLoading.
+    // Dùng overload Boolean vì HomeViewModel chưa extend BaseViewModel
+    // (giữ nguyên logic combine/flatMapLatest phức tạp của nó).
+    UiStateContainer(
+        isLoading = uiState.isLoading,
+        modifier  = modifier.fillMaxSize(),
+        skeleton  = { HomeSkeletonScreen() }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
                 // ── 1. Thẻ ví cuộn ngang + Nút "+" ──
                 BalanceSection(
@@ -143,8 +127,9 @@ private fun HomeContent(
 
                 // ── 3. Bộ lọc thời gian ──
                 TimePeriodFilter(
-                    selectedPeriod   = uiState.selectedPeriod,
-                    onPeriodSelected = { period -> onEvent(HomeEvent.SelectPeriod(period)) }
+                    selectedPeriod         = uiState.selectedPeriod,
+                    onPeriodSelected       = { period -> onEvent(HomeEvent.SelectPeriod(period)) },
+                    onCustomPeriodSelected = { from, to -> onEvent(HomeEvent.SelectCustomPeriod(from, to)) }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -179,10 +164,9 @@ private fun HomeContent(
                         }
                     }
                 }
-            }
-        }
-    }
-}
+        }   // end Column
+    }       // end UiStateContainer
+}           // end HomeContent
 
 // ── Previews ──
 

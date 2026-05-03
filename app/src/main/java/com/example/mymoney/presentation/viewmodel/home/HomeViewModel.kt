@@ -41,6 +41,9 @@ class HomeViewModel(
     /** null = chưa chọn, tự động dùng ví đầu tiên */
     private val _selectedWalletIdOverride = MutableStateFlow<Long?>(null)
 
+    /** null = chưa có range tùy chỉnh; dùng khi period == CUSTOM */
+    private val _customRange = MutableStateFlow<Pair<Long, Long>?>(null)
+
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -51,14 +54,30 @@ class HomeViewModel(
     private fun observeData() {
         val walletsFlow = walletRepository.getWallets(userId)
 
-        // Combine period + wallet override + danh sách ví → flatMapLatest query theo ví được chọn
-        combine(_selectedPeriod, _selectedWalletIdOverride, walletsFlow) { period, overrideId, wallets ->
-            Triple(period, overrideId, wallets)
-        }.flatMapLatest { (period, overrideId, walletModels) ->
-            // Ví đang active: override nếu người dùng đã chọn, không thì lấy ví đầu tiên
+        // Combine 3 flow điều khiển (period + wallet + customRange) thành 1 "params" flow
+        val paramsFlow = combine(
+            _selectedPeriod, _selectedWalletIdOverride, _customRange
+        ) { period, walletId, customRange ->
+            Triple(period, walletId, customRange)
+        }
+
+        // Combine params với wallets → flatMapLatest query giao dịch
+        combine(paramsFlow, walletsFlow) { params, wallets ->
+            Pair(params, wallets)
+        }.flatMapLatest { (params, walletModels) ->
+            val (period, overrideId, customRange) = params
             val selectedId = overrideId ?: walletModels.firstOrNull()?.id ?: 0L
-            val range = PeriodRangeUtil.getRangeFor(period)
-            val label = PeriodRangeUtil.getLabelFor(period)
+
+            // Tính khoảng thời gian: dùng customRange khi period == CUSTOM và đã có range
+            val range = if (period == TimePeriod.CUSTOM && customRange != null)
+                PeriodRangeUtil.Range(customRange.first, customRange.second)
+            else
+                PeriodRangeUtil.getRangeFor(period)
+
+            val label = if (period == TimePeriod.CUSTOM && customRange != null)
+                PeriodRangeUtil.getCustomLabel(customRange.first, customRange.second)
+            else
+                PeriodRangeUtil.getLabelFor(period)
 
             combine(
                 getTransactionsByPeriod.byWallet(userId, selectedId, range.from, range.to),
@@ -85,19 +104,19 @@ class HomeViewModel(
                 val selectedWallet = walletModels.find { it.id == selectedId }
 
                 HomeUiState(
-                    isLoading        = false,
-                    balance          = selectedWallet?.balance?.toLong() ?: 0L,
-                    formattedBalance = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0),
-                    walletName       = selectedWallet?.name ?: "",
-                    wallets          = walletItems,
-                    selectedWalletId = selectedId,
+                    isLoading         = false,
+                    balance           = selectedWallet?.balance?.toLong() ?: 0L,
+                    formattedBalance  = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0),
+                    walletName        = selectedWallet?.name ?: "",
+                    wallets           = walletItems,
+                    selectedWalletId  = selectedId,
                     activeWalletColor = selectedWallet?.color ?: "#0088F0",
-                    selectedPeriod   = period,
-                    groupLabel       = label,
-                    totalIncome      = MoneyFormatter.format(income),
-                    totalExpense     = MoneyFormatter.format(expense),
-                    totalBalance     = MoneyFormatter.format(income - expense),
-                    transactions     = items
+                    selectedPeriod    = period,
+                    groupLabel        = label,
+                    totalIncome       = MoneyFormatter.format(income),
+                    totalExpense      = MoneyFormatter.format(expense),
+                    totalBalance      = MoneyFormatter.format(income - expense),
+                    transactions      = items
                 )
             }
         }
@@ -107,9 +126,17 @@ class HomeViewModel(
 
     fun onEvent(event: HomeEvent) {
         when (event) {
-            is HomeEvent.SelectPeriod  -> _selectedPeriod.update { event.period }
+            is HomeEvent.SelectPeriod -> _selectedPeriod.update { event.period }
+            is HomeEvent.SelectCustomPeriod -> {
+                // Set custom range rồi switch period → trigger requery
+                _customRange.update { Pair(event.fromMs, event.toMs) }
+                _uiState.update { it.copy(isLoading = true) }
+                _selectedPeriod.update { TimePeriod.CUSTOM }
+            }
             is HomeEvent.SelectWallet  -> {
                 Log.d(TAG, "SelectWallet event: walletId=${event.walletId} (prev=${_selectedWalletIdOverride.value})")
+                // Hiện skeleton toàn màn hình trong khi load dữ liệu ví mới
+                _uiState.update { it.copy(isLoading = true) }
                 _selectedWalletIdOverride.update { event.walletId }
             }
             is HomeEvent.ReorderWallets -> {
