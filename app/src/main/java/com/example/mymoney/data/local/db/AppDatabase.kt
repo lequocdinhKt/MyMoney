@@ -23,7 +23,7 @@ import com.example.mymoney.data.local.entity.WalletEntity
         BudgetEntity::class,
         ChatMessageEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

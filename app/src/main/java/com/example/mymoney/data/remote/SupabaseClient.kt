@@ -3,6 +3,7 @@ package com.example.mymoney.data.remote
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 
 /**
  * Singleton Supabase client – dùng chung cho toàn bộ app.
@@ -32,5 +33,7 @@ object SupabaseClient {
         install(Postgrest)
         // Module xác thực người dùng (Auth)
         install(Auth)
+        // Module lưu trữ file (Storage)
+        install(Storage)
     }
 }

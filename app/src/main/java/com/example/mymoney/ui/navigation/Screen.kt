@@ -34,6 +34,11 @@ sealed class Screen(val route: String) {
         fun createRoute(walletId: Long = 0L) = "add_transaction/$walletId"
     }
 
+    // ── Màn hình chụp ảnh (Locket-style) ──
+    data object CameraCapture : Screen("camera_capture/{walletId}") {
+        fun createRoute(walletId: Long = 0L) = "camera_capture/$walletId"
+    }
+
     // ── Màn hình thiết lập ví ──
     // walletId = -1  → tạo mới
     // walletId > 0   → chỉnh sửa ví có id đó

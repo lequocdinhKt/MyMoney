@@ -22,5 +22,6 @@ data class TransactionModel(
     val walletId: Long = 0L,
     val aiGenerated: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
-    val supabaseId: String? = null
+    val supabaseId: String? = null,
+    val imagePath: String? = null
 )

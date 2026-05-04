@@ -52,6 +52,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     userId: String = "",
     onAddTransactionClick: (walletId: Long) -> Unit = {},
+    onCameraClick: (walletId: Long) -> Unit = {},
     onNavigateToAddWallet: () -> Unit = {},
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
@@ -81,6 +82,9 @@ fun MainScreen(
     val currentTab = BottomTab.fromRoute(currentRoute) ?: BottomTab.Home
 
     var isDrawerOpen by rememberSaveable { mutableStateOf(false) }
+
+    // State cho expandable FAB menu (AI & Camera)
+    var isFabMenuOpen by rememberSaveable { mutableStateOf(false) }
 
     // Track ví đang được chọn trên HomeScreen để truyền đúng walletId khi navigate AddTransaction
     var selectedWalletId by rememberSaveable { mutableStateOf(0L) }
@@ -128,7 +132,16 @@ fun MainScreen(
                             restoreState = true
                         }
                     },
-                    onAddClick = { onAddTransactionClick(selectedWalletId) }
+                    isMenuOpen = isFabMenuOpen,
+                    onMenuToggle = { isFabMenuOpen = !isFabMenuOpen },
+                    onAIClick = {
+                        isFabMenuOpen = false  // Đóng menu trước
+                        onAddTransactionClick(selectedWalletId)  // Sau đó navigate
+                    },
+                    onCameraClick = {
+                        isFabMenuOpen = false  // Đóng menu trước
+                        onCameraClick(selectedWalletId)  // Sau đó navigate
+                    }
                 )
             }
         ) { innerPadding ->
@@ -143,6 +156,7 @@ fun MainScreen(
                 onWalletColorChanged      = onWalletColorChanged
             )
         }
+
 
         // Layer 2 + Layer 3 nằm trong MainDrawerOverlay
         MainDrawerOverlay(

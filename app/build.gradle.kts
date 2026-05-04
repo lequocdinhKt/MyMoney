@@ -77,6 +77,7 @@ dependencies {
     // Supabase
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.gotrue)
+    implementation(libs.supabase.storage)
     // Ktor (HTTP engine for Supabase + Groq)
     implementation(libs.ktor.client.android)
     implementation("io.ktor:ktor-client-content-negotiation:2.3.0")
@@ -85,6 +86,11 @@ dependencies {
     implementation(libs.google.generativeai)
     // WorkManager
     implementation(libs.androidx.work.runtime.ktx)
+    // CameraX
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

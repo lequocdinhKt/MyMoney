@@ -79,5 +79,11 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
+
+    @Query("UPDATE transactions SET image_path = :imagePath, updated_at = :now WHERE id = :id")
+    suspend fun updateImagePath(id: Long, imagePath: String, now: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM transactions WHERE user_id = :userId AND image_path IS NOT NULL AND is_deleted = 0 ORDER BY transaction_date DESC")
+    fun observePhotoTransactions(userId: String): Flow<List<TransactionEntity>>
 }
 

@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.example.mymoney.ui.addtransaction.AIChatScreen
 import com.example.mymoney.ui.auth.SignInScreen
 import com.example.mymoney.ui.auth.SignUpScreen
+import com.example.mymoney.ui.camera.CameraCaptureScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
 import com.example.mymoney.ui.wallet.WalletSetupScreen
@@ -99,6 +100,9 @@ composable(route = Screen.Main.route) {
         onAddTransactionClick = { walletId ->
             navController.navigate(Screen.AddTransaction.createRoute(walletId))
         },
+        onCameraClick = { walletId ->
+            navController.navigate(Screen.CameraCapture.createRoute(walletId))
+        },
         onNavigateToAddWallet = {
             navController.navigate(Screen.WalletSetup.createRoute(userId))
         },
@@ -130,6 +134,25 @@ composable(route = Screen.Main.route) {
             )
         }
 
+        // ── Màn hình chụp ảnh (Locket-style) ──
+        composable(
+            route = Screen.CameraCapture.route,
+            arguments = listOf(
+                navArgument("walletId") { type = NavType.LongType; defaultValue = 0L }
+            )
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
+            CameraCaptureScreen(
+                walletId = walletId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onPhotoTaken = { photoUri ->
+                    // Giữ nguyên camera screen sau khi chụp — không pop back
+                }
+            )
+        }
+
         // ── Màn hình thiết lập ví ──
         composable(
             route     = Screen.WalletSetup.route,
@@ -143,7 +166,15 @@ composable(route = Screen.Main.route) {
             WalletSetupScreen(
                 userId         = uid,
                 walletId       = if (wId == -1L) null else wId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    // Guard: chỉ pop khi destination hiện tại vẫn còn là WalletSetup.
+                    // Nếu người dùng nhấn back 2 lần liên tiếp nhanh, lần thứ 2 sẽ
+                    // không làm gì thêm vì route lúc đó đã không còn là WalletSetup.
+                    if (navController.currentBackStackEntry?.destination?.route
+                            == Screen.WalletSetup.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
     }
