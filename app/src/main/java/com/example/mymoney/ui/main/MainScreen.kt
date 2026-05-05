@@ -56,6 +56,7 @@ fun MainScreen(
     onNavigateToAddWallet: () -> Unit = {},
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
+    onSearchClick: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -116,7 +117,7 @@ fun MainScreen(
                 CustomTopAppBar(
                     title = currentTab.title ?: currentTab.label,
                     onSettingsClick = { isDrawerOpen = true },
-                    onSearchClick = { /* TODO */ },
+                    onSearchClick = onSearchClick,
                     onCalendarClick = { /* TODO */ }
                 )
             },

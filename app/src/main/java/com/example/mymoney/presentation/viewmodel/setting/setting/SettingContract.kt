@@ -6,6 +6,19 @@ data class SettingUiState(
     val isLoading: Boolean = false,
     val isThousandSeparatorEnabled: Boolean = true,
     val username: String = "",
+
+    // ── Theme ──
+    val selectedTheme: ThemeMode = ThemeMode.SYSTEM, // Chế độ có được chọn ko
+    val showThemeSheet: Boolean = false, // Hiện hay ẩn màn hình lựa chọn chế độ
+
+    // ── Currency ──
+    val selectedCurrency: CurrencyMode = CurrencyMode.VND,
+    val showCurrencySheet: Boolean = false,
+
+    // ── Number Format ──
+    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
+    val showNumberFormat: Boolean = false,
+
     // ── Backup ──
     val isBackingUp: Boolean = false,           // đang upload → hiện loading
     val backupResultMessage: String? = null,    // kết quả: "✅ Đã sao lưu 12 giao dịch" hoặc lỗi
@@ -32,6 +45,23 @@ sealed interface SettingEvent {
     data object BackupConfirmed : SettingEvent            // xác nhận trong dialog
     data object BackupDismissed : SettingEvent            // đóng dialog
     data object DismissBackupResult : SettingEvent        // đóng snackbar/thông báo kết quả
+
+    // ── Theme ──
+    data object ThemeClicked : SettingEvent               // nhấn "Giao diện"
+
+    data class ThemeSelected(val mode: ThemeMode) : SettingEvent // xác nhận chế độ được chọn
+
+    data object ThemeDismissed : SettingEvent             // đóng ô lựa chọn giao diện
+
+    // ── Currency ──
+    data object CurrencyClicked : SettingEvent
+    data class CurrencySelected(val currency: CurrencyMode) : SettingEvent
+    data object CurrencyDismissed : SettingEvent
+
+    // ── Number Format ──
+    data object NumberFormatClicked : SettingEvent
+    data class NumberFormatSelected(val numberformat: NumberFormat) : SettingEvent
+    data object NumberFormatDismissed : SettingEvent
 }
 
 sealed interface SettingNavEvent {
