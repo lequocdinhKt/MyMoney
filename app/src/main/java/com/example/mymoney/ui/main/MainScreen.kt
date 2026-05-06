@@ -71,6 +71,7 @@ fun MainScreen(
             getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
             getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
             walletRepository        = walletRepo,
+            transactionRepository   = transactionRepo,
             userId                  = userId
         )
     }

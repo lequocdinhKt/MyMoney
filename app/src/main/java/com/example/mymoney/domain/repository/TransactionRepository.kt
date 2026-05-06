@@ -40,6 +40,11 @@ interface TransactionRepository {
     suspend fun addTransaction(transaction: TransactionModel)
 
     /**
+     * Lấy một giao dịch theo id.
+     */
+    suspend fun getTransactionById(id: Long): TransactionModel?
+
+    /**
      * Xoá một giao dịch theo id (soft-delete).
      */
     suspend fun deleteTransaction(id: Long)

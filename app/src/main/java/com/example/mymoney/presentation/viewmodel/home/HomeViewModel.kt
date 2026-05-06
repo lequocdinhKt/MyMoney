@@ -3,6 +3,7 @@ package com.example.mymoney.presentation.viewmodel.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
@@ -31,6 +32,7 @@ class HomeViewModel(
     private val getPeriodSummary: GetPeriodSummaryUseCase,
     private val getTotalBalance: GetTotalBalanceUseCase,
     private val walletRepository: WalletRepository,
+    private val transactionRepository: TransactionRepository,
     private val userId: String
 ) : ViewModel() {
 
@@ -143,6 +145,20 @@ class HomeViewModel(
                 viewModelScope.launch {
                     val orders = event.orderedIds.mapIndexed { index, id -> Pair(id, index) }
                     walletRepository.updateSortOrders(orders)
+                }
+            }
+            is HomeEvent.DeleteTransaction -> {
+                viewModelScope.launch {
+                    val txId = event.transactionId.toLongOrNull() ?: return@launch
+                    // Lấy thông tin giao dịch trước khi xóa để hoàn trả số dư ví
+                    val tx = transactionRepository.getTransactionById(txId) ?: return@launch
+                    // Xóa giao dịch (soft-delete)
+                    transactionRepository.deleteTransaction(txId)
+                    // Hoàn trả số dư ví: income → trừ lại, expense → cộng lại
+                    val wallet = walletRepository.getWalletById(tx.walletId) ?: return@launch
+                    val delta = if (tx.type == "income") -tx.amount else tx.amount
+                    walletRepository.updateWalletBalance(wallet.id, wallet.balance + delta)
+                    Log.d(TAG, "Deleted tx $txId (${tx.type} ${tx.amount}), wallet balance: ${wallet.balance} → ${wallet.balance + delta}")
                 }
             }
             is HomeEvent.AddTransactionClick -> { /* NavHost xử lý */ }

@@ -49,6 +49,9 @@ class TransactionRepositoryImpl(
         transactionDao.insert(transaction.toEntity())
     }
 
+    override suspend fun getTransactionById(id: Long): TransactionModel? =
+        transactionDao.getTransactionById(id)?.toModel()
+
     override suspend fun deleteTransaction(id: Long) =
         transactionDao.softDelete(id)
 

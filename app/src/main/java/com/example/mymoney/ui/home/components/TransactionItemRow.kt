@@ -5,20 +5,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,31 +37,85 @@ import com.example.mymoney.ui.theme.SuccessGreen
 
 /**
  * Composable hiển thị một dòng giao dịch trong LazyColumn.
+ * Hỗ trợ vuốt từ phải sang trái để xóa giao dịch.
  *
- * Layout: Row 3 vùng
- *   ├── Box CircleShape → Icon danh mục (hoặc placeholder)
- *   ├── Column (weight=1f) → Tiêu đề + Thời gian
- *   └── Text → Số tiền (đỏ nếu âm, xanh nếu dương)
- *
- * Màu amountColor được tính bằng remember(transaction.amount) →
- * chỉ recompute khi amount thay đổi, không tính lại mỗi recompose.
- *
- * @param transaction Dữ liệu dòng giao dịch (@Immutable → Compose bỏ qua so sánh lại)
+ * @param transaction     Dữ liệu dòng giao dịch
+ * @param onDelete        Callback khi người dùng xác nhận xóa
+ * @param modifier        Modifier tuỳ chỉnh
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionItemRow(
     transaction: TransactionItem,
+    onDelete: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    // remember(key) → chỉ recompute khi amount thay đổi
     val amountColor = remember(transaction.amount) {
-        if (transaction.amount >= 0) SuccessGreen
-        else null // null = dùng error từ theme (lấy trong Composable scope bên dưới)
+        if (transaction.amount >= 0) SuccessGreen else null
     }
 
+    if (onDelete != null) {
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value == SwipeToDismissBoxValue.EndToStart) {
+                    onDelete()
+                    true
+                } else false
+            },
+            positionalThreshold = { totalDistance -> totalDistance * 0.35f }
+        )
+
+        // Reset state sau khi xóa để tránh item bị dismiss ở trạng thái kẹt
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                dismissState.reset()
+            }
+        }
+
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = false,
+            enableDismissFromEndToStart = true,
+            backgroundContent = {
+                // Nền đỏ + icon thùng rác hiện khi vuốt trái
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFE53935))
+                        .padding(end = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Xóa giao dịch",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            },
+            modifier = modifier
+        ) {
+            TransactionRowContent(transaction = transaction, amountColor = amountColor)
+        }
+    } else {
+        TransactionRowContent(
+            transaction = transaction,
+            amountColor = amountColor,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun TransactionRowContent(
+    transaction: TransactionItem,
+    amountColor: Color?,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -130,7 +192,8 @@ private fun TransactionItemExpensePreview() {
                 dateTime = "7:00, 02/04/2026",
                 amount = -50_000L,
                 formattedAmount = "-50.000"
-            )
+            ),
+            onDelete = {}
         )
     }
 }
@@ -147,7 +210,8 @@ private fun TransactionItemIncomePreview() {
                 dateTime = "8:00, 01/04/2026",
                 amount = 10_000_000L,
                 formattedAmount = "+10.000.000"
-            )
+            ),
+            onDelete = {}
         )
     }
 }
@@ -164,7 +228,8 @@ private fun TransactionItemDarkPreview() {
                 dateTime = "9:00, 02/04/2026",
                 amount = -300_000L,
                 formattedAmount = "-300.000"
-            )
+            ),
+            onDelete = {}
         )
     }
 }

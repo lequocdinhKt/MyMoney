@@ -69,6 +69,7 @@ sealed interface HomeEvent {
     /** Chọn khoảng ngày tùy chỉnh – tự động set period = CUSTOM */
     data class SelectCustomPeriod(val fromMs: Long, val toMs: Long) : HomeEvent
     data class SelectWallet(val walletId: Long) : HomeEvent
+    data class DeleteTransaction(val transactionId: String) : HomeEvent
     data object AddTransactionClick : HomeEvent
     data object AddWalletClick : HomeEvent
     data class EditWalletClick(val walletId: Long) : HomeEvent

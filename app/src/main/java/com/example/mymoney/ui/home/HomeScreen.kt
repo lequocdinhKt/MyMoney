@@ -156,7 +156,10 @@ private fun HomeContent(
                             key         = { it.id },
                             contentType = { "transaction" }
                         ) { transaction ->
-                            TransactionItemRow(transaction = transaction)
+                            TransactionItemRow(
+                                transaction = transaction,
+                                onDelete = { onEvent(HomeEvent.DeleteTransaction(transaction.id)) }
+                            )
                             HorizontalDivider(
                                 color    = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp)
