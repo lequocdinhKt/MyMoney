@@ -15,10 +15,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.*import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -51,6 +51,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.data.local.entity.TransactionEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
@@ -82,13 +83,16 @@ fun CameraCaptureScreen(
     var flashEnabled by remember { mutableStateOf(false) }
     var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var capturedPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var showHistory by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val cameraViewModel: CameraViewModel = viewModel(
         factory = CameraViewModel.factory(context, walletId)
     )
     val saveState by cameraViewModel.saveState.collectAsState()
     val photoTransactions by cameraViewModel.photoTransactions.collectAsState()
+
+    val pagerState = rememberPagerState(pageCount = { 1 + photoTransactions.size })
+    val scope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -109,6 +113,9 @@ fun CameraCaptureScreen(
             capturedPhotoUri?.let { onPhotoTaken(it) }
             cameraViewModel.resetState()
             onNavigateBack()
+        } else if (saveState is CameraViewModel.SaveState.Error) {
+            errorMessage = (saveState as CameraViewModel.SaveState.Error).message
+            cameraViewModel.resetState()
         }
     }
 
@@ -117,30 +124,7 @@ fun CameraCaptureScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        if (hasPermission) {
-            CameraPreviewWithControls(
-                flashEnabled = flashEnabled,
-                lensFacing = lensFacing,
-                capturedPhotoUri = capturedPhotoUri,
-                saveState = saveState,
-                onFlashToggle = { flashEnabled = !flashEnabled },
-                onSwitchCamera = {
-                    lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
-                        CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
-                },
-                onClose = onNavigateBack,
-                onPhotoCaptured = { uri -> capturedPhotoUri = uri },
-                onRetake = {
-                    capturedPhotoUri = null
-                    cameraViewModel.resetState()
-                },
-                onSave = { amount ->
-                    capturedPhotoUri?.let { cameraViewModel.savePhoto(it, amount) }
-                },
-                onShowHistory = { showHistory = true }
-            )
-        } else {
-            // Permission denied state
+        if (!hasPermission) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -153,30 +137,80 @@ fun CameraCaptureScreen(
                     Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) { Text("Cho phép") }
                 }
             }
-        }
-
-        // ── History BottomSheet ──
-        if (showHistory) {
-            ModalBottomSheet(
-                onDismissRequest = { showHistory = false },
-                containerColor = Color(0xFF1A1A2E),
-                dragHandle = {
-                    Box(
-                        modifier = Modifier
-                            .padding(vertical = 12.dp)
-                            .size(width = 40.dp, height = 4.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.3f))
-                    )
-                }
-            ) {
-                PhotoHistorySheet(
-                    transactions = photoTransactions,
-                    onSaveToAlbum = { tx -> cameraViewModel.savePhotoToAlbum(tx.imagePath) },
-                    onDelete = { tx ->
-                        cameraViewModel.deletePhotoTransaction(tx.id, tx.walletId, tx.amount, tx.type, tx.imagePath)
+        } else {
+            // ── Error Dialog ──
+            errorMessage?.let { msg ->
+                AlertDialog(
+                    onDismissRequest = { errorMessage = null },
+                    containerColor = Color(0xFF1A1A2E),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    },
+                    title = {
+                        Text(
+                            text = "Không thể lưu",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(text = msg, color = Color.White.copy(alpha = 0.85f))
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { errorMessage = null }) {
+                            Text("Đã hiểu", color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 )
+            }
+
+            VerticalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                if (page == 0) {
+                    CameraPreviewWithControls(
+                        flashEnabled = flashEnabled,
+                        lensFacing = lensFacing,
+                        capturedPhotoUri = capturedPhotoUri,
+                        saveState = saveState,
+                        onFlashToggle = { flashEnabled = !flashEnabled },
+                        onSwitchCamera = {
+                            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
+                                CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
+                        },
+                        onClose = onNavigateBack,
+                        onPhotoCaptured = { uri -> capturedPhotoUri = uri },
+                        onRetake = {
+                            capturedPhotoUri = null
+                            cameraViewModel.resetState()
+                        },
+                        onSave = { amount ->
+                            capturedPhotoUri?.let { cameraViewModel.savePhoto(it, amount) }
+                        },
+                        onShowHistory = {
+                            scope.launch { pagerState.animateScrollToPage(1) }
+                        },
+                        isCameraActive = pagerState.settledPage == 0
+                    )
+                } else {
+                    val tx = photoTransactions.getOrNull(page - 1)
+                    if (tx != null) {
+                        PhotoFeedPage(
+                            tx = tx,
+                            onClose = { scope.launch { pagerState.animateScrollToPage(0) } },
+                            onSaveToAlbum = { cameraViewModel.savePhotoToAlbum(tx.imagePath) },
+                            onDelete = {
+                                cameraViewModel.deletePhotoTransaction(tx.id, tx.walletId, tx.amount, tx.type, tx.imagePath)
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -194,7 +228,8 @@ private fun CameraPreviewWithControls(
     onPhotoCaptured: (Uri) -> Unit,
     onRetake: () -> Unit,
     onSave: (Double) -> Unit,
-    onShowHistory: () -> Unit
+    onShowHistory: () -> Unit,
+    isCameraActive: Boolean
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -202,14 +237,41 @@ private fun CameraPreviewWithControls(
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var rawDigits by remember { mutableStateOf("") }
+    var storedPreviewView by remember { mutableStateOf<PreviewView?>(null) }
 
     // Reset amount khi chụp lại
     LaunchedEffect(capturedPhotoUri) {
         if (capturedPhotoUri == null) rawDigits = ""
     }
 
+    // Torch control
     LaunchedEffect(flashEnabled, camera) {
         camera?.cameraControl?.enableTorch(flashEnabled)
+    }
+
+    // Rebind camera khi trang camera active trở lại (sau khi vuốt lịch sử rồi vuốt lên)
+    LaunchedEffect(isCameraActive, storedPreviewView, lensFacing, flashEnabled) {
+        val pv = storedPreviewView
+        if (!isCameraActive || pv == null) return@LaunchedEffect
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(pv.surfaceProvider)
+            }
+            imageCapture = ImageCapture.Builder()
+                .setFlashMode(
+                    if (flashEnabled) ImageCapture.FLASH_MODE_ON
+                    else ImageCapture.FLASH_MODE_OFF
+                ).build()
+            val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+            try {
+                cameraProvider.unbindAll()
+                camera = cameraProvider.bindToLifecycle(
+                    lifecycleOwner, cameraSelector, preview, imageCapture
+                )
+            } catch (e: Exception) { e.printStackTrace() }
+        }, ContextCompat.getMainExecutor(context))
     }
 
     Column(
@@ -315,31 +377,13 @@ private fun CameraPreviewWithControls(
                 // Show live camera preview
                 AndroidView(
                     factory = { ctx ->
-                        PreviewView(ctx).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
+                        PreviewView(ctx).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                            // COMPATIBLE dùng TextureView: surface không bị destroy khi off-screen
+                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        }.also { storedPreviewView = it }
                     },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { previewView ->
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-                            val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(previewView.surfaceProvider)
-                            }
-                            imageCapture = ImageCapture.Builder()
-                                .setFlashMode(
-                                    if (flashEnabled) ImageCapture.FLASH_MODE_ON
-                                    else ImageCapture.FLASH_MODE_OFF
-                                ).build()
-                            val cameraSelector = CameraSelector.Builder()
-                                .requireLensFacing(lensFacing).build()
-                            try {
-                                cameraProvider.unbindAll()
-                                camera = cameraProvider.bindToLifecycle(
-                                    lifecycleOwner, cameraSelector, preview, imageCapture
-                                )
-                            } catch (e: Exception) { e.printStackTrace() }
-                        }, ContextCompat.getMainExecutor(context))
-                    }
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
@@ -490,84 +534,78 @@ private fun SaveButton(isSaving: Boolean, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun PhotoHistorySheet(
-    transactions: List<TransactionEntity>,
-    onSaveToAlbum: (TransactionEntity) -> Unit,
-    onDelete: (TransactionEntity) -> Unit
-) {
-    val timeFmt = remember { SimpleDateFormat("HH:mm · dd/MM/yyyy", Locale.getDefault()) }
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Lịch sử chi tiêu bằng ảnh",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (transactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Chưa có ảnh chi tiêu nào", color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp)
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 500.dp)
-            ) {
-                items(transactions, key = { it.id }) { tx ->
-                    PhotoHistoryItem(
-                        tx = tx,
-                        timeFmt = timeFmt,
-                        onSaveToAlbum = { onSaveToAlbum(tx) },
-                        onDelete = { onDelete(tx) }
-                    )
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-    }
-}
 
 @Composable
-private fun PhotoHistoryItem(
+private fun PhotoFeedPage(
     tx: TransactionEntity,
-    timeFmt: SimpleDateFormat,
+    onClose: () -> Unit,
     onSaveToAlbum: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val shortFmt = remember { SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault()) }
     var bitmap by remember(tx.imagePath) { mutableStateOf<ImageBitmap?>(null) }
+    var showMoreMenu by remember { mutableStateOf(false) }
+
     LaunchedEffect(tx.imagePath) {
         val path = tx.imagePath ?: return@LaunchedEffect
         bitmap = withContext(Dispatchers.IO) {
-            android.graphics.BitmapFactory.decodeFile(path)?.asImageBitmap()
+            BitmapFactory.decodeFile(path)?.asImageBitmap()
         }
     }
 
-    Row(
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.07f))
-            .padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .fillMaxSize()
+            .background(Color.Black)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1:1 photo thumbnail
+        // ── Top bar ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left placeholder (cân bằng layout)
+            Spacer(modifier = Modifier.size(48.dp))
+
+            // Center: pill hiển thị ngày giờ chụp
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
+                    .padding(horizontal = 18.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = shortFmt.format(Date(tx.transactionDate)),
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Right: đóng → về home
+            CircularIconButton(
+                icon = Icons.Filled.Close,
+                contentDescription = "Quay lại",
+                onClick = onClose
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // ── Ảnh 1:1 căn giữa ──
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.White.copy(alpha = 0.1f))
+                .fillMaxWidth(0.92f)
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color(0xFF1A1A2E))
         ) {
             if (bitmap != null) {
                 Image(
@@ -581,37 +619,117 @@ private fun PhotoHistoryItem(
                     imageVector = Icons.Filled.Image,
                     contentDescription = null,
                     tint = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.align(Alignment.Center).size(32.dp)
+                    modifier = Modifier.align(Alignment.Center).size(64.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Info
-        Column(modifier = Modifier.weight(1f)) {
+        // ── Info bên dưới ảnh (kiểu "Meo 11h") ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFF6B6B).copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AttachMoney,
+                    contentDescription = null,
+                    tint = Color(0xFFFF6B6B),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = if (tx.amount > 0.0) "-${formatVndDigits(tx.amount.toLong().toString())}đ"
-                       else "0đ",
-                color = Color(0xFFFF6B6B),
+                text = if (tx.amount > 0.0) "-${formatVndDigits(tx.amount.toLong().toString())}đ" else "0đ",
+                color = Color.White,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = timeFmt.format(java.util.Date(tx.transactionDate)),
-                color = Color.White.copy(alpha = 0.55f),
-                fontSize = 12.sp
+                text = run {
+                    val h = (System.currentTimeMillis() - tx.transactionDate) / 3_600_000
+                    if (h < 24) "${h}h" else "${h / 24}d"
+                },
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 14.sp
             )
         }
 
-        // Action buttons
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            IconButton(onClick = onSaveToAlbum, modifier = Modifier.size(36.dp)) {
-                Icon(imageVector = Icons.Filled.Download, contentDescription = "Lưu về máy", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.weight(1f))
+
+        // ── Bottom 3 nút ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 48.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Trái: grid – hiện tất cả ảnh (no-op, pager handles swiping)
+            CircularIconButton(
+                icon = Icons.Filled.GridView,
+                contentDescription = "Tất cả ảnh",
+                onClick = {}
+            )
+
+            // Giữa: vòng tròn trắng → quay lại camera
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = onClose
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CameraAlt,
+                    contentDescription = "Chụp ảnh mới",
+                    tint = Color.Black,
+                    modifier = Modifier.size(30.dp)
+                )
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                Icon(imageVector = Icons.Filled.DeleteOutline, contentDescription = "Xóa", tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp))
+
+            // Phải: nút 3 chấm → save / xóa
+            Box {
+                CircularIconButton(
+                    icon = Icons.Filled.MoreHoriz,
+                    contentDescription = "Thêm",
+                    onClick = { showMoreMenu = true }
+                )
+                DropdownMenu(
+                    expanded = showMoreMenu,
+                    onDismissRequest = { showMoreMenu = false },
+                    modifier = Modifier.background(Color(0xFF2A2A3E))
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Lưu về máy", color = Color.White) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Download, contentDescription = null, tint = Color.White)
+                        },
+                        onClick = { showMoreMenu = false; onSaveToAlbum() }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Xóa", color = Color(0xFFFF6B6B)) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.DeleteOutline, contentDescription = null, tint = Color(0xFFFF6B6B))
+                        },
+                        onClick = { showMoreMenu = false; onDelete() }
+                    )
+                }
             }
         }
     }
