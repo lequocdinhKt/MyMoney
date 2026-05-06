@@ -92,20 +92,35 @@ class CameraViewModel(
                 val localId = db.transactionDao().insert(entity)
                 Log.d(TAG, "Saved photo transaction to Room: id=$localId, path=$localPath")
 
-                // 3. Trừ số dư ví (expense)
+
+                // 3. Trừ số dư ví (expense) – kiểm tra đủ số dư trước
                 if (amount > 0.0) {
                     val wallet = db.walletDao().getWalletById(walletId)
-                    if (wallet != null) {
-                        val newBalance = wallet.balance - amount
-                        db.walletDao().update(
-                            wallet.copy(
-                                balance    = newBalance,
-                                updatedAt  = now,
-                                syncStatus = SyncStatus.PENDING_UPDATE
-                            )
-                        )
-                        Log.d(TAG, "Wallet balance: ${wallet.balance} → $newBalance")
+                    if (wallet == null) {
+                        // Rollback: xóa transaction vừa insert
+                        db.transactionDao().softDelete(localId)
+                        withContext(Dispatchers.IO) { destFile.delete() }
+                        _saveState.value = SaveState.Error("Không tìm thấy ví")
+                        return@launch
                     }
+                    if (wallet.balance < amount) {
+                        // Rollback: xóa transaction vừa insert
+                        db.transactionDao().softDelete(localId)
+                        withContext(Dispatchers.IO) { destFile.delete() }
+                        _saveState.value = SaveState.Error(
+                            "Số dư không đủ!\nSố dư hiện tại: ${formatBalance(wallet.balance)}đ\nCần: ${formatBalance(amount)}đ"
+                        )
+                        return@launch
+                    }
+                    val newBalance = wallet.balance - amount
+                    db.walletDao().update(
+                        wallet.copy(
+                            balance    = newBalance,
+                            updatedAt  = now,
+                            syncStatus = SyncStatus.PENDING_UPDATE
+                        )
+                    )
+                    Log.d(TAG, "Wallet balance: ${wallet.balance} → $newBalance")
                 }
 
                 // 4. Upload lên Supabase Storage (non-fatal)
@@ -188,6 +203,12 @@ class CameraViewModel(
 
     fun resetState() {
         _saveState.value = SaveState.Idle
+    }
+
+    private fun formatBalance(value: Double): String {
+        val long = value.toLong()
+        val reversed = long.toString().reversed()
+        return reversed.chunked(3).joinToString(".").reversed()
     }
 
     companion object {
