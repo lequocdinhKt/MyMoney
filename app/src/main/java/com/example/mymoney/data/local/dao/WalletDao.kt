@@ -46,6 +46,12 @@ interface WalletDao {
     /** Đánh dấu đã sync xong sau khi upsert Supabase thành công */
     @Query("UPDATE wallets SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
+
+    @Query("UPDATE wallets SET is_default = 0, updated_at = :now, sync_status = ${SyncStatus.PENDING_UPDATE} WHERE user_id = :userId")
+    suspend fun clearDefaultWallets(userId: String, now: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM wallets WHERE user_id = :userId AND is_deleted = 0 AND id != :excludeId ORDER BY sort_order ASC, created_at ASC LIMIT 1")
+    suspend fun getAnotherWallet(userId: String, excludeId: Long): WalletEntity?
 }
 
 

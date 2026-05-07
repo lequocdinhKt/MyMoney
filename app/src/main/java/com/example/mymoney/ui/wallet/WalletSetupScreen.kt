@@ -279,8 +279,23 @@ private fun WalletSetupContent(
 
         // ── Nút xóa ──
         if(uiState.isEditMode) {
+            val canDelete = !uiState.isDefault && !uiState.isDeleting
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (uiState.isDefault) {
+                    Text(
+                        text = "Không thể xóa ví mặc định. Hãy tắt chế độ ví mặc định trước.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
             Button(
                 onClick = { onEvent(WalletSetupEvent.DeleteClicked) },
+                enabled = canDelete,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)

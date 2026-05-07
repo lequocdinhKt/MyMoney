@@ -71,10 +71,14 @@ class WalletSetupViewModel(
             is WalletSetupEvent.ColorChanged   -> _uiState.update { it.copy(selectedColor = event.color) }
             is WalletSetupEvent.DefaultChanged -> _uiState.update { it.copy(isDefault = event.isDefault) }
             is WalletSetupEvent.Submit         -> submit()
-            is WalletSetupEvent.DeleteClicked  -> _uiState.update { it.copy(showDeleteDialog = true) }
             is WalletSetupEvent.DeleteConfirm  -> delete()
             is WalletSetupEvent.DeleteDismissed -> _uiState.update { it.copy(showDeleteDialog = false) }
             is WalletSetupEvent.DismissError   -> _uiState.update { it.copy(error = null) }
+            is WalletSetupEvent.DeleteClicked  -> if(_uiState.value.isDefault) {
+                _uiState.update { it.copy(error = "Không thể xóa ví mặc định") }
+            } else {
+                _uiState.update { it.copy(showDeleteDialog = true) }
+            }
         }
     }
 
@@ -160,6 +164,16 @@ class WalletSetupViewModel(
     private fun delete() {
         val state = _uiState.value
         if (!state.isEditMode || state.isDeleting) return
+
+        // Không cho xóa ví mặc định
+        if (state.isDefault) {
+            _uiState.update {
+                it.copy(
+                    error = "Không thể xóa ví mặc định"
+                )
+            }
+            return
+        }
 
         // Bắt đầu xóa
         _uiState.update { it.copy(
