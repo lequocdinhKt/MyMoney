@@ -71,6 +71,9 @@ class WalletSetupViewModel(
             is WalletSetupEvent.ColorChanged   -> _uiState.update { it.copy(selectedColor = event.color) }
             is WalletSetupEvent.DefaultChanged -> _uiState.update { it.copy(isDefault = event.isDefault) }
             is WalletSetupEvent.Submit         -> submit()
+            is WalletSetupEvent.DeleteClicked  -> _uiState.update { it.copy(showDeleteDialog = true) }
+            is WalletSetupEvent.DeleteConfirm  -> delete()
+            is WalletSetupEvent.DeleteDismissed -> _uiState.update { it.copy(showDeleteDialog = false) }
             is WalletSetupEvent.DismissError   -> _uiState.update { it.copy(error = null) }
         }
     }
@@ -153,7 +156,32 @@ class WalletSetupViewModel(
             }
         }
     }
+
+    private fun delete() {
+        val state = _uiState.value
+        if (!state.isEditMode || state.isDeleting) return
+
+        // Bắt đầu xóa
+        _uiState.update { it.copy(
+            isDeleting = true,
+            showDeleteDialog = false,
+            error = null
+        ) }
+
+        viewModelScope.launch {
+            try {
+                walletRepository.deleteWallet(state.id)
+
+                _uiState.update { it.copy(
+                    isDeleting = false,
+                    isSaved = true
+                ) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(
+                    isDeleting = false,
+                    error = "Xóa thất bại: ${e.message}"
+                ) }
+            }
+        }
+    }
 }
-
-
-

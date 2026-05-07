@@ -25,7 +25,9 @@ data class WalletSetupUiState(
     val isDefault: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showDeleteDialog: Boolean = false, // Hiện dialog xóa ví
+    val isDeleting: Boolean = false, // Đang xóa
 )
 
 sealed interface WalletSetupEvent {
@@ -34,6 +36,9 @@ sealed interface WalletSetupEvent {
     data class ColorChanged(val color: String) : WalletSetupEvent
     data class DefaultChanged(val isDefault: Boolean) : WalletSetupEvent
     data object Submit : WalletSetupEvent
+
+    data object DeleteClicked : WalletSetupEvent
+    data object DeleteConfirm : WalletSetupEvent
+    data object DeleteDismissed : WalletSetupEvent
     data object DismissError : WalletSetupEvent
 }
-

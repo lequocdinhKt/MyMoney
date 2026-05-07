@@ -14,14 +14,21 @@ interface TransactionDao {
 
     @Query(
         """SELECT * FROM transactions 
-           WHERE user_id = :userId AND is_deleted = 0 
-           ORDER BY transaction_date DESC"""
+          INNER JOIN wallets ON transactions.wallet_id = wallets.id 
+          WHERE transactions.user_id = :userId
+          AND transactions.is_deleted = 0
+          AND wallets.is_deleted = 0
+    ORDER BY transaction_date DESC"""
     )
     fun observeTransactions(userId: String): Flow<List<TransactionEntity>>
 
     @Query(
         """SELECT * FROM transactions 
-           WHERE user_id = :userId AND wallet_id = :walletId AND is_deleted = 0 
+           INNER JOIN wallets ON transactions.wallet_id = wallets.id 
+           WHERE transactions.user_id = :userId
+           AND transactions.wallet_id = :walletId
+           AND transactions.is_deleted = 0
+           AND wallets.is_deleted = 0
            ORDER BY transaction_date DESC"""
     )
     fun observeByWallet(userId: String, walletId: Long): Flow<List<TransactionEntity>>
