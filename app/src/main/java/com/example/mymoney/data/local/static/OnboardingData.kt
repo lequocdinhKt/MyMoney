@@ -47,7 +47,7 @@ val onboardingPages: List<OnboardingPageData> = listOf(
     OnboardingPageData(
         titleKey = "page_2",
         description = "Đồng hành cùng bạn trên hành trình tự do tài chính",
-        imageRes = R.drawable.ic_logomymoney2,
+        imageRes = R.drawable.ic_logomymoney,
         imageDescription = "Hình minh hoạ heo đất tiết kiệm với đồng xu",
     ),
 )
