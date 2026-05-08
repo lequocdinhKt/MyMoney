@@ -41,13 +41,13 @@ val onboardingPages: List<OnboardingPageData> = listOf(
         titleKey = "page_1",
         description = "Theo dõi chi phí trong vài giây, xem tiền của bạn " +
                 "được chi vào đâu và kiểm soát ngân sách mà không bị căng thẳng.",
-        imageRes = R.drawable.img_batdau2,
+        imageRes = R.drawable.img_batdau2_new,
         imageDescription = "Hình minh hoạ người vui vẻ với tiền bay xung quanh",
     ),
     OnboardingPageData(
         titleKey = "page_2",
         description = "Đồng hành cùng bạn trên hành trình tự do tài chính",
-        imageRes = R.drawable.ic_logomymoney,
+        imageRes = R.drawable.ic_logomymoney2,
         imageDescription = "Hình minh hoạ heo đất tiết kiệm với đồng xu",
     ),
 )
