@@ -22,12 +22,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Switch
@@ -46,6 +48,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.wallet.WALLET_PRESET_COLORS
@@ -93,6 +97,74 @@ private fun WalletSetupContent(
     onEvent: (WalletSetupEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    // ── Loading Overlay: dùng Dialog để phủ toàn màn hình thực sự ── //
+    if (uiState.isDeleting) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(
+                dismissOnBackPress   = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(32.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color    = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text  = "Đang xóa ví...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+
+    // ── Dialog xác nhận xóa ──
+    if (uiState.showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { onEvent(WalletSetupEvent.DeleteDismissed)},
+            title = {
+                Text(
+                    text       = "Xóa ví?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text  = "Hành động này sẽ xóa tất cả dữ liệu liên quan đến ví này. Bạn có chắc chắn muốn tiếp tục?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                OutlinedButton(onClick = { onEvent(WalletSetupEvent.DeleteConfirm) }) {
+                    Text("Xóa", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { onEvent(WalletSetupEvent.DeleteDismissed) }) {
+                    Text("Huỷ")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,7 +179,10 @@ private fun WalletSetupContent(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onNavigateBack) {
+            IconButton(
+                onClick = onNavigateBack,
+                enabled = !uiState.isDeleting
+            ) {
                 Icon(
                     imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
@@ -119,7 +194,7 @@ private fun WalletSetupContent(
                 style      = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 color      = MaterialTheme.colorScheme.onBackground,
-                modifier   = Modifier.padding(start = 4.dp)
+                modifier   = Modifier.weight(1f).padding(start = 4.dp)
             )
         }
 
@@ -140,7 +215,8 @@ private fun WalletSetupContent(
                 label          = { Text("Tên ví") },
                 singleLine     = true,
                 shape          = RoundedCornerShape(12.dp),
-                modifier       = Modifier.fillMaxWidth()
+                modifier       = Modifier.fillMaxWidth(),
+                enabled        = !uiState.isDeleting,
             )
 
             // Số dư ban đầu
@@ -152,12 +228,14 @@ private fun WalletSetupContent(
                 shape         = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 trailingIcon  = { Text("₫", modifier = Modifier.padding(end = 12.dp)) },
-                modifier      = Modifier.fillMaxWidth()
+                modifier      = Modifier.fillMaxWidth(),
+                enabled        = !uiState.isDeleting,
             )
 
             // Bộ chọn màu
             ColorSwatchSection(
                 selectedColor = uiState.selectedColor,
+                enabled = !uiState.isDeleting,
                 onColorSelected = { onEvent(WalletSetupEvent.ColorChanged(it)) }
             )
 
@@ -178,6 +256,7 @@ private fun WalletSetupContent(
                 )
                 Switch(
                     checked         = uiState.isDefault,
+                    enabled         = !uiState.isDeleting,
                     onCheckedChange = { onEvent(WalletSetupEvent.DefaultChanged(it)) }
                 )
             }
@@ -198,10 +277,49 @@ private fun WalletSetupContent(
             ) { Text(uiState.error) }
         }
 
+        // ── Nút xóa ──
+        if(uiState.isEditMode) {
+            val canDelete = !uiState.isDefault && !uiState.isDeleting
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (uiState.isDefault) {
+                    Text(
+                        text = "Không thể xóa ví mặc định. Hãy tắt chế độ ví mặc định trước.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+            }
+            Button(
+                onClick = { onEvent(WalletSetupEvent.DeleteClicked) },
+                enabled = canDelete,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp),
+                shape  = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE53935),
+                    disabledContainerColor = Color(0xFFE57373)
+                )
+            ) {
+                Text(
+                    text = "Xóa ví",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+        }
+
         // ── Nút Tiếp tục ──
         Button(
             onClick  = { onEvent(WalletSetupEvent.Submit) },
-            enabled  = !uiState.isLoading,
+            enabled  = !uiState.isLoading && !uiState.isDeleting,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp)
@@ -234,6 +352,7 @@ private fun WalletSetupContent(
 @Composable
 private fun ColorSwatchSection(
     selectedColor: String,
+    enabled: Boolean = true,
     onColorSelected: (String) -> Unit
 ) {
     Column(
@@ -267,7 +386,11 @@ private fun ColorSwatchSection(
                             else
                                 Modifier.border(1.dp, Color.Transparent, CircleShape)
                         )
-                        .clickable { onColorSelected(hex) }
+                        .clickable (
+                            enabled = enabled
+                        ) {
+                            onColorSelected(hex)
+                        }
                 )
             }
         }
@@ -305,4 +428,3 @@ private fun WalletSetupEditPreview() {
         )
     }
 }
-

@@ -49,6 +49,9 @@ class TransactionRepositoryImpl(
         transactionDao.insert(transaction.toEntity())
     }
 
+    override suspend fun getTransactionById(id: Long): TransactionModel? =
+        transactionDao.getTransactionById(id)?.toModel()
+
     override suspend fun deleteTransaction(id: Long) =
         transactionDao.softDelete(id)
 
@@ -65,7 +68,8 @@ class TransactionRepositoryImpl(
         walletId     = walletId,
         aiGenerated  = aiGenerated,
         timestamp    = transactionDate,
-        supabaseId   = supabaseId
+        supabaseId   = supabaseId,
+        imagePath    = imagePath
     )
 
     private fun TransactionModel.toEntity(): TransactionEntity {
@@ -75,8 +79,8 @@ class TransactionRepositoryImpl(
             supabaseId      = supabaseId,
             userId          = userId,
             walletId        = walletId,
-            categoryId      = categoryId,        // Long? — null khi chưa resolve
-            categoryName    = category,          // lưu tên để hiển thị không cần JOIN
+            categoryId      = categoryId,
+            categoryName    = category,
             amount          = amount,
             type            = type,
             note            = note,
@@ -85,7 +89,8 @@ class TransactionRepositoryImpl(
             createdAt       = if (id == 0L) now else timestamp,
             updatedAt       = now,
             isDeleted       = false,
-            syncStatus      = SyncStatus.PENDING_INSERT
+            syncStatus      = SyncStatus.PENDING_INSERT,
+            imagePath       = imagePath
         )
     }
 }

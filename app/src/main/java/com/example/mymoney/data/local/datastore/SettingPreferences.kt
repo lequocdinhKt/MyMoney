@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -29,6 +30,7 @@ class SettingPreferences(private val context: Context) {
         val KEY_USER_ID                  = stringPreferencesKey("user_id")
         val KEY_USERNAME                 = stringPreferencesKey("username")
         val KEY_THOUSAND_SEPARATOR       = booleanPreferencesKey("thousand_separator_enabled")
+        val KEY_THEME_MODE               = stringPreferencesKey("THEME_MODE")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -47,6 +49,17 @@ class SettingPreferences(private val context: Context) {
     /** Mặc định bật phân tách hàng nghìn */
     val isThousandSeparatorEnabled: Flow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[KEY_THOUSAND_SEPARATOR] ?: true }
+
+    /** Lấy ThemeMode hiện tại, mặc định là SYSTEM */
+    val themeMode: Flow<ThemeMode> = context.dataStore.data
+        .map { prefs ->
+            val themeName = prefs[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name
+            try {
+                ThemeMode.valueOf(themeName)
+            } catch (e: Exception) {
+                ThemeMode.SYSTEM
+            }
+        }
 
     // ── Write ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +87,12 @@ class SettingPreferences(private val context: Context) {
         }
     }
 
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THEME_MODE] = mode.name
+        }
+    }
+
     suspend fun clearUserId() {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_USER_ID)
@@ -86,5 +105,3 @@ class SettingPreferences(private val context: Context) {
         }
     }
 }
-
-

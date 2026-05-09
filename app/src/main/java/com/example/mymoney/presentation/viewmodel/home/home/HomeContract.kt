@@ -52,7 +52,7 @@ data class HomeUiState(
     val walletName: String = "",
     val wallets: List<WalletItem> = emptyList(),
     val selectedWalletId: Long = 0L,
-    val activeWalletColor: String = "#0088F0",   // hex của ví đang chọn → đổi theme
+    val activeWalletColor: String = "#0088F0",
     val selectedPeriod: TimePeriod = TimePeriod.DAY,
     val groupLabel: String = "",
     val totalIncome: String = "0",
@@ -66,7 +66,10 @@ data class HomeUiState(
  */
 sealed interface HomeEvent {
     data class SelectPeriod(val period: TimePeriod) : HomeEvent
+    /** Chọn khoảng ngày tùy chỉnh – tự động set period = CUSTOM */
+    data class SelectCustomPeriod(val fromMs: Long, val toMs: Long) : HomeEvent
     data class SelectWallet(val walletId: Long) : HomeEvent
+    data class DeleteTransaction(val transactionId: String) : HomeEvent
     data object AddTransactionClick : HomeEvent
     data object AddWalletClick : HomeEvent
     data class EditWalletClick(val walletId: Long) : HomeEvent

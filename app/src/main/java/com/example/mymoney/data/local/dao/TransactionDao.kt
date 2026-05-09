@@ -14,14 +14,21 @@ interface TransactionDao {
 
     @Query(
         """SELECT * FROM transactions 
-           WHERE user_id = :userId AND is_deleted = 0 
-           ORDER BY transaction_date DESC"""
+          INNER JOIN wallets ON transactions.wallet_id = wallets.id 
+          WHERE transactions.user_id = :userId
+          AND transactions.is_deleted = 0
+          AND wallets.is_deleted = 0
+    ORDER BY transaction_date DESC"""
     )
     fun observeTransactions(userId: String): Flow<List<TransactionEntity>>
 
     @Query(
         """SELECT * FROM transactions 
-           WHERE user_id = :userId AND wallet_id = :walletId AND is_deleted = 0 
+           INNER JOIN wallets ON transactions.wallet_id = wallets.id 
+           WHERE transactions.user_id = :userId
+           AND transactions.wallet_id = :walletId
+           AND transactions.is_deleted = 0
+           AND wallets.is_deleted = 0
            ORDER BY transaction_date DESC"""
     )
     fun observeByWallet(userId: String, walletId: Long): Flow<List<TransactionEntity>>
@@ -79,5 +86,11 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
+
+    @Query("UPDATE transactions SET image_path = :imagePath, updated_at = :now WHERE id = :id")
+    suspend fun updateImagePath(id: Long, imagePath: String, now: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM transactions WHERE user_id = :userId AND image_path IS NOT NULL AND is_deleted = 0 ORDER BY transaction_date DESC")
+    fun observePhotoTransactions(userId: String): Flow<List<TransactionEntity>>
 }
 

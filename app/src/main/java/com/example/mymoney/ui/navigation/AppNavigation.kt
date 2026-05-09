@@ -2,19 +2,30 @@ package com.example.mymoney.ui.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.slideInVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.TransactionRepositoryImpl
+import com.example.mymoney.domain.usecase.GetTransactionsUseCase
+import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.addtransaction.AIChatScreen
 import com.example.mymoney.ui.auth.SignInScreen
 import com.example.mymoney.ui.auth.SignUpScreen
+import com.example.mymoney.ui.camera.CameraCaptureScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
 import com.example.mymoney.ui.wallet.WalletSetupScreen
+import com.example.mymoney.ui.search.SearchScreen
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -99,6 +110,9 @@ composable(route = Screen.Main.route) {
         onAddTransactionClick = { walletId ->
             navController.navigate(Screen.AddTransaction.createRoute(walletId))
         },
+        onCameraClick = { walletId ->
+            navController.navigate(Screen.CameraCapture.createRoute(walletId))
+        },
         onNavigateToAddWallet = {
             navController.navigate(Screen.WalletSetup.createRoute(userId))
         },
@@ -106,6 +120,9 @@ composable(route = Screen.Main.route) {
             navController.navigate(Screen.WalletSetup.createRoute(userId, walletId))
         },
         onWalletColorChanged = onWalletColorChanged,
+        onSearchClick = {
+            navController.navigate("search")
+        },
         onSignOut = {
             navController.navigate(Screen.SignIn.route) {
                 popUpTo(0) { inclusive = true }
@@ -113,6 +130,54 @@ composable(route = Screen.Main.route) {
         }
     )
 }
+        // ── Màn hình tìm kiếm ──
+        composable(
+            "search",
+            enterTransition = {
+                slideInVertically(
+                    initialOffsetY = { it }, // từ dưới lên
+                    animationSpec = tween(
+                        durationMillis = 400,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            },
+            exitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { -it / 4 }, // đi xuống
+                    animationSpec = tween(300)
+                )
+            },
+            popEnterTransition = {
+                slideInVertically(
+                    initialOffsetY = { -it / 4 },
+                    animationSpec = tween(300)
+                )
+            },
+            popExitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(
+                        400,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
+        ) {
+            val context = LocalContext.current
+            val db = AppDatabase.getInstance(context)
+            val repo = TransactionRepositoryImpl(db.transactionDao())
+
+            val factory = SearchViewModelFactory(
+                GetTransactionsUseCase(repo),
+                userId
+            )
+
+            SearchScreen(
+                factory = factory,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
 
         // ── Màn hình chat AI thêm giao dịch ──
         composable(
@@ -130,6 +195,25 @@ composable(route = Screen.Main.route) {
             )
         }
 
+        // ── Màn hình chụp ảnh (Locket-style) ──
+        composable(
+            route = Screen.CameraCapture.route,
+            arguments = listOf(
+                navArgument("walletId") { type = NavType.LongType; defaultValue = 0L }
+            )
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
+            CameraCaptureScreen(
+                walletId = walletId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onPhotoTaken = { photoUri ->
+                    // Giữ nguyên camera screen sau khi chụp — không pop back
+                }
+            )
+        }
+
         // ── Màn hình thiết lập ví ──
         composable(
             route     = Screen.WalletSetup.route,
@@ -143,7 +227,15 @@ composable(route = Screen.Main.route) {
             WalletSetupScreen(
                 userId         = uid,
                 walletId       = if (wId == -1L) null else wId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    // Guard: chỉ pop khi destination hiện tại vẫn còn là WalletSetup.
+                    // Nếu người dùng nhấn back 2 lần liên tiếp nhanh, lần thứ 2 sẽ
+                    // không làm gì thêm vì route lúc đó đã không còn là WalletSetup.
+                    if (navController.currentBackStackEntry?.destination?.route
+                            == Screen.WalletSetup.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
     }

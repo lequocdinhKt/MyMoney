@@ -95,7 +95,7 @@ fun OnboardingPageLayout(
         Image(
             painter = painterResource(id = imageRes),
             contentDescription = imageDescription,
-            modifier = Modifier.border(2.dp, color = Color.Cyan).size(320.dp)
+            modifier = Modifier.border(2.dp, color = Color.Transparent).size(320.dp)
         )
 
         // ── Phần 3: Chỉ báo trang + nút tiếp theo (dính ngay dưới ảnh) ──
@@ -122,7 +122,7 @@ private fun OnboardingBottomBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .border(2.dp, color = Color.Cyan)
+            .border(width = 2.dp, color = Color.Transparent)
             .padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

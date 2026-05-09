@@ -8,7 +8,10 @@ import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.repository.SupabaseTransactionRepository
 import com.example.mymoney.domain.repository.AuthRepository
 import com.example.mymoney.domain.repository.TransactionRepository
+import com.example.mymoney.presentation.viewmodel.setting.setting.CurrencyMode
+import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
+import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +33,15 @@ private data class BackupViewState(
     val resultMsg: String? = null
 )
 
+/** Internal state cho UI-only (theme, currency, number format) */
+private data class SettingExtrasState(
+    val showThemeSheet: Boolean = false,
+    val selectedCurrency: CurrencyMode = CurrencyMode.VND,
+    val showCurrencySheet: Boolean = false,
+    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
+    val showNumberFormat: Boolean = false
+)
+
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Cài đặt.
  */
@@ -42,21 +54,30 @@ class SettingViewModel(
 
     private val TAG = "SettingViewModel"
 
-    // ── UI state: merge DataStore flows + backup state ──
+    // ── UI state: merge DataStore flows + backup state + UI extras ──
     private val _backupState = MutableStateFlow(BackupViewState())
+    private val _extrasState = MutableStateFlow(SettingExtrasState())
 
     val uiState: StateFlow<SettingUiState> =
         combine(
             settingPreferences.isThousandSeparatorEnabled,
             settingPreferences.currentUsername,
-            _backupState
-        ) { enabled, username, backup ->
+            settingPreferences.themeMode,
+            _backupState,
+            _extrasState
+        ) { enabled, username, themeMode, backup, extras ->
             SettingUiState(
                 isThousandSeparatorEnabled = enabled,
                 username                   = username ?: "",
                 isBackingUp                = backup.isBackingUp,
                 showBackupConfirmDialog    = backup.showDialog,
-                backupResultMessage        = backup.resultMsg
+                backupResultMessage        = backup.resultMsg,
+                selectedTheme              = themeMode,
+                showThemeSheet             = extras.showThemeSheet,
+                selectedCurrency           = extras.selectedCurrency,
+                showCurrencySheet          = extras.showCurrencySheet,
+                selectedNumberFormat       = extras.selectedNumberFormat,
+                showNumberFormat           = extras.showNumberFormat
             )
         }.stateIn(
             scope        = viewModelScope,
@@ -101,6 +122,39 @@ class SettingViewModel(
             // Đóng thông báo kết quả
             is SettingEvent.DismissBackupResult -> {
                 _backupState.update { it.copy(resultMsg = null) }
+            }
+            // ── Theme ──
+            is SettingEvent.ThemeClicked -> {
+                _extrasState.update { it.copy(showThemeSheet = true) }
+            }
+            is SettingEvent.ThemeSelected -> {
+                viewModelScope.launch {
+                    settingPreferences.setThemeMode(event.mode)
+                    _extrasState.update { it.copy(showThemeSheet = false) }
+                }
+            }
+            is SettingEvent.ThemeDismissed -> {
+                _extrasState.update { it.copy(showThemeSheet = false) }
+            }
+            // ── Currency ──
+            is SettingEvent.CurrencyClicked -> {
+                _extrasState.update { it.copy(showCurrencySheet = true) }
+            }
+            is SettingEvent.CurrencySelected -> {
+                _extrasState.update { it.copy(selectedCurrency = event.currency, showCurrencySheet = false) }
+            }
+            is SettingEvent.CurrencyDismissed -> {
+                _extrasState.update { it.copy(showCurrencySheet = false) }
+            }
+            // ── Number Format ──
+            is SettingEvent.NumberFormatClicked -> {
+                _extrasState.update { it.copy(showNumberFormat = true) }
+            }
+            is SettingEvent.NumberFormatSelected -> {
+                _extrasState.update { it.copy(selectedNumberFormat = event.numberformat, showNumberFormat = false) }
+            }
+            is SettingEvent.NumberFormatDismissed -> {
+                _extrasState.update { it.copy(showNumberFormat = false) }
             }
         }
     }

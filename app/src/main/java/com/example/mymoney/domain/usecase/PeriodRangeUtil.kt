@@ -70,4 +70,17 @@ object PeriodRangeUtil {
             TimePeriod.CUSTOM -> "Tất cả giao dịch"
         }
     }
+
+    /**
+     * Nhãn hiển thị cho khoảng ngày tùy chỉnh.
+     * Ví dụ: "01/04/2026 – 30/04/2026"
+     */
+    fun getCustomLabel(fromMs: Long, toMs: Long): String {
+        val zone    = ZoneId.systemDefault()
+        val from    = Instant.ofEpochMilli(fromMs).atZone(zone).toLocalDate()
+        // toMs là exclusive (start of next day), nên trừ 1 ngày để hiển thị đúng
+        val to      = Instant.ofEpochMilli(toMs).atZone(zone).toLocalDate().minusDays(1)
+        fun LocalDate.fmt() = "${dayOfMonth.toString().padStart(2,'0')}/${monthValue.toString().padStart(2,'0')}/$year"
+        return "${from.fmt()} – ${to.fmt()}"
+    }
 }

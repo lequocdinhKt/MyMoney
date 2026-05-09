@@ -1,6 +1,7 @@
 package com.example.mymoney.ui.main.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -33,6 +34,8 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun CustomTopAppBar(
     title: String,
+    showback: Boolean = false,
+    onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit,
     onSearchClick: () -> Unit,
     onCalendarClick: () -> Unit,
@@ -51,12 +54,14 @@ fun CustomTopAppBar(
         },
         // ── Icon trái: Settings ──
         navigationIcon = {
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Cài đặt",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+            if (showback) {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+            } else {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
             }
         },
         // ── Icon phải: Search + Calendar ──

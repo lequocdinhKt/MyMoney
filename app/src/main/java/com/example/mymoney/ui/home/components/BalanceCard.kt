@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -55,10 +56,17 @@ import java.util.Collections
  *  - Nhấn đúp       : mở màn hình chỉnh sửa ví (onEditWallet)
  *  - Ấn giữ + kéo   : sắp xếp lại ví; khi nhả tay → onReorderWallets với thứ tự mới
  *
+ * Loading Indicator:
+ *  - Khi người dùng chọn ví, thẻ đó sẽ hiển thị spinner để indicate dữ liệu đang được load
+ *  - Spinner tự động biến mất khi dữ liệu load xong
+ *
  * @param wallets           Danh sách ví từ database
+ * @param selectedWalletId  ID của ví hiện được chọn
+ * @param onSelectWallet    Callback khi nhấn ví (chọn ví)
  * @param onAddClick        Callback khi nhấn nút "+" (thêm ví mới)
  * @param onEditWallet      Callback khi nhấn đúp thẻ ví (chỉnh sửa)
  * @param onReorderWallets  Callback khi drag & drop kết thúc, nhận danh sách id theo thứ tự mới
+ * @param modifier          Modifier tùy chỉnh
  */
 @Composable
 fun BalanceSection(
@@ -73,6 +81,9 @@ fun BalanceSection(
     // Danh sách nội bộ để hoán đổi vị trí khi kéo thả
     val localWallets = remember { mutableStateListOf<WalletItem>() }
 
+    // Trạng thái scroll – dùng để reset về card đầu tiên khi danh sách ví thay đổi
+    val listState = rememberLazyListState()
+
     // Trạng thái kéo thả
     var isDragging by remember { mutableStateOf(false) }
     var draggingIndex by remember { mutableIntStateOf(-1) }
@@ -82,33 +93,36 @@ fun BalanceSection(
     val density = LocalDensity.current
     val cardStepPx = with(density) { 212.dp.toPx() }
 
-    // Đồng bộ localWallets với DB, nhưng không làm gián đoạn kéo thả
+    // Đồng bộ localWallets với DB, nhưng không làm gián đoạn kéo thả.
+    // Sau khi cập nhật, luôn cuộn về card đầu tiên để ưu tiên hiển thị từ đầu.
     LaunchedEffect(wallets) {
         if (!isDragging) {
             localWallets.clear()
             localWallets.addAll(wallets)
+            listState.scrollToItem(0)
         }
     }
 
     LazyRow(
+        state = listState,
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(items = localWallets, key = { _, w -> w.id }) { index, wallet ->
             WalletCard(
-                wallet      = wallet,
-                isSelected  = wallet.id == selectedWalletId,
-                isDragging  = index == draggingIndex,
-                dragOffsetX = if (index == draggingIndex) dragOffsetX else 0f,
-                onClick     = { onSelectWallet(wallet.id) },
-                onDoubleTap = { onEditWallet(wallet.id) },
-                onDragStart = {
+                wallet          = wallet,
+                isSelected      = wallet.id == selectedWalletId,
+                isDragging      = index == draggingIndex,
+                dragOffsetX     = if (index == draggingIndex) dragOffsetX else 0f,
+                onClick         = { onSelectWallet(wallet.id) },
+                onDoubleTap     = { onEditWallet(wallet.id) },
+                onDragStart     = {
                     isDragging = true
                     draggingIndex = index
                     dragOffsetX = 0f
                 },
-                onDrag = { delta ->
+                onDrag          = { delta ->
                     dragOffsetX += delta
                     val threshold = cardStepPx / 2
                     when {
@@ -124,7 +138,7 @@ fun BalanceSection(
                         }
                     }
                 },
-                onDragEnd = {
+                onDragEnd       = {
                     isDragging = false
                     draggingIndex = -1
                     dragOffsetX = 0f
