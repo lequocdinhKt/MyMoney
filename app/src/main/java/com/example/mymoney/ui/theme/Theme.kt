@@ -71,7 +71,7 @@ fun MyMoneyTheme(
 ) {
     val base = if (darkTheme) DarkColorScheme else LightColorScheme
     // Parse màu HEX của ví đang active → override primary trong scheme
-    val primary = remember(primaryHex) {
+    val primary = remember(primaryHex, darkTheme) {
         runCatching { Color(primaryHex.toColorInt()) }
             .getOrElse { if (darkTheme) Blue50 else Blue40 }
     }

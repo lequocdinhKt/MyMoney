@@ -35,7 +35,6 @@ private data class BackupViewState(
 
 /** Internal state cho UI-only (theme, currency, number format) */
 private data class SettingExtrasState(
-    val selectedTheme: ThemeMode = ThemeMode.SYSTEM,
     val showThemeSheet: Boolean = false,
     val selectedCurrency: CurrencyMode = CurrencyMode.VND,
     val showCurrencySheet: Boolean = false,
@@ -63,16 +62,17 @@ class SettingViewModel(
         combine(
             settingPreferences.isThousandSeparatorEnabled,
             settingPreferences.currentUsername,
+            settingPreferences.themeMode,
             _backupState,
             _extrasState
-        ) { enabled, username, backup, extras ->
+        ) { enabled, username, themeMode, backup, extras ->
             SettingUiState(
                 isThousandSeparatorEnabled = enabled,
                 username                   = username ?: "",
                 isBackingUp                = backup.isBackingUp,
                 showBackupConfirmDialog    = backup.showDialog,
                 backupResultMessage        = backup.resultMsg,
-                selectedTheme              = extras.selectedTheme,
+                selectedTheme              = themeMode,
                 showThemeSheet             = extras.showThemeSheet,
                 selectedCurrency           = extras.selectedCurrency,
                 showCurrencySheet          = extras.showCurrencySheet,
@@ -128,7 +128,10 @@ class SettingViewModel(
                 _extrasState.update { it.copy(showThemeSheet = true) }
             }
             is SettingEvent.ThemeSelected -> {
-                _extrasState.update { it.copy(selectedTheme = event.mode, showThemeSheet = false) }
+                viewModelScope.launch {
+                    settingPreferences.setThemeMode(event.mode)
+                    _extrasState.update { it.copy(showThemeSheet = false) }
+                }
             }
             is SettingEvent.ThemeDismissed -> {
                 _extrasState.update { it.copy(showThemeSheet = false) }
