@@ -1,6 +1,6 @@
 // Thêm dòng này để dùng ModalBottomSheet,...(Material3 API experimental)
 @file:OptIn(ExperimentalMaterial3Api::class)
-package com.example.mymoney.ui.setting.common.bottomsheet
+package com.example.mymoney.ui.common
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

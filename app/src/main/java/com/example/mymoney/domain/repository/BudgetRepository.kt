@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 interface BudgetRepository {
     fun getBudgets(userId: String, month: Int, year: Int): Flow<List<BudgetModel>>
     suspend fun getBudget(userId: String, categoryId: Long, month: Int, year: Int): BudgetModel?
+
+    suspend fun getBudgetById(id: Long): BudgetModel?
     suspend fun saveBudget(budget: BudgetModel): Long
     suspend fun updateBudget(budget: BudgetModel)
     suspend fun deleteBudget(id: Long)

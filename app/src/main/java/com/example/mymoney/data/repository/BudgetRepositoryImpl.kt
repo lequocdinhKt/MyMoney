@@ -18,6 +18,9 @@ class BudgetRepositoryImpl(
     override suspend fun getBudget(userId: String, categoryId: Long, month: Int, year: Int): BudgetModel? =
         budgetDao.getBudget(userId, categoryId, month, year)?.toModel()
 
+    override suspend fun getBudgetById(id: Long): BudgetModel? =
+        budgetDao.getBudgetById(id)?.toModel()
+
     override suspend fun saveBudget(budget: BudgetModel): Long =
         budgetDao.insert(budget.toEntity())
 

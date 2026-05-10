@@ -51,8 +51,8 @@ import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingItem
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
-import com.example.mymoney.ui.setting.common.bottomsheet.SelectionBottomSheet
-import com.example.mymoney.ui.setting.common.bottomsheet.SelectionOption
+import com.example.mymoney.ui.common.SelectionBottomSheet
+import com.example.mymoney.ui.common.SelectionOption
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /** * Màn hình Cài đặt.
