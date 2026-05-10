@@ -26,6 +26,7 @@ import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import com.example.mymoney.ui.budget_detail.BudgetManualScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -102,7 +103,6 @@ fun AppNavigation(
                 },
             )
         }
-
 // ── Màn hình chính ──
 composable(route = Screen.Main.route) {
     MainScreen(
@@ -119,6 +119,12 @@ composable(route = Screen.Main.route) {
         onNavigateToEditWallet = { walletId ->
             navController.navigate(Screen.WalletSetup.createRoute(userId, walletId))
         },
+        onNavigateToBudgetManual = { budgetId ->
+            navController.navigate(Screen.BudgetManual.createRoute(userId, budgetId))
+        },
+//        onNavigateToBudgetAI = {
+//            navController.navigate(Screen.BudgetAI.createRoute(userId))
+//        },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
             navController.navigate("search")
@@ -232,11 +238,34 @@ composable(route = Screen.Main.route) {
                     // Nếu người dùng nhấn back 2 lần liên tiếp nhanh, lần thứ 2 sẽ
                     // không làm gì thêm vì route lúc đó đã không còn là WalletSetup.
                     if (navController.currentBackStackEntry?.destination?.route
-                            == Screen.WalletSetup.route) {
+                        == Screen.WalletSetup.route) {
                         navController.popBackStack()
                     }
                 }
             )
         }
+
+        // ── Màn hình thiết lập ngân sách ──
+        composable(
+            route = Screen.BudgetManual.route,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("budgetId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("userId") ?: userId
+            val bId = backStackEntry.arguments?.getLong("budgetId") ?: -1L
+            BudgetManualScreen(
+                userId = uid,
+                budgetId = if (bId == -1L) null else bId,
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.BudgetManual.route) {
+                        navController.popBackStack()
+                    }
+                }
+            )
+        }
+
+
     }
 }

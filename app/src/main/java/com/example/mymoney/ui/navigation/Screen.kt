@@ -46,6 +46,16 @@ sealed class Screen(val route: String) {
         fun createRoute(userId: String, walletId: Long = -1L) =
             "wallet_setup/$userId/$walletId"
     }
+
+    // ── Màn hình thiết lập ngân sách ──
+    data object BudgetManual : Screen("budget_manual/{userId}/{budgetId}") {
+        fun createRoute(userId: String, budgetId: Long = -1L) =
+            "budget_manual/$userId/$budgetId"
+    }
+
+//    data object BudgetAI : Screen("budget_ai/{userId}") {
+//        fun createRoute(userId: String) = "budget_ai/$userId"
+//    }
 }
 
 /**
@@ -106,4 +116,3 @@ sealed class BottomTab(
             all.firstOrNull { it.route == route }
     }
 }
-

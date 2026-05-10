@@ -26,6 +26,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,12 +45,13 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /**
  * Màn hình Ngân sách – tab thứ 2 trong Bottom Navigation.
- * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
  */
 @Composable
 fun BudgetScreen(
     modifier: Modifier = Modifier,
     userId: String = "",
+    onNavigateToBudgetManual: () -> Unit = {},
+//    onNavigateToBudgetAI: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val viewModel: BudgetViewModel = viewModel(
@@ -56,22 +59,31 @@ fun BudgetScreen(
     )
     val uiState by viewModel.uiState.collectAsState()
 
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.onEvent(BudgetEvent.AddBudgetDismissed)
+        }
+    }
+
     BudgetContent(
         uiState = uiState,
         modifier = modifier,
         onEvent = viewModel::onEvent,
+        onNavigateToBudgetManual = onNavigateToBudgetManual,
+//        onNavigateToBudgetAI = onNavigateToBudgetAI
     )
 }
 
 /**
  * Nội dung hiển thị của màn hình Ngân sách.
- * Composable thuần tuý – không phụ thuộc ViewModel, dễ test và preview.
  */
 @Composable
 private fun BudgetContent(
     uiState: BudgetUiState,
     onEvent: (BudgetEvent) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToBudgetManual: () -> Unit = {},
+//    onNavigateToBudgetAI: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -90,7 +102,7 @@ private fun BudgetContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
-                    .clickable() {
+                    .clickable {
                         onEvent(BudgetEvent.AddBudgetDismissed)
                     }
             )
@@ -114,7 +126,8 @@ private fun BudgetContent(
                 SmallFabItem(
                     text = "Ngân sách với AI",
                     onClick = {
-                        // TODO
+//                        onEvent(BudgetEvent.AddBudgetDismissed)
+//                        onNavigateToBudgetAI()
                     }
                 )
             }
@@ -130,7 +143,8 @@ private fun BudgetContent(
                 SmallFabItem(
                     text = "Thêm thủ công",
                     onClick = {
-                        // TODO
+                        onEvent(BudgetEvent.AddBudgetDismissed)
+                        onNavigateToBudgetManual()
                     }
                 )
             }
@@ -200,7 +214,8 @@ private fun BudgetScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         BudgetContent(
             uiState = BudgetUiState(),
-            onEvent = {}
+            onEvent = {},
+            onNavigateToBudgetManual = {}
         )
     }
 }
@@ -209,9 +224,9 @@ private fun BudgetScreenLightPreview() {
 @Composable
 private fun BudgetScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
-        BudgetContent(
-            uiState = BudgetUiState(),
-            onEvent = {}
+        BudgetContent(uiState = BudgetUiState(),
+        onEvent = {},
+        onNavigateToBudgetManual = {}
         )
     }
 }

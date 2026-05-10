@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -55,6 +56,7 @@ import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.B
 import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.mymoney.ui.common.SelectionBottomSheet
 import com.example.mymoney.ui.common.SelectionOption
 
@@ -151,6 +153,8 @@ private fun BudgetManualContent(
                 label          = { Text("Số tiền ngân sách") },
                 singleLine     = true,
                 shape          = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon  = { Text("₫", modifier = Modifier.padding(end = 12.dp)) },
                 modifier       = Modifier.fillMaxWidth(),
             )
 
@@ -305,6 +309,7 @@ private fun MonthYearSelector(
                 shape = RoundedCornerShape(12.dp),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                 modifier = Modifier.fillMaxWidth()
+                    .menuAnchor()
             )
             ExposedDropdownMenu(
                 expanded = monthExpanded,
@@ -346,6 +351,7 @@ private fun MonthYearSelector(
                 shape = RoundedCornerShape(12.dp),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                 modifier = Modifier.fillMaxWidth()
+                    .menuAnchor()
             )
             ExposedDropdownMenu(
                 expanded = yearExpanded,
