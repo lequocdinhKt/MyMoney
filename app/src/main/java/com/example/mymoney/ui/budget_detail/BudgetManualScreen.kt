@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.mymoney.ui.budget_detail
 
 import androidx.compose.foundation.background
@@ -15,13 +16,16 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CarRepair
+import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +36,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -58,6 +63,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.mymoney.ui.common.SelectionBottomSheet
+import com.example.mymoney.ui.common.SelectionLayout
 import com.example.mymoney.ui.common.SelectionOption
 
 
@@ -77,7 +83,7 @@ fun BudgetManualScreen(
     val context = LocalContext.current
     val viewModel: BudgetManualViewModel = viewModel(
         factory = BudgetManualViewModelFactory(context, userId, budgetId),
-        key     = "budget_${budgetId ?: "new"}"
+        key = "budget_${budgetId ?: "new"}"
     )
     val uiState by viewModel.uiState.collectAsState()
 
@@ -91,8 +97,8 @@ fun BudgetManualScreen(
     }
 
     BudgetManualContent(
-        uiState        = uiState,
-        onEvent        = viewModel::onEvent,
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack
     )
 }
@@ -121,22 +127,22 @@ private fun BudgetManualContent(
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint               = MaterialTheme.colorScheme.onBackground
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
             Text(
-                text       = if (uiState.isEditMode) "Chỉnh sửa ngân sách" else "Tạo ngân sách",
-                style      = MaterialTheme.typography.headlineSmall,
+                text = if (uiState.isEditMode) "Chỉnh sửa ngân sách" else "Tạo ngân sách",
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onBackground,
-                modifier   = Modifier.weight(1f).padding(start = 4.dp)
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
             )
         }
-
-        Spacer(Modifier.width(16.dp))
 
         // ── Form ──
         Column(
@@ -148,48 +154,66 @@ private fun BudgetManualContent(
         ) {
             // Số tiền ngân sách
             OutlinedTextField(
-                value          = uiState.currentAmountLimit,
-                onValueChange  = { onEvent(BudgetManualEvent.OnAmountChange(it)) },
-                label          = { Text("Số tiền ngân sách") },
-                singleLine     = true,
-                shape          = RoundedCornerShape(12.dp),
+                value = uiState.currentAmountLimit,
+                onValueChange = { onEvent(BudgetManualEvent.OnAmountChange(it)) },
+                label = { Text("Số tiền ngân sách") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon  = { Text("₫", modifier = Modifier.padding(end = 12.dp)) },
-                modifier       = Modifier.fillMaxWidth(),
+                trailingIcon = { Text("₫", modifier = Modifier.padding(end = 12.dp)) },
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
-                text  = "Danh mục",
+                text = "Danh mục",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             CategorySelector(
                 selectedId = uiState.categoryId,
-                onSelect = {
-                    onEvent(BudgetManualEvent.OnCategorySelected(it))
-                },
                 onEvent = onEvent
             )
 
-            uiState.error?.let { error ->
-                Snackbar(
-                    action = {
-                        Text(
-                            "OK",
-                            modifier = Modifier.clickable {
-                                onEvent(BudgetManualEvent.DismissError)
-                            }
+            if (uiState.showCategorySheet) {
+                SelectionBottomSheet(
+                    title = "Danh mục",
+                    options = listOf(
+                        SelectionOption(
+                            title = "Ăn uống",
+                            value = 1L,
+                            image = Icons.Default.Fastfood
+                        ),
+                        SelectionOption(
+                            title = "Mua sắm",
+                            value = 2L,
+                            image = Icons.Default.ShoppingCart
+                        ),
+                        SelectionOption(
+                            title = "Nhà cửa",
+                            value = 3L,
+                            image = Icons.Default.Home
+                        ),
+                        SelectionOption(
+                            title = "Bảo trì xe",
+                            value = 4L,
+                            image = Icons.Default.CarRepair
                         )
+                    ),
+                    selected = uiState.categoryId,
+                    layout = SelectionLayout.GRID,
+                    onSelected = {
+                        onEvent(BudgetManualEvent.OnCategorySelected(it))
+                    },
+                    onDismiss = {
+                        onEvent(BudgetManualEvent.DismissCategorySheet)
                     }
-                ) {
-                    Text(error)
-                }
+                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             MonthYearSelector(
                 month = uiState.month,
@@ -204,8 +228,34 @@ private fun BudgetManualContent(
                 month = uiState.month,
                 year = uiState.year,
                 isEdit = uiState.isEditMode,
-                amountPreview = uiState.currentAmountLimit
+                amountPreview = uiState.currentAmountLimit,
+                categoryName =
+                    when (uiState.categoryId) {
+                        1L -> "Ăn uống"
+                        2L -> "Mua sắm"
+                        3L -> "Nhà cửa"
+                        4L -> "Bảo trì xe"
+                        else -> "Chưa chọn"
+                    }
             )
+        }
+
+        uiState.error?.let { error ->
+            Snackbar(
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                action = {
+                    Text(
+                        "OK",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            onEvent(BudgetManualEvent.DismissError)
+                        }
+                    )
+                }
+            ) {
+                Text(error)
+            }
         }
 
         // ── Nút Tiếp tục ──
@@ -216,7 +266,7 @@ private fun BudgetManualContent(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp)
                 .height(52.dp),
-            shape  = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF4DD0C4)
             )
@@ -224,13 +274,13 @@ private fun BudgetManualContent(
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color    = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
             } else {
                 Text(
-                    text     = if (uiState.isEditMode) "Lưu thay đổi" else "Tiếp tục",
-                    color    = Color.White,
+                    text = if (uiState.isEditMode) "Lưu thay đổi" else "Tiếp tục",
+                    color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -240,13 +290,19 @@ private fun BudgetManualContent(
 }
 
 
-
 @Composable
 private fun CategorySelector(
     selectedId: Long,
-    onSelect: (Long) -> Unit,
     onEvent: (BudgetManualEvent) -> Unit
 ) {
+
+    val (icon, title) = when (selectedId) {
+        1L -> Icons.Default.Fastfood to "Ăn uống"
+        2L -> Icons.Default.ShoppingCart to "Mua sắm"
+        3L -> Icons.Default.Home to "Nhà cửa"
+        4L -> Icons.Default.CarRepair to "Bảo trì xe"
+        else -> null to ""
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         // Nếu chưa chọn
         if (selectedId <= 0L) {
@@ -261,10 +317,14 @@ private fun CategorySelector(
                     }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("＋ Thêm danh mục")
+                Text(
+                    "＋ Thêm danh mục",
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+
             }
         } else {
-            Box(
+            Row(
                 modifier = Modifier
                     .background(
                         MaterialTheme.colorScheme.primaryContainer,
@@ -273,9 +333,33 @@ private fun CategorySelector(
                     .clickable {
                         onEvent(BudgetManualEvent.CategoryClicked)
                     }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Danh mục #$selectedId")
+                icon?.let {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = title,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Text(
+                    "✕",
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.clickable {
+                        onEvent(BudgetManualEvent.ClearCategory)
+                    }
+                )
             }
         }
     }
@@ -308,8 +392,12 @@ private fun MonthYearSelector(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(monthExpanded) },
                 shape = RoundedCornerShape(12.dp),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier.fillMaxWidth()
-                    .menuAnchor()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        MenuAnchorType.PrimaryNotEditable,
+                        enabled = true
+                    )
             )
             ExposedDropdownMenu(
                 expanded = monthExpanded,
@@ -350,8 +438,12 @@ private fun MonthYearSelector(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(yearExpanded) },
                 shape = RoundedCornerShape(12.dp),
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier.fillMaxWidth()
-                    .menuAnchor()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        MenuAnchorType.PrimaryNotEditable,
+                        enabled = true
+                    )
             )
             ExposedDropdownMenu(
                 expanded = yearExpanded,
@@ -382,7 +474,8 @@ fun BudgetInfoCard(
     month: Int,
     year: Int,
     isEdit: Boolean,
-    amountPreview: String
+    amountPreview: String,
+    categoryName: String
 ) {
     Box(
         modifier = Modifier
@@ -424,7 +517,13 @@ fun BudgetInfoCard(
             Text(
                 text = "Ngân sách chi tiêu",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            )
+
+            Text(
+                text = "Danh mục: $categoryName",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
             // Row 3: amount preview

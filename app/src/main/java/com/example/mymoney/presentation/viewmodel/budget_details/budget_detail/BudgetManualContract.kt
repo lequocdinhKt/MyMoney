@@ -38,4 +38,6 @@ sealed interface BudgetManualEvent {
     data object CategoryClicked : BudgetManualEvent
     data object DismissCategorySheet : BudgetManualEvent
     data object DismissError : BudgetManualEvent
+
+    data object ClearCategory : BudgetManualEvent
 }

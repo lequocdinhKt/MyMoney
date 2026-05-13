@@ -75,10 +75,11 @@ class BudgetManualViewModel(
             is BudgetManualEvent.DeleteConfirm         -> deleteBudget()
             is BudgetManualEvent.DeleteClicked         -> _uiState.update { it.copy(showDeleteDialog = true) }
             is BudgetManualEvent.DeleteDismissed       -> _uiState.update { it.copy(showDeleteDialog = false) }
-            is BudgetManualEvent.OnCategorySelected    -> _uiState.update { it.copy(categoryId = event.categoryId) }
+            is BudgetManualEvent.OnCategorySelected    -> _uiState.update { it.copy(categoryId = event.categoryId, showCategorySheet = false) }
             is BudgetManualEvent.CategoryClicked       -> _uiState.update { it.copy(showCategorySheet = true) }
             is BudgetManualEvent.DismissCategorySheet  -> _uiState.update { it.copy(showCategorySheet = false) }
             is BudgetManualEvent.DismissError          -> _uiState.update { it.copy(error = null) }
+            is BudgetManualEvent.ClearCategory         -> _uiState.update { it.copy(categoryId = 0L) }
         }
     }
 

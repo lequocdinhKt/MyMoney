@@ -52,6 +52,7 @@ import com.example.mymoney.presentation.viewmodel.setting.setting.SettingItem
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
 import com.example.mymoney.ui.common.SelectionBottomSheet
+import com.example.mymoney.ui.common.SelectionLayout
 import com.example.mymoney.ui.common.SelectionOption
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
@@ -250,6 +251,7 @@ fun SettingContent(
                 SelectionOption("Theo hệ thống", ThemeMode.SYSTEM)
             ),
             selected = uiState.selectedTheme,
+            layout = SelectionLayout.LIST,
             onSelected = { onEvent(SettingEvent.ThemeSelected(it)) },
             onDismiss = { onEvent(SettingEvent.ThemeDismissed) }
         )
@@ -262,6 +264,7 @@ fun SettingContent(
                 SelectionOption("Việt Nam Đồng (VNĐ)", CurrencyMode.VND)
             ),
             selected = uiState.selectedCurrency,
+            layout = SelectionLayout.LIST,
             onSelected = {
                 onEvent(SettingEvent.CurrencySelected(it))
             },
@@ -278,6 +281,7 @@ fun SettingContent(
                 SelectionOption("1,000,000", NumberFormat.COMMA)
             ),
             selected = uiState.selectedNumberFormat,
+            layout = SelectionLayout.LIST,
             onSelected = {
                 onEvent(SettingEvent.NumberFormatSelected(it))
             },
