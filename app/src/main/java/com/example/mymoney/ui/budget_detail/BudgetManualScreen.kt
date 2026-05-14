@@ -17,15 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CarRepair
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,11 +58,14 @@ import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.B
 import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.mymoney.domain.model.CategoryModel
 import com.example.mymoney.ui.common.SelectionBottomSheet
 import com.example.mymoney.ui.common.SelectionLayout
 import com.example.mymoney.ui.common.SelectionOption
-
+import com.example.mymoney.ui.common.mapEmojiToDrawable
 
 /**
  * Màn hình Thiết lập ngân sách thủ công — dùng cho cả tạo mới và chỉnh sửa.
@@ -109,7 +109,7 @@ private fun BudgetManualContent(
     onEvent: (BudgetManualEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val isValid = uiState.categoryId > 0 && uiState.currentAmountLimit.isNotBlank()
+    val isValid = uiState.selectedCategory != null && uiState.currentAmountLimit.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -173,36 +173,21 @@ private fun BudgetManualContent(
             )
 
             CategorySelector(
-                selectedId = uiState.categoryId,
+                selectedCategory = uiState.selectedCategory,
                 onEvent = onEvent
             )
 
             if (uiState.showCategorySheet) {
                 SelectionBottomSheet(
                     title = "Danh mục",
-                    options = listOf(
+                    options = uiState.categories.map { category ->
                         SelectionOption(
-                            title = "Ăn uống",
-                            value = 1L,
-                            image = Icons.Default.Fastfood
-                        ),
-                        SelectionOption(
-                            title = "Mua sắm",
-                            value = 2L,
-                            image = Icons.Default.ShoppingCart
-                        ),
-                        SelectionOption(
-                            title = "Nhà cửa",
-                            value = 3L,
-                            image = Icons.Default.Home
-                        ),
-                        SelectionOption(
-                            title = "Bảo trì xe",
-                            value = 4L,
-                            image = Icons.Default.CarRepair
+                            title = category.name,
+                            value = category,
+                            image = mapEmojiToDrawable(category.icon)
                         )
-                    ),
-                    selected = uiState.categoryId,
+                    },
+                    selected = uiState.selectedCategory,
                     layout = SelectionLayout.GRID,
                     onSelected = {
                         onEvent(BudgetManualEvent.OnCategorySelected(it))
@@ -230,13 +215,7 @@ private fun BudgetManualContent(
                 isEdit = uiState.isEditMode,
                 amountPreview = uiState.currentAmountLimit,
                 categoryName =
-                    when (uiState.categoryId) {
-                        1L -> "Ăn uống"
-                        2L -> "Mua sắm"
-                        3L -> "Nhà cửa"
-                        4L -> "Bảo trì xe"
-                        else -> "Chưa chọn"
-                    }
+                    uiState.selectedCategory?.name ?: "Chưa chọn"
             )
         }
 
@@ -292,20 +271,15 @@ private fun BudgetManualContent(
 
 @Composable
 private fun CategorySelector(
-    selectedId: Long,
+    selectedCategory: CategoryModel?,
     onEvent: (BudgetManualEvent) -> Unit
 ) {
+    val icon = selectedCategory?.icon
+    val title = selectedCategory?.name ?: ""
 
-    val (icon, title) = when (selectedId) {
-        1L -> Icons.Default.Fastfood to "Ăn uống"
-        2L -> Icons.Default.ShoppingCart to "Mua sắm"
-        3L -> Icons.Default.Home to "Nhà cửa"
-        4L -> Icons.Default.CarRepair to "Bảo trì xe"
-        else -> null to ""
-    }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         // Nếu chưa chọn
-        if (selectedId <= 0L) {
+        if (selectedCategory == null) {
             Box(
                 modifier = Modifier
                     .background(
@@ -320,7 +294,7 @@ private fun CategorySelector(
                 Text(
                     "＋ Thêm danh mục",
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
+                )
 
             }
         } else {
@@ -337,13 +311,26 @@ private fun CategorySelector(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                icon?.let {
-                    Icon(
-                        imageVector = it,
-                        contentDescription = title,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(45.dp)
+                        .clip(CircleShape)
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    icon?.let {
+                        Icon(
+                            painter = painterResource(
+                                id = mapEmojiToDrawable(it)
+                            ),
+                            contentDescription = title,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                 }
 
                 Text(

@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.BudgetRepositoryImpl
-import com.example.mymoney.domain.repository.BudgetRepository
+import com.example.mymoney.data.repository.CategoryRepositoryImpl
 
 /**
  * Factory tạo [BudgetManualViewModel] với dependencies thủ công (không Hilt).
@@ -24,9 +24,11 @@ class BudgetManualViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(BudgetManualViewModel::class.java))
         val db   = AppDatabase.getInstance(context.applicationContext)
-        val repo = BudgetRepositoryImpl(db.budgetDao())
+        val budgetRepo = BudgetRepositoryImpl(db.budgetDao())
+        val categoryRepo = CategoryRepositoryImpl(db.categoryDao())
         return BudgetManualViewModel(
-            budgetRepository = repo,
+            budgetRepository = budgetRepo,
+            categoryRepository = categoryRepo,
             userId           = userId,
             budgetId         = budgetId
         ) as T

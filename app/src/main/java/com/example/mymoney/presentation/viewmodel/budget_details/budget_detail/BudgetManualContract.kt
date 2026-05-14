@@ -1,12 +1,16 @@
 package com.example.mymoney.presentation.viewmodel.budget_details.budget_detail
 
+import com.example.mymoney.domain.model.CategoryModel
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Contract: tập hợp State, Event cho BudgetManualScreen
 // ─────────────────────────────────────────────────────────────────────────────
 
 data class BudgetManualUiState(
     val id: Long = 0L,
-    val categoryId: Long = 0L,
+
+    val selectedCategory: CategoryModel? = null,
+    val categories: List<CategoryModel> = emptyList(),
 
     val originalAmountLimit: String = "", // giới hạn chi tiêu ban đầu khi mới tạo và sẽ được dùng để so sánh sau này
     val currentAmountLimit: String = "", // giới hạn chi tiêu sau khi chỉnh sửa
@@ -25,10 +29,9 @@ data class BudgetManualUiState(
     val isDeleted: Boolean = false
 )
 
-
 sealed interface BudgetManualEvent {
     data class OnAmountChange(val value: String) : BudgetManualEvent
-    data class OnCategorySelected(val categoryId: Long) : BudgetManualEvent
+    data class OnCategorySelected(val category: CategoryModel) : BudgetManualEvent
     data class OnMonthSelected(val month: Int) : BudgetManualEvent
     data class OnYearSelected(val year: Int) : BudgetManualEvent
     data object Save : BudgetManualEvent
@@ -38,6 +41,5 @@ sealed interface BudgetManualEvent {
     data object CategoryClicked : BudgetManualEvent
     data object DismissCategorySheet : BudgetManualEvent
     data object DismissError : BudgetManualEvent
-
     data object ClearCategory : BudgetManualEvent
 }

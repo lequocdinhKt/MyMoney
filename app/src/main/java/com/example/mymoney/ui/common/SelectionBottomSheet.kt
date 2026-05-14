@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,13 +31,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.filled.CarRepair
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 
 @Composable
 fun <T> SelectionBottomSheet (
     title: String,
     options: List<SelectionOption<T>>,
-    selected: T,
+    selected: T?,
     layout:  SelectionLayout,
     onSelected: (T) -> Unit,
     onDismiss: () -> Unit,
@@ -117,12 +114,6 @@ private fun <T> CategoryGridItem(
         else
             MaterialTheme.colorScheme.surfaceVariant
 
-    val contentColor =
-        if (selected)
-            MaterialTheme.colorScheme.primary
-        else
-            MaterialTheme.colorScheme.onSurfaceVariant
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
@@ -136,11 +127,11 @@ private fun <T> CategoryGridItem(
             contentAlignment = Alignment.Center
         ) {
 
-            option.image?.let {
+            option.image?.let { resId ->
                 Icon(
-                    imageVector = it,
+                    painter = painterResource(id = resId),
                     contentDescription = option.title,
-                    tint = contentColor,
+                    tint = Color.Unspecified,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -168,22 +159,17 @@ val sampleCategories = listOf(
     SelectionOption(
         title = "Ăn uống",
         value = 1,
-        image = Icons.Default.Fastfood
+        image = mapEmojiToDrawable("🍜")
     ),
     SelectionOption(
         title = "Mua sắm",
         value = 2,
-        image = Icons.Default.ShoppingCart
+        image = mapEmojiToDrawable("🛍")
     ),
     SelectionOption(
         title = "Nhà cửa",
         value = 3,
-        image = Icons.Default.Home
-    ),
-    SelectionOption(
-        title = "Bảo trì xe",
-        value = 4,
-        image = Icons.Default.CarRepair
+        image = mapEmojiToDrawable("🏠")
     )
 )
 

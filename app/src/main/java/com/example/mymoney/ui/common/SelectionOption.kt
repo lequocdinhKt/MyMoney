@@ -1,11 +1,9 @@
 package com.example.mymoney.ui.common
 
-import androidx.compose.ui.graphics.vector.ImageVector
-
 data class SelectionOption<T>(
     val title: String,
     val value: T,
-    val image: ImageVector? = null
+    val image: Int? = null
 )
 
 enum class SelectionLayout {

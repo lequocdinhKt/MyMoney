@@ -38,6 +38,7 @@ class CategoryRepositoryImpl(
             Seed("Ăn uống",   "expense", "🍜", "#FF6B6B"),
             Seed("Di chuyển", "expense", "🚗", "#4ECDC4"),
             Seed("Mua sắm",   "expense", "🛍", "#45B7D1"),
+            Seed("Nhà cửa",   "expense", "🏠", "#FF9800"),
             Seed("Giải trí",  "expense", "🎮", "#96CEB4"),
             Seed("Sức khỏe",  "expense", "💊", "#FFEAA7"),
             Seed("Giáo dục",  "expense", "📚", "#DDA0DD"),

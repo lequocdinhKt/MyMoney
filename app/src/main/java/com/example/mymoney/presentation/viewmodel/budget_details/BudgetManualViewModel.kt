@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.domain.model.BudgetModel
 import com.example.mymoney.domain.repository.BudgetRepository
+import com.example.mymoney.domain.repository.CategoryRepository
 import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualEvent
 import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import java.time.LocalDate
 
 class BudgetManualViewModel(
     private val budgetRepository: BudgetRepository,
+    private val categoryRepository: CategoryRepository,
     private val userId: String,
     private val budgetId: Long? // null tạo mới
 ) : ViewModel() {
@@ -30,11 +32,24 @@ class BudgetManualViewModel(
     val uiState: StateFlow<BudgetManualUiState> = _uiState.asStateFlow()
 
     init {
-        if (budgetId != null) {
-            loadBudget(budgetId)
-        } else {
-            val now = LocalDate.now()
-            _uiState.update { it.copy(month = now.monthValue, year = now.year) }
+        viewModelScope.launch {
+
+            categoryRepository.seedDefaultCategories(userId)
+
+            observeCategories()
+
+            if (budgetId != null) {
+                loadBudget(budgetId)
+            } else {
+                val now = LocalDate.now()
+
+                _uiState.update {
+                    it.copy(
+                        month = now.monthValue,
+                        year = now.year
+                    )
+                }
+            }
         }
     }
 
@@ -47,7 +62,7 @@ class BudgetManualViewModel(
                     _uiState.update {
                         it.copy(
                             id                   = budget.id,
-                            categoryId           = budget.categoryId,
+                            selectedCategory     = _uiState.value.categories.find { it.id == budget.categoryId },
                             currentAmountLimit   = budget.amountLimit.toString(),
                             originalAmountLimit  = budget.amountLimit.toString(),
                             month                = budget.month,
@@ -66,6 +81,19 @@ class BudgetManualViewModel(
         }
     }
 
+    private fun observeCategories() {
+        viewModelScope.launch {
+            categoryRepository
+                .getCategoriesByType(userId, "expense")
+                .collect { categories ->
+
+                    _uiState.update {
+                        it.copy(categories = categories)
+                    }
+                }
+        }
+    }
+
     fun onEvent(event: BudgetManualEvent) {
         when (event) {
             is BudgetManualEvent.OnAmountChange        -> _uiState.update { it.copy(currentAmountLimit = event.value, error = null) }
@@ -75,17 +103,17 @@ class BudgetManualViewModel(
             is BudgetManualEvent.DeleteConfirm         -> deleteBudget()
             is BudgetManualEvent.DeleteClicked         -> _uiState.update { it.copy(showDeleteDialog = true) }
             is BudgetManualEvent.DeleteDismissed       -> _uiState.update { it.copy(showDeleteDialog = false) }
-            is BudgetManualEvent.OnCategorySelected    -> _uiState.update { it.copy(categoryId = event.categoryId, showCategorySheet = false) }
+            is BudgetManualEvent.OnCategorySelected    -> _uiState.update { it.copy(selectedCategory = event.category, showCategorySheet = false) }
             is BudgetManualEvent.CategoryClicked       -> _uiState.update { it.copy(showCategorySheet = true) }
             is BudgetManualEvent.DismissCategorySheet  -> _uiState.update { it.copy(showCategorySheet = false) }
             is BudgetManualEvent.DismissError          -> _uiState.update { it.copy(error = null) }
-            is BudgetManualEvent.ClearCategory         -> _uiState.update { it.copy(categoryId = 0L) }
+            is BudgetManualEvent.ClearCategory         -> _uiState.update { it.copy(selectedCategory = null) }
         }
     }
 
     private fun saveBudget() {
         val state = _uiState.value
-        if (state.categoryId <= 0L) {
+        if (state.selectedCategory == null) {
             _uiState.update { it.copy(error = "Vui lòng chọn danh mục") }
             return
         }
@@ -107,7 +135,7 @@ class BudgetManualViewModel(
                 val budget = BudgetModel(
                     id          = state.id,
                     userId      = userId,
-                    categoryId  = state.categoryId,
+                    categoryId  = state.selectedCategory.id,
                     amountLimit = amountLimit,
                     month       = state.month,
                     year        = state.year,
