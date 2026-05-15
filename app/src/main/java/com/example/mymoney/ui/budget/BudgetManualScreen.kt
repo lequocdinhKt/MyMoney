@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.mymoney.ui.budget_detail
+package com.example.mymoney.ui.budget
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,10 +52,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.presentation.viewmodel.budget_details.BudgetManualViewModel
-import com.example.mymoney.presentation.viewmodel.budget_details.BudgetManualViewModelFactory
-import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualEvent
-import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualUiState
+import com.example.mymoney.presentation.viewmodel.budget.BudgetManualViewModel
+import com.example.mymoney.presentation.viewmodel.budget.BudgetManualViewModelFactory
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualEvent
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
@@ -468,7 +468,7 @@ fun BudgetInfoCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(20.dp)
             )
             .padding(16.dp)
@@ -484,16 +484,17 @@ fun BudgetInfoCard(
                     text = "Tháng $month/$year",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
 
                 Text(
                     text = if (isEdit) "EDIT" else "CREATE",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.onPrimary,
                             RoundedCornerShape(8.dp)
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -504,13 +505,13 @@ fun BudgetInfoCard(
             Text(
                 text = "Ngân sách chi tiêu",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
             )
 
             Text(
                 text = "Danh mục: $categoryName",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimary
             )
 
             // Row 3: amount preview
@@ -518,7 +519,7 @@ fun BudgetInfoCard(
                 text = amountPreview.ifBlank { "0 đ" },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }

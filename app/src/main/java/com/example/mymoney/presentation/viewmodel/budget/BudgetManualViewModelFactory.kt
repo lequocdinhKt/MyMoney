@@ -1,4 +1,4 @@
-package com.example.mymoney.presentation.viewmodel.budget_details
+package com.example.mymoney.presentation.viewmodel.budget
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -29,8 +29,8 @@ class BudgetManualViewModelFactory(
         return BudgetManualViewModel(
             budgetRepository = budgetRepo,
             categoryRepository = categoryRepo,
-            userId           = userId,
-            budgetId         = budgetId
+            userId = userId,
+            budgetId = budgetId
         ) as T
     }
 }

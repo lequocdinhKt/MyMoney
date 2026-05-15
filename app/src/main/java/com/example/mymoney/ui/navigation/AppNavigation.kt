@@ -26,7 +26,7 @@ import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import com.example.mymoney.ui.budget_detail.BudgetManualScreen
+import com.example.mymoney.ui.budget.BudgetManualScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -122,9 +122,6 @@ composable(route = Screen.Main.route) {
         onNavigateToBudgetManual = { budgetId ->
             navController.navigate(Screen.BudgetManual.createRoute(userId, budgetId))
         },
-//        onNavigateToBudgetAI = {
-//            navController.navigate(Screen.BudgetAI.createRoute(userId))
-//        },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
             navController.navigate("search")
@@ -265,7 +262,5 @@ composable(route = Screen.Main.route) {
                 }
             )
         }
-
-
     }
 }

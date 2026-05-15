@@ -17,8 +17,4 @@ sealed interface BudgetEvent {
     data class SaveBudget(val budget: BudgetModel) : BudgetEvent
     data class DeleteBudget(val id: Long) : BudgetEvent
     data class LoadMonth(val month: Int, val year: Int) : BudgetEvent
-
-
-    data object AddBudgetClicked : BudgetEvent
-    data object AddBudgetDismissed : BudgetEvent
 }

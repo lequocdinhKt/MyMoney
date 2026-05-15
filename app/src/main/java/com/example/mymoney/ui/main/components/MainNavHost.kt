@@ -37,7 +37,6 @@ fun MainNavHost(
     onSelectedWalletIdChanged: (walletId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onNavigateToBudgetManual: () -> Unit = {},
-//    onNavigateToBudgetAI: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -60,8 +59,7 @@ fun MainNavHost(
         composable(BottomTab.Budget.route) { 
             BudgetScreen(
                 userId = userId,
-                onNavigateToBudgetManual = onNavigateToBudgetManual,
-//                onNavigateToBudgetAI = onNavigateToBudgetAI
+                onNavigateToBudgetManual = onNavigateToBudgetManual
             )
         }
         composable(BottomTab.Saving.route) { SavingScreen() }

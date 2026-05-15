@@ -1,12 +1,12 @@
-package com.example.mymoney.presentation.viewmodel.budget_details
+package com.example.mymoney.presentation.viewmodel.budget
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.domain.model.BudgetModel
 import com.example.mymoney.domain.repository.BudgetRepository
 import com.example.mymoney.domain.repository.CategoryRepository
-import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualEvent
-import com.example.mymoney.presentation.viewmodel.budget_details.budget_detail.BudgetManualUiState
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualEvent
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -133,14 +133,14 @@ class BudgetManualViewModel(
                 val now = System.currentTimeMillis()
 
                 val budget = BudgetModel(
-                    id          = state.id,
-                    userId      = userId,
-                    categoryId  = state.selectedCategory.id,
+                    id = state.id,
+                    userId = userId,
+                    categoryId = state.selectedCategory.id,
                     amountLimit = amountLimit,
-                    month       = state.month,
-                    year        = state.year,
-                    createdAt   = if (state.isEditMode) state.createdAt else now,
-                    updatedAt   = now,
+                    month = state.month,
+                    year = state.year,
+                    createdAt = if (state.isEditMode) state.createdAt else now,
+                    updatedAt = now,
                 )
 
                 if(state.isEditMode) {

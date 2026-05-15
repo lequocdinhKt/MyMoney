@@ -56,7 +56,6 @@ fun MainScreen(
     onNavigateToAddWallet: () -> Unit = {},
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
-//    onNavigateToBudgetAI: () -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
     onSignOut: () -> Unit = {}
@@ -158,11 +157,9 @@ fun MainScreen(
                 onNavigateToEditWallet    = onNavigateToEditWallet,
                 onSelectedWalletIdChanged = { walletId -> selectedWalletId = walletId },
                 onWalletColorChanged      = onWalletColorChanged,
-                onNavigateToBudgetManual  = { onNavigateToBudgetManual(-1L) },
-//                onNavigateToBudgetAI      = onNavigateToBudgetAI
+                onNavigateToBudgetManual  = { onNavigateToBudgetManual(-1L) }
             )
         }
-
 
         // Layer 2 + Layer 3 nằm trong MainDrawerOverlay
         MainDrawerOverlay(

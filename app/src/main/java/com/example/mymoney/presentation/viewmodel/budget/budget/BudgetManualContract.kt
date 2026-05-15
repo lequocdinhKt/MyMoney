@@ -1,4 +1,4 @@
-package com.example.mymoney.presentation.viewmodel.budget_details.budget_detail
+package com.example.mymoney.presentation.viewmodel.budget.budget
 
 import com.example.mymoney.domain.model.CategoryModel
 
