@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,13 +55,15 @@ fun BudgetScreen(
 @Composable
 private fun BudgetContent(
     uiState: BudgetUiState,
-    onNavigateToBudgetManual: () -> Unit = {}
+    onNavigateToBudgetManual: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        EmptyStateComposable("Hiện tại chưa có ngân sách nào được tạo.\n" +
-                "Bắt đầu thêm ngân sách của bạn ngay bây giờ")
+        EmptyStateComposable(
+            "Hiện tại chưa có ngân sách nào được tạo.\n" +
+                    "Bắt đầu thêm ngân sách của bạn ngay bây giờ"
+        )
 
         // FAB
         Column(
@@ -81,13 +82,7 @@ private fun BudgetContent(
                 },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(
-                    imageVector = if (uiState.showAddBudget)
-                        Icons.Default.Close
-                    else
-                        Icons.Default.Add,
-                    contentDescription = null
-                )
+                Icon(Icons.Default.Add, contentDescription = null )
                 Text(
                     text = "Thêm",
                     style = MaterialTheme.typography.titleMedium
