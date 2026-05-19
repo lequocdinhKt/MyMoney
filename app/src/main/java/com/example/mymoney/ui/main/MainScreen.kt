@@ -58,6 +58,7 @@ fun MainScreen(
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -165,6 +166,7 @@ fun MainScreen(
         MainDrawerOverlay(
             isOpen = isDrawerOpen,
             onClose = { isDrawerOpen = false },
+            onNavigateToProfile = onNavigateToProfile,
             onSignOut = onSignOut
         )
     }

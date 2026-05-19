@@ -27,6 +27,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.example.mymoney.ui.budget.BudgetManualScreen
+import com.example.mymoney.ui.profile.ProfileScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -125,6 +126,9 @@ composable(route = Screen.Main.route) {
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
             navController.navigate("search")
+        },
+        onNavigateToProfile = {
+            navController.navigate(Screen.Profile.route)
         },
         onSignOut = {
             navController.navigate(Screen.SignIn.route) {
@@ -258,6 +262,18 @@ composable(route = Screen.Main.route) {
                 onNavigateBack = {
                     if (navController.currentBackStackEntry?.destination?.route == Screen.BudgetManual.route) {
                         navController.popBackStack()
+                    }
+                }
+            )
+        }
+
+        // ── Màn hình thay đổi thông tin người dùng ──
+        composable(route = Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSignIn = {
+                    navController.navigate(Screen.SignIn.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

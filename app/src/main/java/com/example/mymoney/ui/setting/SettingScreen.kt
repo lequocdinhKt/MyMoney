@@ -6,10 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -58,11 +57,13 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 
 /** * Màn hình Cài đặt.
  * * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
+ * * Màn hình Cài đặt hiển thị trong Navigation Drawer.
  * */
 
 @Composable
 fun SettingScreen(
     onItemClick: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     onSignOut: () -> Unit = {},
     viewModel: SettingViewModel = viewModel(
         factory = SettingViewModel.factory(LocalContext.current)
@@ -86,6 +87,10 @@ fun SettingScreen(
         onEvent  = viewModel::onEvent,
         onItemClick = { route ->
             when (route) {
+                "account" -> {
+                    onItemClick() // Đóng drawer
+                    onNavigateToProfile()
+                }
                 "logout" -> viewModel.onEvent(SettingEvent.SignOut)
                 "backup" -> viewModel.onEvent(SettingEvent.BackupToSupabaseClicked)
                 "theme"  -> viewModel.onEvent(SettingEvent.ThemeClicked)
@@ -142,17 +147,16 @@ fun SettingContent(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text  = if (uiState.username.isNotBlank()) uiState.username else "...",
+                            text  = if (uiState.username.isNotBlank()) uiState.username else "Chưa đăng nhập",
                             color = MaterialTheme.colorScheme.onBackground,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
 
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
 
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -303,6 +307,7 @@ fun SettingNavigationItem(
             .clickable { onItemClick() }
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text  = item.title,

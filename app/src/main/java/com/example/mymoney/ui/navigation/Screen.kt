@@ -53,9 +53,8 @@ sealed class Screen(val route: String) {
             "budget_manual/$userId/$budgetId"
     }
 
-//    data object BudgetAI : Screen("budget_ai/{userId}") {
-//        fun createRoute(userId: String) = "budget_ai/$userId"
-//    }
+    // ── Màn hình hồ sơ người dùng ──
+    data object Profile : Screen("profile")
 }
 
 /**

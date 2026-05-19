@@ -4,6 +4,8 @@ import com.example.mymoney.data.remote.SupabaseClient
 import com.example.mymoney.domain.repository.AuthRepository
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 
 /**
  * Implementation của [AuthRepository] — thuộc Data layer.
@@ -56,9 +58,9 @@ class AuthRepositoryImpl : AuthRepository {
         supabase.auth.signUpWith(Email) {
             this.email = email
             this.password = password
-            this.data = kotlinx.serialization.json.buildJsonObject {
-                put("username", kotlinx.serialization.json.JsonPrimitive(username))
-                put("display_name", kotlinx.serialization.json.JsonPrimitive(username))
+            this.data = buildJsonObject {
+                put("username", JsonPrimitive(username))
+                put("display_name", JsonPrimitive(username))
             }
         }
 
@@ -107,5 +109,54 @@ class AuthRepositoryImpl : AuthRepository {
         } catch (e: Exception) {
             null
         }
+    }
+
+    // ── Update Username ──
+
+    override suspend fun updateUsername(newUsername: String) {
+        supabase.auth.updateUser {
+            data = buildJsonObject {
+                put("username", JsonPrimitive(newUsername))
+                put("display_name", JsonPrimitive(newUsername))
+            }
+        }
+    }
+
+    // ── Update User Password ──
+
+    override suspend fun updatePassword(newPassword: String) {
+        supabase.auth.updateUser {
+            password = newPassword
+        }
+    }
+
+    override suspend fun deleteAccount() {
+        /**
+         * Supabase GoTrue client thường KHÔNG hỗ trợ xóa trực tiếp user hiện tại
+         * theo cách thông thường nếu không có quyền admin.
+         *
+         * Tuy nhiên, một số phiên bản hoặc cấu hình đặc biệt có thể cho phép,
+         * hoặc chúng ta cần dùng RPC / Edge Function.
+         *
+         * Với Supabase tiêu chuẩn, việc xóa user thường được thực hiện thông qua:
+         * - Edge Function
+         * - hoặc xóa trực tiếp trong database nếu quyền cho phép.
+         *
+         * Nhưng ở đây người dùng chỉ cần UI và flow xử lý.
+         * Vì vậy tạm thời sẽ để placeholder hoặc throw exception
+         * nếu SDK không hỗ trợ trực tiếp.
+         *
+         * Phần lớn mobile SDK không cho phép user tự xóa tài khoản vì lý do bảo mật.
+         *
+         * Có thể implement tạm:
+         * - sign out
+         * - xóa dữ liệu local
+         * nếu chưa có chức năng xóa account thật sự.
+         *
+         * Thực tế Supabase thường KHÔNG có hàm `deleteUser` cho chính user hiện tại trong mobile SDK.
+         */
+
+        // Tạm thời ném ra lỗi (throw) để báo rằng phần này cần một trình triển khai cụ thể (ví dụ: Edge Function).
+        throw UnsupportedOperationException("Xóa tài khoản yêu cầu cấu hình đặc biệt hoặc Edge Function.")
     }
 }

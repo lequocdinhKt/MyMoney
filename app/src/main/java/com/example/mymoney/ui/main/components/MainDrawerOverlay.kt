@@ -57,6 +57,7 @@ private const val MAX_BLUR_RADIUS = 18f
 fun MainDrawerOverlay(
     isOpen: Boolean,
     onClose: () -> Unit,
+    onNavigateToProfile: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -125,6 +126,7 @@ fun MainDrawerOverlay(
             SettingScreen(
                 onItemClick = onClose,
                 onSignOut = onSignOut,
+                onNavigateToProfile = onNavigateToProfile,
                 viewModel = settingViewModel
             )
         }
