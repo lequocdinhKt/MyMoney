@@ -200,7 +200,15 @@ fun ProfileContent(
                         onClick = { onEvent(ProfileEvent.UpdateUsername(uiState.newUsername)) },
                         enabled = !uiState.isLoading && uiState.newUsername != uiState.username
                     ) {
-                        Text("Lưu tên")
+                        if(uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp,
+                                )
+                        } else {
+                            Text("Lưu tên")
+                        }
                     }
                 }
             }
@@ -279,7 +287,15 @@ fun ProfileContent(
                                 uiState.password.new.isNotEmpty() &&
                                 uiState.password.confirm.isNotEmpty()
                     ) {
-                        Text("Cập nhật mật khẩu")
+                        if(uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text("Cập nhật mật khẩu")
+                        }
                     }
                 }
             }
@@ -306,12 +322,6 @@ fun ProfileContent(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) {
                 Text("Xóa tài khoản")
-            }
-        }
-
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
             }
         }
     }
