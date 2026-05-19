@@ -38,30 +38,16 @@ class ProfileViewModel(
 
     fun onEvent(event: ProfileEvent) {
         when (event) {
-            is ProfileEvent.UpdateUsername                   -> updateUsername(event.newUsername)
-            is ProfileEvent.ToggleEditUsername ->
-                _uiState.update {
-                    it.copy(
-                        isEditingUsername = !it.isEditingUsername,
-                        newUsername = it.username
-                    )
-                }
-            is ProfileEvent.UsernameChanged ->
-                _uiState.update {
-                    it.copy(newUsername = event.value)
-                }
-            is ProfileEvent.UpdatePassword                   -> updatePassword(event.oldPassword, event.newPassword, event.confirmPassword)
-            is ProfileEvent.DeleteAccountConfirmed           -> deleteAccount()
-            is ProfileEvent.DeleteAccountClicked             -> _uiState.update { it.copy(showDeleteConfirmDialog = true) }
-            is ProfileEvent.DeleteAccountDismissed           -> _uiState.update { it.copy(showDeleteConfirmDialog = false) }
-            is ProfileEvent.DismissSnackbar                  -> _uiState.update { it.copy(error = null, successMessage = null) }
-            is ProfileEvent.OldPasswordChanged               -> _uiState.update { it.copy(oldPassword = event.value) }
-            is ProfileEvent.NewPasswordChanged               -> _uiState.update { it.copy(newPassword = event.value) }
-            is ProfileEvent.ConfirmPasswordChanged           -> _uiState.update { it.copy(confirmPassword = event.value) }
-            is ProfileEvent.ToggleExpanded                   -> _uiState.update { it.copy(isExpanded = !it.isExpanded) }
-            is ProfileEvent.ToggleOldPasswordVisibility      -> _uiState.update { it.copy(oldPasswordVisible = !it.oldPasswordVisible) }
-            is ProfileEvent.ToggleNewPasswordVisibility      -> _uiState.update { it.copy(newPasswordVisible = !it.newPasswordVisible) }
-            is ProfileEvent.ToggleConfirmPasswordVisibility  -> _uiState.update { it.copy(confirmPasswordVisible = !it.confirmPasswordVisible) }
+            is ProfileEvent.UpdateUsername          -> updateUsername(event.newUsername)
+            is ProfileEvent.ToggleEditUsername      ->_uiState.update {it.copy(isEditingUsername = !it.isEditingUsername,newUsername = it.username)}
+            is ProfileEvent.UsernameChanged         ->_uiState.update {it.copy(newUsername = event.value)}
+            is ProfileEvent.Password                -> handlePasswordEvent(event.event)
+            is ProfileEvent.UpdatePassword          -> updatePassword(_uiState.value.password)
+            is ProfileEvent.DeleteAccountConfirmed  -> deleteAccount()
+            is ProfileEvent.DeleteAccountClicked    -> _uiState.update { it.copy(showDeleteConfirmDialog = true) }
+            is ProfileEvent.DeleteAccountDismissed  -> _uiState.update { it.copy(showDeleteConfirmDialog = false) }
+            is ProfileEvent.DismissSnackbar         -> _uiState.update { it.copy(error = null, successMessage = null) }
+            is ProfileEvent.ToggleExpanded          -> _uiState.update { it.copy(isExpanded = !it.isExpanded) }
         }
     }
 
@@ -88,7 +74,16 @@ class ProfileViewModel(
         }
     }
 
-    private fun updatePassword(oldPassword: String, newPassword: String, confirmPassword: String) {
+    private fun updatePassword(password: PasswordState) {
+        val oldPassword = password.old
+        val newPassword = password.new
+        val confirmPassword = password.confirm
+
+        if (oldPassword.isBlank()) {
+            _uiState.update { it.copy(error = "Vui lòng nhập mật khẩu cũ") }
+            return
+        }
+
         if (newPassword.length < 6) {
             _uiState.update { it.copy(error = "Mật khẩu mới phải từ 6 ký tự") }
             return
@@ -97,7 +92,7 @@ class ProfileViewModel(
             _uiState.update { it.copy(error = "Mật khẩu xác nhận không khớp") }
             return
         }
-        
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
@@ -114,9 +109,22 @@ class ProfileViewModel(
                 settingPreferences.clearUserId()
                 settingPreferences.clearUsername()
                 _navEvent.emit(ProfileNavEvent.NavigateToSignIn)
-                _uiState.update { it.copy(oldPassword = "", newPassword = "", confirmPassword = "") }
+                _uiState.update { it.copy(password = PasswordState(), isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Lỗi: ${e.message}", isLoading = false) }
+            }
+        }
+    }
+
+    private fun handlePasswordEvent(event: PasswordEvent) {
+        _uiState.update { state ->
+            when (event) {
+                is PasswordEvent.OldChanged              -> state.copy(password = state.password.copy(old = event.value))
+                is PasswordEvent.NewChanged              -> state.copy(password = state.password.copy(new = event.value))
+                is PasswordEvent.ConfirmChanged          -> state.copy(password = state.password.copy(confirm = event.value))
+                is PasswordEvent.ToggleOldVisibility     -> state.copy(password = state.password.copy(oldVisible = !state.password.oldVisible))
+                is PasswordEvent.ToggleNewVisibility     -> state.copy(password = state.password.copy(newVisible = !state.password.newVisible))
+                is PasswordEvent.ToggleConfirmVisibility -> state.copy(password = state.password.copy(confirmVisible = !state.password.confirmVisible))
             }
         }
     }

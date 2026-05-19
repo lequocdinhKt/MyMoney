@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.repository.AuthRepositoryImpl
+import com.example.mymoney.presentation.viewmodel.profile.PasswordEvent
 import com.example.mymoney.presentation.viewmodel.profile.ProfileEvent
 import com.example.mymoney.presentation.viewmodel.profile.ProfileNavEvent
 import com.example.mymoney.presentation.viewmodel.profile.ProfileUiState
@@ -160,7 +161,8 @@ fun ProfileContent(
                 ) {
                     Text(
                         text = uiState.username,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
                     )
 
                     IconButton(
@@ -236,47 +238,46 @@ fun ProfileContent(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Nhập mật khẩu cũ
                     AuthTextField(
-                        value = uiState.oldPassword,
-                        onValueChange = { onEvent(ProfileEvent.OldPasswordChanged(it)) },
+                        value = uiState.password.old,
+                        onValueChange = { onEvent(ProfileEvent.Password(PasswordEvent.OldChanged(it))) },
                         placeholder = "Mật khẩu cũ",
                         leadingIcon = Icons.Default.Lock,
                         isPassword = true,
-                        isPasswordVisible = uiState.oldPasswordVisible,
-                        onTogglePasswordVisibility = { onEvent(ProfileEvent.ToggleOldPasswordVisibility) }
+                        isPasswordVisible = uiState.password.oldVisible,
+                        onTogglePasswordVisibility = { onEvent(ProfileEvent.Password(PasswordEvent.ToggleOldVisibility)) }
                     )
 
                     // Nhập mật khẩu mới
                     AuthTextField(
-                        value = uiState.newPassword,
-                        onValueChange = { onEvent(ProfileEvent.NewPasswordChanged(it)) },
+                        value = uiState.password.new,
+                        onValueChange = { onEvent(ProfileEvent.Password(PasswordEvent.NewChanged(it))) },
                         placeholder = "Mật khẩu mới",
                         leadingIcon = Icons.Default.Lock,
                         isPassword = true,
-                        isPasswordVisible = uiState.newPasswordVisible,
-                        onTogglePasswordVisibility = { onEvent(ProfileEvent.ToggleNewPasswordVisibility) }
+                        isPasswordVisible = uiState.password.newVisible,
+                        onTogglePasswordVisibility = { onEvent(ProfileEvent.Password(PasswordEvent.ToggleNewVisibility)) }
                     )
 
                     // Xác nhận lại mật khẩu
                     AuthTextField(
-                        value = uiState.confirmPassword,
-                        onValueChange = { onEvent(ProfileEvent.ConfirmPasswordChanged(it)) },
+                        value = uiState.password.confirm,
+                        onValueChange = { onEvent(ProfileEvent.Password(PasswordEvent.ConfirmChanged(it))) },
                         placeholder = "Nhập lại mật khẩu mới",
                         leadingIcon = Icons.Default.Lock,
                         isPassword = true,
-                        isPasswordVisible = uiState.confirmPasswordVisible,
-                        onTogglePasswordVisibility = { onEvent(ProfileEvent.ToggleConfirmPasswordVisibility) }
+                        isPasswordVisible = uiState.password.confirmVisible,
+                        onTogglePasswordVisibility = { onEvent(ProfileEvent.Password(PasswordEvent.ToggleConfirmVisibility)) }
                     )
 
 
                     Button(
                         onClick = {
-                            onEvent(ProfileEvent.UpdatePassword(
-                                uiState.oldPassword,
-                                uiState.newPassword,
-                                uiState.confirmPassword))
+                            onEvent(ProfileEvent.UpdatePassword)
                         },
                         modifier = Modifier.align(Alignment.End),
-                        enabled = !uiState.isLoading && uiState.newPassword.isNotEmpty() && uiState.confirmPassword.isNotEmpty()
+                        enabled = !uiState.isLoading &&
+                                uiState.password.new.isNotEmpty() &&
+                                uiState.password.confirm.isNotEmpty()
                     ) {
                         Text("Cập nhật mật khẩu")
                     }
