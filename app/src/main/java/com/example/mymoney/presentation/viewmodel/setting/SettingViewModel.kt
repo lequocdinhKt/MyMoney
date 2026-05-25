@@ -38,8 +38,8 @@ private data class SettingExtrasState(
     val showThemeSheet: Boolean = false,
     val selectedCurrency: CurrencyMode = CurrencyMode.VND,
     val showCurrencySheet: Boolean = false,
-    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
-    val showNumberFormat: Boolean = false
+//    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
+//    val showNumberFormat: Boolean = false
 )
 
 /**
@@ -76,8 +76,8 @@ class SettingViewModel(
                 showThemeSheet             = extras.showThemeSheet,
                 selectedCurrency           = extras.selectedCurrency,
                 showCurrencySheet          = extras.showCurrencySheet,
-                selectedNumberFormat       = extras.selectedNumberFormat,
-                showNumberFormat           = extras.showNumberFormat
+//                selectedNumberFormat       = extras.selectedNumberFormat,
+//                showNumberFormat           = extras.showNumberFormat
             )
         }.stateIn(
             scope        = viewModelScope,
@@ -147,15 +147,15 @@ class SettingViewModel(
                 _extrasState.update { it.copy(showCurrencySheet = false) }
             }
             // ── Number Format ──
-            is SettingEvent.NumberFormatClicked -> {
-                _extrasState.update { it.copy(showNumberFormat = true) }
-            }
-            is SettingEvent.NumberFormatSelected -> {
-                _extrasState.update { it.copy(selectedNumberFormat = event.numberformat, showNumberFormat = false) }
-            }
-            is SettingEvent.NumberFormatDismissed -> {
-                _extrasState.update { it.copy(showNumberFormat = false) }
-            }
+//            is SettingEvent.NumberFormatClicked -> {
+//                _extrasState.update { it.copy(showNumberFormat = true) }
+//            }
+//            is SettingEvent.NumberFormatSelected -> {
+//                _extrasState.update { it.copy(selectedNumberFormat = event.numberformat, showNumberFormat = false) }
+//            }
+//            is SettingEvent.NumberFormatDismissed -> {
+//                _extrasState.update { it.copy(showNumberFormat = false) }
+//            }
         }
     }
 

@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
@@ -68,12 +69,14 @@ fun MainScreen(
         val db = AppDatabase.getInstance(context)
         val transactionRepo = TransactionRepositoryImpl(db.transactionDao())
         val walletRepo      = WalletRepositoryImpl(db.walletDao())
+        val settingPrefs    = SettingPreferences(context)
         HomeViewModelFactory(
             getTransactionsByPeriod = GetTransactionsByPeriodUseCase(transactionRepo),
             getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
             getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
             walletRepository        = walletRepo,
             transactionRepository   = transactionRepo,
+            settingPreferences      = settingPrefs,
             userId                  = userId
         )
     }

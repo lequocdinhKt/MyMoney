@@ -95,7 +95,7 @@ fun SettingScreen(
                 "backup" -> viewModel.onEvent(SettingEvent.BackupToSupabaseClicked)
                 "theme"  -> viewModel.onEvent(SettingEvent.ThemeClicked)
                 "currency" -> viewModel.onEvent(SettingEvent.CurrencyClicked)
-                "number_format" -> viewModel.onEvent(SettingEvent.NumberFormatClicked)
+//                "number_format" -> viewModel.onEvent(SettingEvent.NumberFormatClicked)
                 else     -> onItemClick()
             }
         }
@@ -278,22 +278,22 @@ fun SettingContent(
         )
     }
 
-    if (uiState.showNumberFormat) {
-        SelectionBottomSheet(
-            title = "Định dạng số",
-            options = listOf(
-                SelectionOption("1,000,000", NumberFormat.COMMA)
-            ),
-            selected = uiState.selectedNumberFormat,
-            layout = SelectionLayout.LIST,
-            onSelected = {
-                onEvent(SettingEvent.NumberFormatSelected(it))
-            },
-            onDismiss = {
-                onEvent(SettingEvent.NumberFormatDismissed)
-            }
-        )
-    }
+//    if (uiState.showNumberFormat) {
+//        SelectionBottomSheet(
+//            title = "Định dạng số",
+//            options = listOf(
+//                SelectionOption("1,000,000", NumberFormat.COMMA)
+//            ),
+//            selected = uiState.selectedNumberFormat,
+//            layout = SelectionLayout.LIST,
+//            onSelected = {
+//                onEvent(SettingEvent.NumberFormatSelected(it))
+//            },
+//            onDismiss = {
+//                onEvent(SettingEvent.NumberFormatDismissed)
+//            }
+//        )
+//    }
 }
 
 @Composable
@@ -350,9 +350,9 @@ private fun buildSettingItems(
         SettingItem.SettingNavigation("Giao diện",                 arrow, "theme"),
         SettingItem.SettingNavigation("Đơn vị tiền tệ",            arrow, "currency"),
         SettingItem.SettingToggle("Dấu phân cách hàng nghìn", isChecked = state.isThousandSeparatorEnabled),
-        if (state.isThousandSeparatorEnabled)
-            SettingItem.SettingNavigation("Dạng hiển thị số",      arrow, "number_format")
-        else null,
+//        if (state.isThousandSeparatorEnabled)
+//            SettingItem.SettingNavigation("Dạng hiển thị số",      arrow, "number_format")
+//        else null,
         SettingItem.SettingNavigation("Dữ liệu và sao lưu",        arrow, "backup"),
         SettingItem.SettingNavigation("Đăng xuất",                 arrow, "logout")
     )

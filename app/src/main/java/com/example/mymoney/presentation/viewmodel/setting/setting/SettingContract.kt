@@ -16,8 +16,8 @@ data class SettingUiState(
     val showCurrencySheet: Boolean = false,
 
     // ── Number Format ──
-    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
-    val showNumberFormat: Boolean = false,
+//    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
+//    val showNumberFormat: Boolean = false,
 
     // ── Backup ──
     val isBackingUp: Boolean = false,           // đang upload → hiện loading
@@ -59,9 +59,9 @@ sealed interface SettingEvent {
     data object CurrencyDismissed : SettingEvent
 
     // ── Number Format ──
-    data object NumberFormatClicked : SettingEvent
-    data class NumberFormatSelected(val numberformat: NumberFormat) : SettingEvent
-    data object NumberFormatDismissed : SettingEvent
+//    data object NumberFormatClicked : SettingEvent
+//    data class NumberFormatSelected(val numberformat: NumberFormat) : SettingEvent
+//    data object NumberFormatDismissed : SettingEvent
 }
 
 sealed interface SettingNavEvent {

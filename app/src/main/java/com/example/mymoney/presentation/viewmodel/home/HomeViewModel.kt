@@ -3,6 +3,7 @@ package com.example.mymoney.presentation.viewmodel.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
@@ -33,6 +34,7 @@ class HomeViewModel(
     private val getTotalBalance: GetTotalBalanceUseCase,
     private val walletRepository: WalletRepository,
     private val transactionRepository: TransactionRepository,
+    private val settingPreferences: SettingPreferences,
     private val userId: String
 ) : ViewModel() {
 
@@ -64,9 +66,9 @@ class HomeViewModel(
         }
 
         // Combine params với wallets → flatMapLatest query giao dịch
-        combine(paramsFlow, walletsFlow) { params, wallets ->
-            Pair(params, wallets)
-        }.flatMapLatest { (params, walletModels) ->
+        combine(paramsFlow, walletsFlow, settingPreferences.isThousandSeparatorEnabled) { params, wallets, useGrouping ->
+            Triple(params, wallets, useGrouping)
+        }.flatMapLatest { (params, walletModels, useGrouping) ->
             val (period, overrideId, customRange) = params
             val selectedId = overrideId ?: walletModels.firstOrNull()?.id ?: 0L
 
@@ -94,13 +96,13 @@ class HomeViewModel(
                         title           = model.note.ifBlank { model.category },
                         dateTime        = formatTimestamp(model.timestamp),
                         amount          = amountVal.toLong(),
-                        formattedAmount = MoneyFormatter.formatWithSign(amountVal)
+                        formattedAmount = MoneyFormatter.formatWithSign(amountVal, useGrouping)
                     )
                 }
 
                 val walletItems = walletModels.map { w ->
                     WalletItem(id = w.id, name = w.name,
-                        formattedBalance = MoneyFormatter.formatBalance(w.balance), color = w.color)
+                        formattedBalance = MoneyFormatter.formatBalance(w.balance, useGrouping), color = w.color)
                 }
 
                 val selectedWallet = walletModels.find { it.id == selectedId }
@@ -108,22 +110,22 @@ class HomeViewModel(
                 HomeUiState(
                     isLoading         = false,
                     balance           = selectedWallet?.balance?.toLong() ?: 0L,
-                    formattedBalance  = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0),
+                    formattedBalance  = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0, useGrouping),
                     walletName        = selectedWallet?.name ?: "",
                     wallets           = walletItems,
                     selectedWalletId  = selectedId,
                     activeWalletColor = selectedWallet?.color ?: "#0088F0",
                     selectedPeriod    = period,
                     groupLabel        = label,
-                    totalIncome       = MoneyFormatter.format(income),
-                    totalExpense      = MoneyFormatter.format(expense),
-                    totalBalance      = MoneyFormatter.format(income - expense),
+                    totalIncome       = MoneyFormatter.format(income, useGrouping),
+                    totalExpense      = MoneyFormatter.format(expense, useGrouping),
+                    totalBalance      = MoneyFormatter.format(income - expense, useGrouping),
                     transactions      = items
                 )
             }
         }
-        .onEach { state -> _uiState.value = state }
-        .launchIn(viewModelScope)
+            .onEach { state -> _uiState.value = state }
+            .launchIn(viewModelScope)
     }
 
     fun onEvent(event: HomeEvent) {
