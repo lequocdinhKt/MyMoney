@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,9 +24,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mymoney.domain.model.BudgetModel
 import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModel
 import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModelFactory
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetEvent
 import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
+import com.example.mymoney.ui.budget.components.BudgetSection
 import com.example.mymoney.ui.components.EmptyStateComposable
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
@@ -35,7 +39,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun BudgetScreen(
     userId: String = "",
-    onNavigateToBudgetManual: () -> Unit = {}
+    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: BudgetViewModel = viewModel(
@@ -45,7 +49,8 @@ fun BudgetScreen(
 
     BudgetContent(
         uiState = uiState,
-        onNavigateToBudgetManual = onNavigateToBudgetManual
+        onNavigateToBudgetManual = onNavigateToBudgetManual,
+        onDeleteBudget = { id -> viewModel.onEvent(BudgetEvent.DeleteBudget(id)) }
     )
 }
 
@@ -55,15 +60,33 @@ fun BudgetScreen(
 @Composable
 private fun BudgetContent(
     uiState: BudgetUiState,
-    onNavigateToBudgetManual: () -> Unit = {},
+    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
+    onDeleteBudget: (budgetId: Long) -> Unit = {},
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        EmptyStateComposable(
-            "Hiện tại chưa có ngân sách nào được tạo.\n" +
-                    "Bắt đầu thêm ngân sách của bạn ngay bây giờ"
-        )
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            uiState.budgets.isEmpty() -> {
+                EmptyStateComposable(
+                    "Hiện tại chưa có ngân sách nào được tạo.\n" +
+                            "Bắt đầu thêm ngân sách của bạn ngay bây giờ"
+                )
+            }
+            else -> {
+                BudgetSection(
+                    budgets = uiState.budgets,
+                    selectedBudgetId = -1L,
+                    onSelectBudget = {},
+                    onDeleteClick = onDeleteBudget,
+                    onEditBudget = { id -> onNavigateToBudgetManual(id) },
+                    onReorderBudget = {}
+                )
+            }
+        }
 
         // FAB
         Column(
@@ -77,12 +100,10 @@ private fun BudgetContent(
 
             // FAB chính
             ExtendedFloatingActionButton(
-                onClick = {
-                    onNavigateToBudgetManual()
-                },
+                onClick = { onNavigateToBudgetManual(-1L) },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = null )
+                Icon(Icons.Default.Add, contentDescription = null)
                 Text(
                     text = "Thêm",
                     style = MaterialTheme.typography.titleMedium
@@ -106,10 +127,28 @@ private fun BudgetScreenLightPreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
+private fun BudgetScreenWithDataPreview() {
+    MyMoneyTheme(darkTheme = false) {
+        BudgetContent(
+            uiState = BudgetUiState(
+                isLoading = false,
+                budgets = listOf(
+                    BudgetModel(id = 1L, userId = "u1", categoryId = 1L, categoryName = "Ăn uống", amountLimit = 2000000.0, month = 5, year = 2026),
+                    BudgetModel(id = 2L, userId = "u1", categoryId = 2L, categoryName = "Di chuyển", amountLimit = 500000.0, month = 5, year = 2026),
+                )
+            ),
+            onNavigateToBudgetManual = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
 private fun BudgetScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
-        BudgetContent(uiState = BudgetUiState(),
-        onNavigateToBudgetManual = {}
+        BudgetContent(
+            uiState = BudgetUiState(),
+            onNavigateToBudgetManual = {}
         )
     }
 }

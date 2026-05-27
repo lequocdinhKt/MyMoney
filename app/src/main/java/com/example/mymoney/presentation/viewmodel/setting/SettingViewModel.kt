@@ -58,6 +58,15 @@ class SettingViewModel(
     private val _backupState = MutableStateFlow(BackupViewState())
     private val _extrasState = MutableStateFlow(SettingExtrasState())
 
+    init {
+        // Load numberFormat từ DataStore vào _extrasState khi ViewModel khởi động
+        viewModelScope.launch {
+            settingPreferences.numberFormat.collect { savedFormat ->
+                _extrasState.update { it.copy(selectedNumberFormat = savedFormat) }
+            }
+        }
+    }
+
     val uiState: StateFlow<SettingUiState> =
         combine(
             settingPreferences.isThousandSeparatorEnabled,

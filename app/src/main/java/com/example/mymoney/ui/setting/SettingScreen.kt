@@ -278,7 +278,9 @@ fun SettingContent(
         SelectionBottomSheet(
             title = "Định dạng số",
             options = listOf(
-                SelectionOption("1,000,000", NumberFormat.COMMA)
+                SelectionOption("1.000.000 (Việt Nam)", NumberFormat.DOT),
+                SelectionOption("1,000,000 (Tiếng Anh)", NumberFormat.COMMA),
+                SelectionOption("1 000 000 (Dấu cách)", NumberFormat.SPACE)
             ),
             selected = uiState.selectedNumberFormat,
             layout = SelectionLayout.LIST,

@@ -25,6 +25,7 @@ import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.main.components.CustomTopAppBar
@@ -73,7 +74,8 @@ fun MainScreen(
             getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
             walletRepository        = walletRepo,
             transactionRepository   = transactionRepo,
-            userId                  = userId
+            userId                  = userId,
+            settingPreferences      = SettingPreferences(context.applicationContext)
         )
     }
 
@@ -157,7 +159,7 @@ fun MainScreen(
                 onNavigateToEditWallet    = onNavigateToEditWallet,
                 onSelectedWalletIdChanged = { walletId -> selectedWalletId = walletId },
                 onWalletColorChanged      = onWalletColorChanged,
-                onNavigateToBudgetManual  = { onNavigateToBudgetManual(-1L) }
+                onNavigateToBudgetManual  = onNavigateToBudgetManual
             )
         }
 

@@ -8,6 +8,7 @@ import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.usecase.MoneyFormatter
 import com.example.mymoney.domain.usecase.PeriodRangeUtil
 import com.example.mymoney.presentation.viewmodel.home.home.HomeEvent
@@ -33,7 +34,8 @@ class HomeViewModel(
     private val getTotalBalance: GetTotalBalanceUseCase,
     private val walletRepository: WalletRepository,
     private val transactionRepository: TransactionRepository,
-    private val userId: String
+    private val userId: String,
+    private val settingPreferences: SettingPreferences
 ) : ViewModel() {
 
     private val TAG = "HomeViewModel"
@@ -63,11 +65,18 @@ class HomeViewModel(
             Triple(period, walletId, customRange)
         }
 
-        // Combine params với wallets → flatMapLatest query giao dịch
-        combine(paramsFlow, walletsFlow) { params, wallets ->
-            Pair(params, wallets)
-        }.flatMapLatest { (params, walletModels) ->
+        // Flow cấu hình format số
+        val formatFlow = combine(
+            settingPreferences.isThousandSeparatorEnabled,
+            settingPreferences.numberFormat
+        ) { useThousandSep, numFmt -> Pair(useThousandSep, numFmt) }
+
+        // Combine params + wallets + formatConfig → flatMapLatest query giao dịch
+        combine(paramsFlow, walletsFlow, formatFlow) { params, wallets, fmt ->
+            Triple(params, wallets, fmt)
+        }.flatMapLatest { (params, walletModels, fmt) ->
             val (period, overrideId, customRange) = params
+            val (useThousandSep, numFmt) = fmt
             val selectedId = overrideId ?: walletModels.firstOrNull()?.id ?: 0L
 
             // Tính khoảng thời gian: dùng customRange khi period == CUSTOM và đã có range
@@ -94,13 +103,13 @@ class HomeViewModel(
                         title           = model.note.ifBlank { model.category },
                         dateTime        = formatTimestamp(model.timestamp),
                         amount          = amountVal.toLong(),
-                        formattedAmount = MoneyFormatter.formatWithSign(amountVal)
+                        formattedAmount = MoneyFormatter.formatWithSign(amountVal, useThousandSep, numFmt)
                     )
                 }
 
                 val walletItems = walletModels.map { w ->
                     WalletItem(id = w.id, name = w.name,
-                        formattedBalance = MoneyFormatter.formatBalance(w.balance), color = w.color)
+                        formattedBalance = MoneyFormatter.formatBalance(w.balance, useThousandSep, numFmt), color = w.color)
                 }
 
                 val selectedWallet = walletModels.find { it.id == selectedId }
@@ -108,16 +117,16 @@ class HomeViewModel(
                 HomeUiState(
                     isLoading         = false,
                     balance           = selectedWallet?.balance?.toLong() ?: 0L,
-                    formattedBalance  = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0),
+                    formattedBalance  = MoneyFormatter.formatBalance(selectedWallet?.balance ?: 0.0, useThousandSep, numFmt),
                     walletName        = selectedWallet?.name ?: "",
                     wallets           = walletItems,
                     selectedWalletId  = selectedId,
                     activeWalletColor = selectedWallet?.color ?: "#0088F0",
                     selectedPeriod    = period,
                     groupLabel        = label,
-                    totalIncome       = MoneyFormatter.format(income),
-                    totalExpense      = MoneyFormatter.format(expense),
-                    totalBalance      = MoneyFormatter.format(income - expense),
+                    totalIncome       = MoneyFormatter.format(income, useThousandSep, numFmt),
+                    totalExpense      = MoneyFormatter.format(expense, useThousandSep, numFmt),
+                    totalBalance      = MoneyFormatter.format(income - expense, useThousandSep, numFmt),
                     transactions      = items
                 )
             }

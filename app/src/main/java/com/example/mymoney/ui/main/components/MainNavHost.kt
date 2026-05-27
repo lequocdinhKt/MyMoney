@@ -36,7 +36,7 @@ fun MainNavHost(
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onSelectedWalletIdChanged: (walletId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
-    onNavigateToBudgetManual: () -> Unit = {},
+    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
 ) {
     NavHost(
         navController = navController,

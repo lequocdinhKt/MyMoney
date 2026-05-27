@@ -39,6 +39,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mymoney.domain.model.BudgetModel
+import com.example.mymoney.domain.usecase.MoneyFormatter
+import com.example.mymoney.ui.common.LocalMoneyFormatConfig
 import androidx.compose.foundation.gestures.detectDragGestures
 import java.util.Collections
 
@@ -163,6 +165,7 @@ private fun BudgetCard(
         targetValue = if (isDragging) 1.03f else 1f,
         label = "budget_scale"
     )
+    val fmt = LocalMoneyFormatConfig.current
 
     Card(
         modifier = modifier
@@ -240,7 +243,7 @@ private fun BudgetCard(
             )
 
             Text(
-                text = "${budget.amountLimit} đ",
+                text = "${MoneyFormatter.format(budget.amountLimit, fmt.useThousandSep, fmt.numberFormat)} đ",
                 modifier = Modifier.padding(top = 12.dp),
                 style = MaterialTheme.typography.bodyLarge
             )

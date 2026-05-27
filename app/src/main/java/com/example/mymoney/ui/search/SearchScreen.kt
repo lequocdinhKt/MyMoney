@@ -47,6 +47,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Alignment
 import com.example.mymoney.presentation.viewmodel.search.SearchViewModelFactory
 import com.example.mymoney.ui.components.EmptyStateComposable
+import com.example.mymoney.ui.common.LocalMoneyFormatConfig
 
 /**
  * Màn hình Tìm kiếm.
@@ -176,6 +177,7 @@ private fun SearchContent(
 // UI Item
 @Composable
 private fun TransactionItem(tx: TransactionModel) {
+    val fmt = LocalMoneyFormatConfig.current
     Card (
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(4.dp)
@@ -212,7 +214,9 @@ private fun TransactionItem(tx: TransactionModel) {
 
             Text(
                 text = MoneyFormatter.formatWithSign(
-                    if (tx.type == "expense") -tx.amount else tx.amount
+                    if (tx.type == "expense") -tx.amount else tx.amount,
+                    fmt.useThousandSep,
+                    fmt.numberFormat
                 ),
                 color = if (tx.type == "expense")
                     MaterialTheme.colorScheme.error
