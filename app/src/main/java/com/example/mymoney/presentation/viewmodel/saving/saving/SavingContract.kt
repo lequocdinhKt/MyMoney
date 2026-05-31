@@ -1,18 +1,28 @@
 package com.example.mymoney.presentation.viewmodel.saving.saving
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Contract: tập hợp State, Event cho SavingScreen
-// ─────────────────────────────────────────────────────────────────────────────
+import com.example.mymoney.domain.model.SavingGoalModel
 
 /**
  * Trạng thái giao diện của màn hình Tiết kiệm.
- * Dùng data class bất biến – cập nhật bằng copy().
  */
 data class SavingUiState(
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val savingGoals: List<SavingGoalModel> = emptyList(),
+    val isShowCompletedEnabled: Boolean = true, // Có hiện mục tiêu đã hoàn thành ko - mặc định là có
+    val selectedType: SavingType = SavingType.ONE_TIME
 )
+
+enum class SavingType {
+    ONE_TIME,
+    RECURRING
+}
 
 /**
  * Sự kiện người dùng gửi từ SavingScreen lên ViewModel.
  */
-sealed interface SavingEvent
+sealed interface SavingEvent {
+    data class ToggleShowCompleted(val enabled: Boolean) : SavingEvent
+    data class SaveGoal(val goal: SavingGoalModel) : SavingEvent
+    data class DeleteGoal(val id: Long) : SavingEvent
+    data class SelectedType(val type: SavingType) : SavingEvent
+}

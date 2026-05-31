@@ -30,7 +30,8 @@ class SettingPreferences(private val context: Context) {
         val KEY_USER_ID                  = stringPreferencesKey("user_id")
         val KEY_USERNAME                 = stringPreferencesKey("username")
         val KEY_THOUSAND_SEPARATOR       = booleanPreferencesKey("thousand_separator_enabled")
-        val KEY_THEME_MODE               = stringPreferencesKey("THEME_MODE")
+        val KEY_THEME_MODE               = stringPreferencesKey("theme_mode")
+        val KEY_SHOW_COMPLETED           = booleanPreferencesKey("show_completed_enabled")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -61,6 +62,10 @@ class SettingPreferences(private val context: Context) {
             }
         }
 
+    /** Mặc định hiện mục tiêu đã hoàn thành */
+    val isShowCompletedEnabled: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[KEY_SHOW_COMPLETED] ?: true }
+
     // ── Write ──────────────────────────────────────────────────────────────────
 
     suspend fun saveOnboardingCompleted() {
@@ -90,6 +95,12 @@ class SettingPreferences(private val context: Context) {
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[KEY_THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun setShowCompletedEnabled(show_enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SHOW_COMPLETED] = show_enabled
         }
     }
 

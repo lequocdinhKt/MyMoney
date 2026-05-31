@@ -62,7 +62,9 @@ fun MainNavHost(
                 onNavigateToBudgetManual = onNavigateToBudgetManual
             )
         }
-        composable(BottomTab.Saving.route) { SavingScreen() }
+        composable(BottomTab.Saving.route) {
+            SavingScreen(userId = userId)
+        }
         composable(BottomTab.Other.route)  { OtherScreen() }
     }
 }
