@@ -14,8 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.presentation.viewmodel.saving.SavingViewModel
-import com.example.mymoney.presentation.viewmodel.saving.SavingViewModelFactory
+import com.example.mymoney.presentation.viewmodel.saving.saving.SavingViewModel
+import com.example.mymoney.presentation.viewmodel.saving.saving.SavingViewModelFactory
 import com.example.mymoney.presentation.viewmodel.saving.saving.SavingEvent
 import com.example.mymoney.presentation.viewmodel.saving.saving.SavingType
 import com.example.mymoney.presentation.viewmodel.saving.saving.SavingUiState
@@ -28,6 +28,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun SavingScreen(
     userId: String = "",
+    onNavigateToAddSavingForm: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: SavingViewModel = viewModel(
@@ -38,7 +39,8 @@ fun SavingScreen(
 
     SavingContent(
         uiState = uiState,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        onNavigateToAddSavingForm = onNavigateToAddSavingForm
     )
 }
 
@@ -46,7 +48,7 @@ fun SavingScreen(
 private fun SavingContent(
     uiState: SavingUiState,
     onEvent: (SavingEvent) -> Unit,
-    modifier: Modifier = Modifier
+    onNavigateToAddSavingForm: () -> Unit = {},
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -139,7 +141,7 @@ private fun SavingContent(
             Spacer(modifier = Modifier.height(12.dp))
 
             ExtendedFloatingActionButton(
-                onClick = { /* TODO */ },
+                onClick = { onNavigateToAddSavingForm() },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
@@ -160,7 +162,8 @@ private fun SavingScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         SavingContent(
             uiState = SavingUiState(),
-            onEvent = {}
+            onEvent = {},
+            onNavigateToAddSavingForm = {}
         )
     }
 }

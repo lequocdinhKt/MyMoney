@@ -1,4 +1,4 @@
-package com.example.mymoney.presentation.viewmodel.budget
+package com.example.mymoney.presentation.viewmodel.budget.budget
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

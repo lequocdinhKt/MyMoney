@@ -26,8 +26,9 @@ import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import com.example.mymoney.ui.budget.BudgetManualScreen
+import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.profile.ProfileScreen
+import com.example.mymoney.ui.saving.SavingFormScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -120,8 +121,12 @@ composable(route = Screen.Main.route) {
         onNavigateToEditWallet = { walletId ->
             navController.navigate(Screen.WalletSetup.createRoute(userId, walletId))
         },
-        onNavigateToBudgetManual = { budgetId ->
-            navController.navigate(Screen.BudgetManual.createRoute(userId, budgetId))
+        onNavigateToBudgetForm = { budgetId ->
+            navController.navigate(Screen.BudgetForm.createRoute(userId, budgetId))
+        },
+
+        onNavigateToAddSavingForm = {
+            navController.navigate(Screen.SavingForm.createRoute(userId))
         },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
@@ -248,7 +253,7 @@ composable(route = Screen.Main.route) {
 
         // ── Màn hình thiết lập ngân sách ──
         composable(
-            route = Screen.BudgetManual.route,
+            route = Screen.BudgetForm.route,
             arguments = listOf(
                 navArgument("userId") { type = NavType.StringType },
                 navArgument("budgetId") { type = NavType.LongType }
@@ -256,11 +261,11 @@ composable(route = Screen.Main.route) {
         ) { backStackEntry ->
             val uid = backStackEntry.arguments?.getString("userId") ?: userId
             val bId = backStackEntry.arguments?.getLong("budgetId") ?: -1L
-            BudgetManualScreen(
+            BudgetFormScreen(
                 userId = uid,
                 budgetId = if (bId == -1L) null else bId,
                 onNavigateBack = {
-                    if (navController.currentBackStackEntry?.destination?.route == Screen.BudgetManual.route) {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.BudgetForm.route) {
                         navController.popBackStack()
                     }
                 }
@@ -276,6 +281,18 @@ composable(route = Screen.Main.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // ── Màn hình thiết lập tiết kiệm ──
+        composable(
+            route = Screen.SavingForm.route,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("userId") ?: userId
+            SavingFormScreen(
+                userId = uid,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

@@ -36,7 +36,8 @@ fun MainNavHost(
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onSelectedWalletIdChanged: (walletId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
-    onNavigateToBudgetManual: () -> Unit = {},
+    onNavigateToBudgetForm: () -> Unit = {},
+    onNavigateToAddSavingForm: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -59,11 +60,14 @@ fun MainNavHost(
         composable(BottomTab.Budget.route) { 
             BudgetScreen(
                 userId = userId,
-                onNavigateToBudgetManual = onNavigateToBudgetManual
+                onNavigateToBudgetForm = onNavigateToBudgetForm
             )
         }
         composable(BottomTab.Saving.route) {
-            SavingScreen(userId = userId)
+            SavingScreen(
+                userId = userId,
+                onNavigateToAddSavingForm = onNavigateToAddSavingForm
+            )
         }
         composable(BottomTab.Other.route)  { OtherScreen() }
     }

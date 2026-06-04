@@ -1,10 +1,8 @@
-package com.example.mymoney.presentation.viewmodel.budget
+package com.example.mymoney.presentation.viewmodel.budget.budget
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.domain.repository.BudgetRepository
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetEvent
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

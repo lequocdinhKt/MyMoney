@@ -1,4 +1,4 @@
-package com.example.mymoney.presentation.viewmodel.budget
+package com.example.mymoney.presentation.viewmodel.budget.add_budget
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -16,19 +16,19 @@ import com.example.mymoney.data.repository.CategoryRepositoryImpl
  * @param budgetId  null = thêm mới, khác null = chỉnh sửa ngân sách có id này
  */
 
-class BudgetManualViewModelFactory(
+class BudgetFormViewModelFactory(
     private val context: Context,
     private val userId: String,
     private val budgetId: Long? = null,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        require(modelClass.isAssignableFrom(BudgetManualViewModel::class.java))
-        val db   = AppDatabase.getInstance(context.applicationContext)
+        require(modelClass.isAssignableFrom(BudgetFormViewModel::class.java))
+        val db   = AppDatabase.Companion.getInstance(context.applicationContext)
         val budgetRepo = BudgetRepositoryImpl(db.budgetDao())
         val categoryRepo = CategoryRepositoryImpl(db.categoryDao())
         val settingPrefs = SettingPreferences(context.applicationContext)
-        return BudgetManualViewModel(
+        return BudgetFormViewModel(
             budgetRepository = budgetRepo,
             categoryRepository = categoryRepo,
             settingPreferences = settingPrefs,

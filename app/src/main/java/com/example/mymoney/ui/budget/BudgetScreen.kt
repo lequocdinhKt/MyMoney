@@ -23,8 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModelFactory
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetViewModel
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetViewModelFactory
 import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import com.example.mymoney.ui.components.EmptyStateComposable
 import com.example.mymoney.ui.theme.MyMoneyTheme
@@ -35,7 +35,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun BudgetScreen(
     userId: String = "",
-    onNavigateToBudgetManual: () -> Unit = {}
+    onNavigateToBudgetForm: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: BudgetViewModel = viewModel(
@@ -45,7 +45,7 @@ fun BudgetScreen(
 
     BudgetContent(
         uiState = uiState,
-        onNavigateToBudgetManual = onNavigateToBudgetManual
+        onNavigateToBudgetForm = onNavigateToBudgetForm
     )
 }
 
@@ -55,7 +55,7 @@ fun BudgetScreen(
 @Composable
 private fun BudgetContent(
     uiState: BudgetUiState,
-    onNavigateToBudgetManual: () -> Unit = {},
+    onNavigateToBudgetForm: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -78,7 +78,7 @@ private fun BudgetContent(
             // FAB chính
             ExtendedFloatingActionButton(
                 onClick = {
-                    onNavigateToBudgetManual()
+                    onNavigateToBudgetForm()
                 },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
@@ -99,7 +99,7 @@ private fun BudgetScreenLightPreview() {
     MyMoneyTheme(darkTheme = false) {
         BudgetContent(
             uiState = BudgetUiState(),
-            onNavigateToBudgetManual = {}
+            onNavigateToBudgetForm = {}
         )
     }
 }
@@ -108,8 +108,9 @@ private fun BudgetScreenLightPreview() {
 @Composable
 private fun BudgetScreenDarkPreview() {
     MyMoneyTheme(darkTheme = true) {
-        BudgetContent(uiState = BudgetUiState(),
-        onNavigateToBudgetManual = {}
+        BudgetContent(
+            uiState = BudgetUiState(),
+            onNavigateToBudgetForm = {}
         )
     }
 }

@@ -56,7 +56,8 @@ fun MainScreen(
     onCameraClick: (walletId: Long) -> Unit = {},
     onNavigateToAddWallet: () -> Unit = {},
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
-    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
+    onNavigateToBudgetForm: (budgetId: Long) -> Unit = {},
+    onNavigateToAddSavingForm: () -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
@@ -161,7 +162,8 @@ fun MainScreen(
                 onNavigateToEditWallet    = onNavigateToEditWallet,
                 onSelectedWalletIdChanged = { walletId -> selectedWalletId = walletId },
                 onWalletColorChanged      = onWalletColorChanged,
-                onNavigateToBudgetManual  = { onNavigateToBudgetManual(-1L) }
+                onNavigateToBudgetForm    = { onNavigateToBudgetForm(-1L) },
+                onNavigateToAddSavingForm = { onNavigateToAddSavingForm() }
             )
         }
 

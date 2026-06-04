@@ -48,13 +48,17 @@ sealed class Screen(val route: String) {
     }
 
     // ── Màn hình thiết lập ngân sách ──
-    data object BudgetManual : Screen("budget_manual/{userId}/{budgetId}") {
+    data object BudgetForm : Screen("budget_form/{userId}/{budgetId}") {
         fun createRoute(userId: String, budgetId: Long = -1L) =
-            "budget_manual/$userId/$budgetId"
+            "budget_form/$userId/$budgetId"
     }
 
     // ── Màn hình hồ sơ người dùng ──
     data object Profile : Screen("profile")
+
+    data object SavingForm : Screen("saving_form/{userId}") {
+        fun createRoute(userId: String) = "saving_form/$userId"
+    }
 }
 
 /**

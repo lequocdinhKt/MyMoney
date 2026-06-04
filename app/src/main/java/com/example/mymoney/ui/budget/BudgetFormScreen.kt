@@ -52,16 +52,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetManualViewModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetManualViewModelFactory
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualEvent
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualUiState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.mymoney.domain.model.CategoryModel
+import com.example.mymoney.presentation.viewmodel.budget.add_budget.BudgetFormEvent
+import com.example.mymoney.presentation.viewmodel.budget.add_budget.BudgetFormUiState
+import com.example.mymoney.presentation.viewmodel.budget.add_budget.BudgetFormViewModel
+import com.example.mymoney.presentation.viewmodel.budget.add_budget.BudgetFormViewModelFactory
 import com.example.mymoney.ui.common.SelectionBottomSheet
 import com.example.mymoney.ui.common.SelectionLayout
 import com.example.mymoney.ui.common.SelectionOption
@@ -75,14 +75,14 @@ import com.example.mymoney.ui.common.mapEmojiToDrawable
  */
 
 @Composable
-fun BudgetManualScreen(
+fun BudgetFormScreen(
     userId: String,
     budgetId: Long? = null,
     onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val viewModel: BudgetManualViewModel = viewModel(
-        factory = BudgetManualViewModelFactory(context, userId, budgetId),
+    val viewModel: BudgetFormViewModel = viewModel(
+        factory = BudgetFormViewModelFactory(context, userId, budgetId),
         key = "budget_${budgetId ?: "new"}"
     )
     val uiState by viewModel.uiState.collectAsState()
@@ -96,7 +96,7 @@ fun BudgetManualScreen(
         if (uiState.isDeleted) onNavigateBack()
     }
 
-    BudgetManualContent(
+    BudgetFormContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack
@@ -104,9 +104,9 @@ fun BudgetManualScreen(
 }
 
 @Composable
-private fun BudgetManualContent(
-    uiState: BudgetManualUiState,
-    onEvent: (BudgetManualEvent) -> Unit,
+private fun BudgetFormContent(
+    uiState: BudgetFormUiState,
+    onEvent: (BudgetFormEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val isValid = uiState.selectedCategory != null && uiState.currentAmountLimit.isNotBlank()
@@ -155,7 +155,7 @@ private fun BudgetManualContent(
             // Số tiền ngân sách
             OutlinedTextField(
                 value = uiState.currentAmountLimit,
-                onValueChange = { onEvent(BudgetManualEvent.OnAmountChange(it)) },
+                onValueChange = { onEvent(BudgetFormEvent.OnAmountChange(it)) },
                 label = { Text("Số tiền ngân sách") },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -190,10 +190,10 @@ private fun BudgetManualContent(
                     selected = uiState.selectedCategory,
                     layout = SelectionLayout.GRID,
                     onSelected = {
-                        onEvent(BudgetManualEvent.OnCategorySelected(it))
+                        onEvent(BudgetFormEvent.OnCategorySelected(it))
                     },
                     onDismiss = {
-                        onEvent(BudgetManualEvent.DismissCategorySheet)
+                        onEvent(BudgetFormEvent.DismissCategorySheet)
                     }
                 )
             }
@@ -203,8 +203,8 @@ private fun BudgetManualContent(
             MonthYearSelector(
                 month = uiState.month,
                 year = uiState.year,
-                onMonthSelected = { onEvent(BudgetManualEvent.OnMonthSelected(it)) },
-                onYearSelected = { onEvent(BudgetManualEvent.OnYearSelected(it)) }
+                onMonthSelected = { onEvent(BudgetFormEvent.OnMonthSelected(it)) },
+                onYearSelected = { onEvent(BudgetFormEvent.OnYearSelected(it)) }
             )
 
             Spacer(Modifier.height(8.dp))
@@ -228,7 +228,7 @@ private fun BudgetManualContent(
                         "OK",
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable {
-                            onEvent(BudgetManualEvent.DismissError)
+                            onEvent(BudgetFormEvent.DismissError)
                         }
                     )
                 }
@@ -239,7 +239,7 @@ private fun BudgetManualContent(
 
         // ── Nút Tiếp tục ──
         Button(
-            onClick = { onEvent(BudgetManualEvent.Save) },
+            onClick = { onEvent(BudgetFormEvent.Save) },
             enabled = isValid && !uiState.isLoading,
             modifier = Modifier
                 .fillMaxWidth()
@@ -272,7 +272,7 @@ private fun BudgetManualContent(
 @Composable
 private fun CategorySelector(
     selectedCategory: CategoryModel?,
-    onEvent: (BudgetManualEvent) -> Unit
+    onEvent: (BudgetFormEvent) -> Unit
 ) {
     val icon = selectedCategory?.icon
     val title = selectedCategory?.name ?: ""
@@ -287,7 +287,7 @@ private fun CategorySelector(
                         RoundedCornerShape(12.dp)
                     )
                     .clickable {
-                        onEvent(BudgetManualEvent.CategoryClicked)
+                        onEvent(BudgetFormEvent.CategoryClicked)
                     }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
@@ -305,7 +305,7 @@ private fun CategorySelector(
                         RoundedCornerShape(12.dp)
                     )
                     .clickable {
-                        onEvent(BudgetManualEvent.CategoryClicked)
+                        onEvent(BudgetFormEvent.CategoryClicked)
                     }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -344,7 +344,7 @@ private fun CategorySelector(
                     "✕",
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.clickable {
-                        onEvent(BudgetManualEvent.ClearCategory)
+                        onEvent(BudgetFormEvent.ClearCategory)
                     }
                 )
             }
@@ -528,9 +528,9 @@ fun BudgetInfoCard(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun BudgetManualAddPreview() {
-    BudgetManualContent(
-        uiState = BudgetManualUiState(),
+fun BudgetFormAddPreview() {
+    BudgetFormContent(
+        uiState = BudgetFormUiState(),
         onEvent = {},
         onNavigateBack = {}
     )
@@ -538,10 +538,10 @@ fun BudgetManualAddPreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun BudgetManualEditPreview() {
+private fun BudgetFormEditPreview() {
     MyMoneyTheme(darkTheme = false) {
-        BudgetManualContent(
-            uiState = BudgetManualUiState(
+        BudgetFormContent(
+            uiState = BudgetFormUiState(
                 isEditMode = true
             ),
             onEvent = {},
