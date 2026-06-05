@@ -14,4 +14,3 @@ class StreakViewModelFactory(
         return StreakViewModel(transactionRepository, userId) as T
     }
 }
-

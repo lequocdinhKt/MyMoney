@@ -217,7 +217,7 @@ private fun StreakStatsRow(
         StatCard(
             modifier = Modifier.weight(1f),
             icon = {
-                Text("🏆", fontSize = 24.sp)
+                Text("", fontSize = 24.sp)
             },
             value = "$longestStreak ngày",
             label = "Chuỗi dài nhất"
@@ -225,7 +225,7 @@ private fun StreakStatsRow(
         StatCard(
             modifier = Modifier.weight(1f),
             icon = {
-                Text("📝", fontSize = 22.sp)
+                Text("", fontSize = 22.sp)
             },
             value = "$todayCount GD",
             label = "Hôm nay"
@@ -633,7 +633,6 @@ private fun StreakScreenPreview() {
         )
     }
 }
-
 
 
 

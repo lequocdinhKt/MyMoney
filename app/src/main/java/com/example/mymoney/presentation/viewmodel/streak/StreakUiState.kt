@@ -32,4 +32,3 @@ data class StreakUiState(
     val selectedDaySummary: DaySummary?
         get() = selectedDate?.let { daySummaryMap[it] }
 }
-
