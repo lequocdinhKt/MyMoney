@@ -58,7 +58,9 @@ data class HomeUiState(
     val totalIncome: String = "0",
     val totalExpense: String = "0",
     val totalBalance: String = "0",
-    val transactions: List<TransactionItem> = emptyList()
+    val transactions: List<TransactionItem> = emptyList(),
+    /** Hiển thị dialog yêu cầu tạo ví khi không có ví nào */
+    val showCreateWalletDialog: Boolean = false
 )
 
 /**
@@ -75,4 +77,6 @@ sealed interface HomeEvent {
     data class EditWalletClick(val walletId: Long) : HomeEvent
     /** Sau khi drag & drop kết thúc: danh sách id ví theo thứ tự mới */
     data class ReorderWallets(val orderedIds: List<Long>) : HomeEvent
+    /** Đóng dialog yêu cầu tạo ví */
+    data object DismissCreateWalletDialog : HomeEvent
 }

@@ -28,6 +28,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.example.mymoney.ui.budget.BudgetManualScreen
 import com.example.mymoney.ui.streak.StreakScreen
+import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
 
 /**
@@ -199,6 +200,9 @@ composable(route = Screen.Main.route) {
                 walletId = walletId,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToRecurring = { wId ->
+                    navController.navigate(Screen.Recurring.createRoute(wId))
                 }
             )
         }
@@ -277,6 +281,20 @@ composable(route = Screen.Main.route) {
             StreakScreen(
                 factory = factory,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // ── Màn hình giao dịch định kỳ ──
+        composable(
+            route = Screen.Recurring.route,
+            arguments = listOf(
+                navArgument("walletId") { type = NavType.LongType; defaultValue = 0L }
+            )
+        ) { backStackEntry ->
+            val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
+            RecurringScreen(
+                walletId = walletId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

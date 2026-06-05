@@ -82,8 +82,9 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun AIChatScreen(
     onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    onNavigateToRecurring: (walletId: Long) -> Unit = {},
     walletId: Long = 0L,
-    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val viewModel: AddTransactionViewModel = viewModel(
@@ -96,6 +97,7 @@ fun AIChatScreen(
             when (event) {
                 is AddTransactionNavEvent.NavigateBack -> onNavigateBack()
                 is AddTransactionNavEvent.NavigateToParseSettings -> { /* TODO */ }
+                is AddTransactionNavEvent.NavigateToRecurring -> onNavigateToRecurring(event.walletId)
             }
         }
     }

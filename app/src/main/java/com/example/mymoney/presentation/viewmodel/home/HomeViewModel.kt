@@ -127,7 +127,8 @@ class HomeViewModel(
                     totalIncome       = MoneyFormatter.format(income, useThousandSep, numFmt),
                     totalExpense      = MoneyFormatter.format(expense, useThousandSep, numFmt),
                     totalBalance      = MoneyFormatter.format(income - expense, useThousandSep, numFmt),
-                    transactions      = items
+                    transactions      = items,
+                    showCreateWalletDialog = walletModels.isEmpty()
                 )
             }
         }
@@ -173,6 +174,9 @@ class HomeViewModel(
             is HomeEvent.AddTransactionClick -> { /* NavHost xử lý */ }
             is HomeEvent.AddWalletClick      -> { /* NavHost xử lý */ }
             is HomeEvent.EditWalletClick     -> { /* NavHost xử lý */ }
+            is HomeEvent.DismissCreateWalletDialog -> {
+                _uiState.update { it.copy(showCreateWalletDialog = false) }
+            }
         }
     }
 

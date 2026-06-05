@@ -84,4 +84,7 @@ sealed class AddTransactionNavEvent {
 
     /** Mở màn hình cài đặt parsing giao dịch */
     data object NavigateToParseSettings : AddTransactionNavEvent()
+
+    /** Mở màn hình giao dịch định kỳ */
+    data class NavigateToRecurring(val walletId: Long) : AddTransactionNavEvent()
 }

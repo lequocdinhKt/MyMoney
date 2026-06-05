@@ -4,13 +4,17 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -19,13 +23,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
 import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
-import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
 import com.example.mymoney.ui.main.components.CustomTopAppBar
@@ -34,6 +38,8 @@ import com.example.mymoney.ui.main.components.MainNavHost
 import com.example.mymoney.ui.main.components.drawerBlur
 import com.example.mymoney.ui.navigation.BottomTab
 import com.example.mymoney.ui.theme.MyMoneyTheme
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 /**
  * Màn hình chính của ứng dụng – chứa Bottom Navigation và nội dung các tab.
@@ -95,6 +101,16 @@ fun MainScreen(
     // Track ví đang được chọn trên HomeScreen để truyền đúng walletId khi navigate AddTransaction
     var selectedWalletId by rememberSaveable { mutableStateOf(0L) }
 
+    // Dialog khi không có ví
+    var showNoWalletDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Wallet repository để kiểm tra số ví
+    val walletRepo = remember {
+        WalletRepositoryImpl(AppDatabase.getInstance(context).walletDao())
+    }
+
+    val scope = rememberCoroutineScope()
+
     // ── drawerProgress: biến X chia sẻ giữa Layer 1 (blur) và Overlay (scrim + drawer) ──
     // Layer 1 cần X để tính blurRadius = X × 18px
     val drawerProgress = remember { Animatable(0f) }
@@ -142,11 +158,27 @@ fun MainScreen(
                     onMenuToggle = { isFabMenuOpen = !isFabMenuOpen },
                     onAIClick = {
                         isFabMenuOpen = false  // Đóng menu trước
-                        onAddTransactionClick(selectedWalletId)  // Sau đó navigate
+                        // Kiểm tra xem có ví nào không
+                        scope.launch {
+                            val wallets = walletRepo.getWallets(userId).first()
+                            if (wallets.isEmpty()) {
+                                showNoWalletDialog = true
+                            } else {
+                                onAddTransactionClick(selectedWalletId)
+                            }
+                        }
                     },
                     onCameraClick = {
                         isFabMenuOpen = false  // Đóng menu trước
-                        onCameraClick(selectedWalletId)  // Sau đó navigate
+                        // Kiểm tra xem có ví nào không
+                        scope.launch {
+                            val wallets = walletRepo.getWallets(userId).first()
+                            if (wallets.isEmpty()) {
+                                showNoWalletDialog = true
+                            } else {
+                                onCameraClick(selectedWalletId)
+                            }
+                        }
                     }
                 )
             }
@@ -169,6 +201,37 @@ fun MainScreen(
             isOpen = isDrawerOpen,
             onClose = { isDrawerOpen = false },
             onSignOut = onSignOut
+        )
+    }
+
+    // ── Dialog: Thông báo không có ví ──
+    if (showNoWalletDialog) {
+        AlertDialog(
+            onDismissRequest = { showNoWalletDialog = false },
+            title = { Text("Tạo ví trước") },
+            text = {
+                Text(
+                    "Bạn cần tạo ít nhất một ví trước khi có thể thêm giao dịch.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNoWalletDialog = false
+                        onNavigateToAddWallet()  // Điều hướng sang tạo ví
+                    }
+                ) {
+                    Text("Tạo ví")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showNoWalletDialog = false }
+                ) {
+                    Text("Đóng")
+                }
+            }
         )
     }
 }

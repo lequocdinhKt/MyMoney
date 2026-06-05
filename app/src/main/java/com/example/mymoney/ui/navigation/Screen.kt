@@ -59,6 +59,11 @@ sealed class Screen(val route: String) {
 
     // ── Màn hình Chuỗi ngày (Streak) ──
     data object Streak : Screen("streak")
+
+    // ── Màn hình giao dịch định kỳ ──
+    data object Recurring : Screen("recurring/{walletId}") {
+        fun createRoute(walletId: Long = 0L) = "recurring/$walletId"
+    }
 }
 
 /**

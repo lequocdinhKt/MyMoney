@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -169,6 +172,34 @@ private fun HomeContent(
                 }
         }   // end Column
     }       // end UiStateContainer
+
+    // ── Dialog: Yêu cầu tạo ví ──
+    if (uiState.showCreateWalletDialog) {
+        AlertDialog(
+            onDismissRequest = { onEvent(HomeEvent.DismissCreateWalletDialog) },
+            title = { Text("Tạo ví đầu tiên") },
+            text = {
+                Text(
+                    "Bạn chưa có ví nào. Hãy tạo ví đầu tiên để bắt đầu quản lý tài chính.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { onNavigateToAddWallet() }
+                ) {
+                    Text("Tạo ví")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { onEvent(HomeEvent.DismissCreateWalletDialog) }
+                ) {
+                    Text("Để sau")
+                }
+            }
+        )
+    }
 }           // end HomeContent
 
 // ── Previews ──

@@ -22,6 +22,7 @@ import com.example.mymoney.ui.navigation.AppNavigation
 import com.example.mymoney.ui.navigation.Screen
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import com.example.mymoney.worker.ChatCleanupWorker
+import com.example.mymoney.worker.RecurringTransactionWorker
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +31,8 @@ class MainActivity : ComponentActivity() {
 
         // Lên lịch xóa chat_messages cũ hơn 48h, chạy mỗi 12h
         ChatCleanupWorker.schedule(this)
+        // Lên lịch xử lý giao dịch định kỳ, chạy mỗi ngày lúc 8:00 sáng
+        RecurringTransactionWorker.schedule(this)
 
         setContent {
             val prefs = SettingPreferences(this)

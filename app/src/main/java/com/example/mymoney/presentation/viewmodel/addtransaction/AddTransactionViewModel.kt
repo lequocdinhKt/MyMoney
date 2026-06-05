@@ -154,7 +154,7 @@ class AddTransactionViewModel(
             is AddTransactionEvent.OnMicClicked           -> { /* TODO */ }
             is AddTransactionEvent.OnParseSettingsClicked -> handleParseSettings()
             is AddTransactionEvent.OnTransferFundClicked  -> { /* TODO */ }
-            is AddTransactionEvent.OnRecurringClicked     -> { /* TODO */ }
+            is AddTransactionEvent.OnRecurringClicked     -> handleRecurring()
         }
     }
 
@@ -407,6 +407,10 @@ class AddTransactionViewModel(
 
     private fun handleParseSettings() {
         viewModelScope.launch { _navEvent.emit(AddTransactionNavEvent.NavigateToParseSettings) }
+    }
+
+    private fun handleRecurring() {
+        viewModelScope.launch { _navEvent.emit(AddTransactionNavEvent.NavigateToRecurring(selectedWalletId)) }
     }
 
     private fun mapAIError(e: Exception): String {

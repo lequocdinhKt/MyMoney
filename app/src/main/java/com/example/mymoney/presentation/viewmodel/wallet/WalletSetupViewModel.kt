@@ -74,9 +74,7 @@ class WalletSetupViewModel(
             is WalletSetupEvent.DeleteConfirm  -> delete()
             is WalletSetupEvent.DeleteDismissed -> _uiState.update { it.copy(showDeleteDialog = false) }
             is WalletSetupEvent.DismissError   -> _uiState.update { it.copy(error = null) }
-            is WalletSetupEvent.DeleteClicked  -> if(_uiState.value.isDefault) {
-                _uiState.update { it.copy(error = "Không thể xóa ví mặc định") }
-            } else {
+            is WalletSetupEvent.DeleteClicked  -> {
                 _uiState.update { it.copy(showDeleteDialog = true) }
             }
         }
@@ -165,17 +163,6 @@ class WalletSetupViewModel(
         val state = _uiState.value
         if (!state.isEditMode || state.isDeleting) return
 
-        // Không cho xóa ví mặc định
-        if (state.isDefault) {
-            _uiState.update {
-                it.copy(
-                    error = "Không thể xóa ví mặc định"
-                )
-            }
-            return
-        }
-
-        // Bắt đầu xóa
         _uiState.update { it.copy(
             isDeleting = true,
             showDeleteDialog = false,
@@ -184,6 +171,27 @@ class WalletSetupViewModel(
 
         viewModelScope.launch {
             try {
+                // Nếu xóa ví mặc định, cần chuyển ví khác thành mặc định
+                if (state.isDefault) {
+                    val allWallets = walletRepository.getWallets(userId).first()
+                        .filterNot { it.id == state.id }  // loại bỏ ví sắp xóa
+
+                    if (allWallets.isEmpty()) {
+                        // Đây là ví duy nhất → không cho xóa
+                        _uiState.update {
+                            it.copy(
+                                isDeleting = false,
+                                error = "Phải có ít nhất một ví. Vui lòng tạo ví khác trước khi xóa ví này."
+                            )
+                        }
+                        return@launch
+                    }
+
+                    // Chuyển ví đầu tiên (sau khi loại bỏ ví hiện tại) thành mặc định
+                    val nextDefault = allWallets.first().copy(isDefault = true)
+                    walletRepository.updateWallet(nextDefault)
+                }
+
                 walletRepository.deleteWallet(state.id)
 
                 _uiState.update { it.copy(

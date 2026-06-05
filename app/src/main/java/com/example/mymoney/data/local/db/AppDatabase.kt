@@ -7,11 +7,13 @@ import androidx.room.RoomDatabase
 import com.example.mymoney.data.local.dao.BudgetDao
 import com.example.mymoney.data.local.dao.CategoryDao
 import com.example.mymoney.data.local.dao.ChatMessageDao
+import com.example.mymoney.data.local.dao.RecurringTransactionDao
 import com.example.mymoney.data.local.dao.TransactionDao
 import com.example.mymoney.data.local.dao.WalletDao
 import com.example.mymoney.data.local.entity.BudgetEntity
 import com.example.mymoney.data.local.entity.CategoryEntity
 import com.example.mymoney.data.local.entity.ChatMessageEntity
+import com.example.mymoney.data.local.entity.RecurringTransactionEntity
 import com.example.mymoney.data.local.entity.TransactionEntity
 import com.example.mymoney.data.local.entity.WalletEntity
 
@@ -21,9 +23,10 @@ import com.example.mymoney.data.local.entity.WalletEntity
         CategoryEntity::class,
         TransactionEntity::class,
         BudgetEntity::class,
-        ChatMessageEntity::class
+        ChatMessageEntity::class,
+        RecurringTransactionEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun budgetDao(): BudgetDao
     abstract fun chatMessageDao(): ChatMessageDao
+    abstract fun recurringTransactionDao(): RecurringTransactionDao
 
     companion object {
         private const val DB_NAME = "mymoney.db"
