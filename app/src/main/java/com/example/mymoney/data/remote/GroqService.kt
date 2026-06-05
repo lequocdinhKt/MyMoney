@@ -13,6 +13,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import java.io.File
+import java.util.UUID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -199,6 +201,83 @@ object GroqService {
 
         Log.d(TAG, "Parsed ${transactions.size} transaction(s)")
         return ChatResult(displayText = displayText, transactions = transactions)
+    }
+
+    /**
+     * Nhận dạng giọng nói từ file audio bằng Groq Whisper API.
+     * @param audioFile File âm thanh (m4a/mp4) đã ghi từ VoiceRecorder
+     * @return Văn bản đã nhận dạng
+     */
+    suspend fun transcribeAudio(audioFile: File): String {
+        val apiKey = BuildConfig.GROQ_API_KEY
+        if (apiKey.isBlank()) throw IllegalStateException("GROQ_API_KEY chưa cấu hình")
+
+        Log.d(TAG, "Uploading audio file: ${audioFile.absolutePath} (${audioFile.length()} bytes)")
+
+        // Manually create multipart payload
+        val boundary = UUID.randomUUID().toString()
+        val body = buildMultipartBody(boundary, audioFile)
+
+        val response = client.post("https://api.groq.com/openai/v1/audio/transcriptions") {
+            header("Authorization", "Bearer $apiKey")
+            header("Content-Type", "multipart/form-data; boundary=$boundary")
+            setBody(body)
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorText = response.bodyAsText()
+            Log.e(TAG, "Whisper error ${response.status.value}: $errorText")
+            throw Exception("Lỗi nhận dạng giọng nói: ${response.status.value}")
+        }
+        val result = response.bodyAsText().trim()
+        Log.d(TAG, "Whisper transcript: $result")
+        return result
+    }
+
+    private fun buildMultipartBody(boundary: String, audioFile: File): ByteArray {
+        val sb = StringBuilder()
+        val CRLF = "\r\n"
+
+        // model field
+        sb.append("--$boundary$CRLF")
+        sb.append("Content-Disposition: form-data; name=\"model\"$CRLF")
+        sb.append("$CRLF")
+        sb.append("whisper-large-v3$CRLF")
+
+        // language field
+        sb.append("--$boundary$CRLF")
+        sb.append("Content-Disposition: form-data; name=\"language\"$CRLF")
+        sb.append("$CRLF")
+        sb.append("vi$CRLF")
+
+        // response_format field
+        sb.append("--$boundary$CRLF")
+        sb.append("Content-Disposition: form-data; name=\"response_format\"$CRLF")
+        sb.append("$CRLF")
+        sb.append("text$CRLF")
+
+        // file field
+        sb.append("--$boundary$CRLF")
+        sb.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"$CRLF")
+        sb.append("Content-Type: audio/m4a$CRLF")
+        sb.append("$CRLF")
+
+        val headerBytes = sb.toString().toByteArray(Charsets.UTF_8)
+        val fileBytes = audioFile.readBytes()
+        val footerBytes = "$CRLF--$boundary--$CRLF".toByteArray(Charsets.UTF_8)
+
+        val result = ByteArray(headerBytes.size + fileBytes.size + footerBytes.size)
+        var pos = 0
+
+        System.arraycopy(headerBytes, 0, result, pos, headerBytes.size)
+        pos += headerBytes.size
+
+        System.arraycopy(fileBytes, 0, result, pos, fileBytes.size)
+        pos += fileBytes.size
+
+        System.arraycopy(footerBytes, 0, result, pos, footerBytes.size)
+
+        return result
     }
 
     @Serializable

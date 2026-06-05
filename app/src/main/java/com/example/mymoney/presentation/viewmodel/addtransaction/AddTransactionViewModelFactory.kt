@@ -44,7 +44,8 @@ class AddTransactionViewModelFactory(
             supabaseTransactionRepo = SupabaseTransactionRepository(),
             settingPreferences      = SettingPreferences(appCtx),
             categoryDao             = db.categoryDao(),
-            selectedWalletId        = walletId
+            selectedWalletId        = walletId,
+            appContext               = appCtx
         ) as T
     }
 }

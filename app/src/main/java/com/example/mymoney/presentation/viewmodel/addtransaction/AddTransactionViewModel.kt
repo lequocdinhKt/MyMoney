@@ -3,6 +3,7 @@ package com.example.mymoney.presentation.viewmodel.addtransaction
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.audio.VoiceRecorder
 import com.example.mymoney.data.local.dao.CategoryDao
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.remote.GroqService
@@ -19,6 +20,7 @@ import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatMessage
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatSender
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.VoiceRecordingState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,10 +60,14 @@ class AddTransactionViewModel(
     private val settingPreferences: SettingPreferences,
     private val categoryDao: CategoryDao,
     /** ID ví đang active trên HomeScreen. 0L = chưa chọn → fallback về ví mặc định. */
-    private val selectedWalletId: Long = 0L
+    private val selectedWalletId: Long = 0L,
+    /** ApplicationContext để tạo VoiceRecorder */
+    appContext: android.content.Context
 ) : ViewModel() {
 
     private val TAG = "AddTransactionVM"
+
+    private val voiceRecorder = VoiceRecorder(appContext)
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
@@ -151,7 +157,11 @@ class AddTransactionViewModel(
             is AddTransactionEvent.OnNoteChanged          -> _uiState.update { it.copy(noteInput = event.note) }
             is AddTransactionEvent.OnSubmitClicked        -> handleSubmit()
             is AddTransactionEvent.OnCameraClicked        -> { /* TODO */ }
-            is AddTransactionEvent.OnMicClicked           -> { /* TODO */ }
+            is AddTransactionEvent.OnMicClicked           -> { /* replaced by OnMicPressStart/End */ }
+            is AddTransactionEvent.OnMicPressStart        -> handleMicPressStart()
+            is AddTransactionEvent.OnMicPressEnd          -> handleMicPressEnd()
+            is AddTransactionEvent.OnVoicePlayback        -> handleVoicePlayback()
+            is AddTransactionEvent.OnVoiceCancel          -> handleVoiceCancel()
             is AddTransactionEvent.OnParseSettingsClicked -> handleParseSettings()
             is AddTransactionEvent.OnTransferFundClicked  -> { /* TODO */ }
             is AddTransactionEvent.OnRecurringClicked     -> handleRecurring()
@@ -411,6 +421,83 @@ class AddTransactionViewModel(
 
     private fun handleRecurring() {
         viewModelScope.launch { _navEvent.emit(AddTransactionNavEvent.NavigateToRecurring(selectedWalletId)) }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Voice recording handlers
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Người dùng bắt đầu nhấn giữ mic → bắt đầu ghi âm */
+    private fun handleMicPressStart() {
+        if (_uiState.value.voiceState != VoiceRecordingState.IDLE) return
+        try {
+            voiceRecorder.startRecording()
+            _uiState.update { it.copy(voiceState = VoiceRecordingState.RECORDING) }
+            Log.d(TAG, "Voice recording started")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start recording: ${e.message}")
+            _uiState.update { it.copy(voiceState = VoiceRecordingState.IDLE) }
+        }
+    }
+
+    /** Người dùng thả mic → dừng ghi, gửi Groq Whisper để nhận dạng */
+    private fun handleMicPressEnd() {
+        if (_uiState.value.voiceState != VoiceRecordingState.RECORDING) {
+            voiceRecorder.stopRecording()
+            return
+        }
+        val audioFile = voiceRecorder.stopRecording()
+        if (audioFile == null || !audioFile.exists() || audioFile.length() < 1000L) {
+            voiceRecorder.deleteRecording()
+            _uiState.update { it.copy(voiceState = VoiceRecordingState.IDLE) }
+            Log.d(TAG, "Recording too short or failed, discarded")
+            return
+        }
+        _uiState.update { it.copy(voiceState = VoiceRecordingState.PROCESSING) }
+        viewModelScope.launch {
+            try {
+                val transcript = GroqService.transcribeAudio(audioFile)
+                if (transcript.isNotBlank()) {
+                    _uiState.update { state ->
+                        state.copy(noteInput = transcript, voiceState = VoiceRecordingState.RECORDED)
+                    }
+                    Log.d(TAG, "Transcript: $transcript")
+                } else {
+                    voiceRecorder.deleteRecording()
+                    _uiState.update { it.copy(voiceState = VoiceRecordingState.IDLE) }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Transcription failed: ${e.message}")
+                voiceRecorder.deleteRecording()
+                _uiState.update { it.copy(voiceState = VoiceRecordingState.IDLE) }
+            }
+        }
+    }
+
+    /** Phát lại / dừng phát âm thanh đã ghi */
+    private fun handleVoicePlayback() {
+        if (voiceRecorder.isPlaying()) {
+            voiceRecorder.stopPlayback()
+            _uiState.update { it.copy(isVoicePlaying = false) }
+        } else {
+            _uiState.update { it.copy(isVoicePlaying = true) }
+            voiceRecorder.startPlayback {
+                _uiState.update { it.copy(isVoicePlaying = false) }
+            }
+        }
+    }
+
+    /** Hủy bỏ ghi âm và xóa văn bản đã nhận dạng */
+    private fun handleVoiceCancel() {
+        voiceRecorder.deleteRecording()
+        _uiState.update { state ->
+            state.copy(voiceState = VoiceRecordingState.IDLE, isVoicePlaying = false, noteInput = "")
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        voiceRecorder.release()
     }
 
     private fun mapAIError(e: Exception): String {

@@ -13,6 +13,15 @@ enum class ChatSender {
 }
 
 /**
+ * Trạng thái ghi âm giọng nói.
+ * IDLE       → chưa làm gì
+ * RECORDING  → đang ghi (user nhấn giữ mic)
+ * PROCESSING → đang gửi audio lên Groq Whisper để nhận dạng
+ * RECORDED   → đã nhận dạng xong, văn bản xuất hiện trong noteInput
+ */
+enum class VoiceRecordingState { IDLE, RECORDING, PROCESSING, RECORDED }
+
+/**
  * Một tin nhắn trong cuộc trò chuyện giữa người dùng và AI.
  *
  * @param id        Mã định danh duy nhất
@@ -37,6 +46,8 @@ data class ChatMessage(
  * @param isEmpty         true khi chưa có tin nhắn nào
  * @param walletName      Tên ví hiện tại (hiển thị trên top bar)
  * @param errorMessage    Thông báo lỗi (null = không lỗi)
+ * @param voiceState      Trạng thái ghi âm hiện tại
+ * @param isVoicePlaying  Đang phát lại âm thanh hay không
  */
 data class AddTransactionUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -44,7 +55,9 @@ data class AddTransactionUiState(
     val isLoading: Boolean = true,        // true từ đầu → không flash màn trống khi restore từ Room
     val isEmpty: Boolean = true,
     val walletName: String = "Ví chính",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val voiceState: VoiceRecordingState = VoiceRecordingState.IDLE,
+    val isVoicePlaying: Boolean = false
 )
 
 /**
@@ -61,8 +74,20 @@ sealed class AddTransactionEvent {
     /** Người dùng nhấn nút camera */
     data object OnCameraClicked : AddTransactionEvent()
 
-    /** Người dùng nhấn nút microphone */
+    /** (Legacy) Người dùng nhấn nút microphone một lần */
     data object OnMicClicked : AddTransactionEvent()
+
+    /** Người dùng BẮT ĐẦU nhấn giữ mic → bắt đầu ghi âm */
+    data object OnMicPressStart : AddTransactionEvent()
+
+    /** Người dùng THẢ mic → dừng ghi, gửi Whisper để nhận dạng */
+    data object OnMicPressEnd : AddTransactionEvent()
+
+    /** Người dùng nhấn nút phát lại / dừng phát */
+    data object OnVoicePlayback : AddTransactionEvent()
+
+    /** Người dùng hủy bỏ ghi âm và xóa văn bản đã nhận dạng */
+    data object OnVoiceCancel : AddTransactionEvent()
 
     /** Người dùng nhấn nút settings (cài đặt parsing) */
     data object OnParseSettingsClicked : AddTransactionEvent()

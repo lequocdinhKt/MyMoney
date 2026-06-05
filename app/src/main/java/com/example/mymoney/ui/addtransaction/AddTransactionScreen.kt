@@ -1,9 +1,20 @@
 package com.example.mymoney.ui.addtransaction
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,9 +40,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AssistChip
@@ -53,13 +67,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.addtransaction.AddTransactionViewModel
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionEvent
@@ -67,6 +88,7 @@ import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatMessage
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatSender
+import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.VoiceRecordingState
 import com.example.mymoney.ui.theme.MyMoneyTheme
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,6 +276,8 @@ private fun AIChatContent(
             ) {
                 BottomInputCard(
                     noteInput = uiState.noteInput,
+                    voiceState = uiState.voiceState,
+                    isVoicePlaying = uiState.isVoicePlaying,
                     onEvent = onEvent,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -303,9 +327,18 @@ private fun EmptyChatState(
 @Composable
 private fun BottomInputCard(
     noteInput: String,
+    voiceState: VoiceRecordingState,
+    isVoicePlaying: Boolean,
     onEvent: (AddTransactionEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    // Launcher yêu cầu quyền RECORD_AUDIO
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* Người dùng có thể thử nhấn giữ mic lại sau khi cấp quyền */ }
+
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface)
@@ -340,7 +373,17 @@ private fun BottomInputCard(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // ── Thanh phát lại / nhận dạng (hiện khi PROCESSING hoặc RECORDED) ──
+        VoicePlaybackBar(
+            voiceState = voiceState,
+            isVoicePlaying = isVoicePlaying,
+            onPlayback = { onEvent(AddTransactionEvent.OnVoicePlayback) },
+            onCancel   = { onEvent(AddTransactionEvent.OnVoiceCancel) }
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
 
         // ── TextField + Submit FAB cùng hàng ──
         Row(
@@ -384,22 +427,197 @@ private fun BottomInputCard(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // ── Hàng icon: Camera + Mic + Settings ──
+        // ── Hàng icon: Camera + Mic (nhấn giữ) + Settings ──
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             IconButton(onClick = { onEvent(AddTransactionEvent.OnCameraClicked) }) {
                 Icon(Icons.Default.CameraAlt, "Chụp hoá đơn",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp))
             }
-            IconButton(onClick = { onEvent(AddTransactionEvent.OnMicClicked) }) {
-                Icon(Icons.Default.Mic, "Nhập bằng giọng nói",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp))
-            }
+
+            // ── Nút Mic — nhấn giữ để ghi âm ──
+            HoldToRecordMicButton(
+                voiceState = voiceState,
+                context = context,
+                permissionLauncher = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                onEvent = onEvent
+            )
+
             IconButton(onClick = { onEvent(AddTransactionEvent.OnParseSettingsClicked) }) {
                 Icon(Icons.Default.Settings, "Cài đặt phân tích",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp))
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HoldToRecordMicButton — Nhấn giữ để ghi, thả để nhận dạng
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun HoldToRecordMicButton(
+    voiceState: VoiceRecordingState,
+    context: android.content.Context,
+    permissionLauncher: () -> Unit,
+    onEvent: (AddTransactionEvent) -> Unit
+) {
+    // Giữ tham chiếu mới nhất mà không reset pointerInput
+    val currentVoiceState = rememberUpdatedState(voiceState)
+    val currentOnEvent    = rememberUpdatedState(onEvent)
+    val currentPermLauncher = rememberUpdatedState(permissionLauncher)
+
+    // Animation pulse khi đang ghi
+    val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "mic_scale"
+    )
+
+    val isRecording = voiceState == VoiceRecordingState.RECORDING
+    val isProcessing = voiceState == VoiceRecordingState.PROCESSING
+
+    val bgColor by animateColorAsState(
+        targetValue = when {
+            isRecording -> MaterialTheme.colorScheme.errorContainer
+            else        -> Color.Transparent
+        },
+        label = "mic_bg"
+    )
+    val iconTint by animateColorAsState(
+        targetValue = when {
+            isRecording  -> MaterialTheme.colorScheme.error
+            isProcessing -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            else         -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        label = "mic_tint"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .scale(if (isRecording) pulseScale else 1f)
+            .clip(CircleShape)
+            .background(bgColor)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        val state = currentVoiceState.value
+                        val hasPermission = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        when {
+                            !hasPermission -> {
+                                tryAwaitRelease()
+                                currentPermLauncher.value()
+                            }
+                            state == VoiceRecordingState.IDLE -> {
+                                currentOnEvent.value(AddTransactionEvent.OnMicPressStart)
+                                tryAwaitRelease()
+                                currentOnEvent.value(AddTransactionEvent.OnMicPressEnd)
+                            }
+                            else -> tryAwaitRelease() // tiêu thụ gesture, không làm gì
+                        }
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (isProcessing) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Mic,
+                contentDescription = if (isRecording) "Đang ghi..." else "Nhấn giữ để ghi âm",
+                tint = iconTint,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VoicePlaybackBar — Thanh nghe lại và hủy (hiện khi PROCESSING / RECORDED)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun VoicePlaybackBar(
+    voiceState: VoiceRecordingState,
+    isVoicePlaying: Boolean,
+    onPlayback: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isVisible = voiceState == VoiceRecordingState.PROCESSING ||
+                    voiceState == VoiceRecordingState.RECORDED
+
+    AnimatedVisibility(visible = isVisible, modifier = modifier) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(12.dp),
+            tonalElevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (voiceState == VoiceRecordingState.PROCESSING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "🎙️ Đang nhận dạng giọng nói...",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    // Nút Play / Stop
+                    IconButton(
+                        onClick = onPlayback,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isVoicePlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = if (isVoicePlaying) "Dừng phát" else "Nghe lại",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Text(
+                        text = if (isVoicePlaying) "Đang phát..." else "Nghe lại giọng nói",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    // Nút hủy
+                    IconButton(
+                        onClick = onCancel,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Hủy ghi âm",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
     }
