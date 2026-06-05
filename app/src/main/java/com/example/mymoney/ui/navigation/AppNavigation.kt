@@ -27,6 +27,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.example.mymoney.ui.budget.BudgetManualScreen
+import com.example.mymoney.ui.streak.StreakScreen
+import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -125,6 +127,9 @@ composable(route = Screen.Main.route) {
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
             navController.navigate("search")
+        },
+        onNavigateToStreak = {
+            navController.navigate(Screen.Streak.route)
         },
         onSignOut = {
             navController.navigate(Screen.SignIn.route) {
@@ -260,6 +265,18 @@ composable(route = Screen.Main.route) {
                         navController.popBackStack()
                     }
                 }
+            )
+        }
+
+        // ── Màn hình Chuỗi ngày ──
+        composable(route = Screen.Streak.route) {
+            val context = LocalContext.current
+            val db = AppDatabase.getInstance(context)
+            val repo = TransactionRepositoryImpl(db.transactionDao())
+            val factory = StreakViewModelFactory(repo, userId)
+            StreakScreen(
+                factory = factory,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

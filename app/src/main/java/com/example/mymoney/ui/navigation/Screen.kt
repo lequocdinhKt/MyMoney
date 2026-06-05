@@ -56,6 +56,9 @@ sealed class Screen(val route: String) {
 //    data object BudgetAI : Screen("budget_ai/{userId}") {
 //        fun createRoute(userId: String) = "budget_ai/$userId"
 //    }
+
+    // ── Màn hình Chuỗi ngày (Streak) ──
+    data object Streak : Screen("streak")
 }
 
 /**

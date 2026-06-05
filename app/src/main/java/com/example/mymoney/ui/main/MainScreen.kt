@@ -59,6 +59,7 @@ fun MainScreen(
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onNavigateToStreak: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -122,7 +123,7 @@ fun MainScreen(
                     title = currentTab.title ?: currentTab.label,
                     onSettingsClick = { isDrawerOpen = true },
                     onSearchClick = onSearchClick,
-                    onCalendarClick = { /* TODO */ }
+                    onCalendarClick = onNavigateToStreak
                 )
             },
             bottomBar = {
