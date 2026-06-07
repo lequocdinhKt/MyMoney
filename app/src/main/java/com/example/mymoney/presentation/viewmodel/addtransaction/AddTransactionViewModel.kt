@@ -156,13 +156,14 @@ class AddTransactionViewModel(
         when (event) {
             is AddTransactionEvent.OnNoteChanged          -> _uiState.update { it.copy(noteInput = event.note) }
             is AddTransactionEvent.OnSubmitClicked        -> handleSubmit()
-            is AddTransactionEvent.OnCameraClicked        -> { /* TODO */ }
+            is AddTransactionEvent.OnCameraClicked        -> handleCameraClicked()
             is AddTransactionEvent.OnMicClicked           -> { /* replaced by OnMicPressStart/End */ }
             is AddTransactionEvent.OnMicPressStart        -> handleMicPressStart()
             is AddTransactionEvent.OnMicPressEnd          -> handleMicPressEnd()
             is AddTransactionEvent.OnVoicePlayback        -> handleVoicePlayback()
             is AddTransactionEvent.OnVoiceCancel          -> handleVoiceCancel()
             is AddTransactionEvent.OnParseSettingsClicked -> handleParseSettings()
+            is AddTransactionEvent.OnOcrResult            -> _uiState.update { it.copy(noteInput = event.text) }
             is AddTransactionEvent.OnTransferFundClicked  -> { /* TODO */ }
             is AddTransactionEvent.OnRecurringClicked     -> handleRecurring()
         }
@@ -180,6 +181,13 @@ class AddTransactionViewModel(
         submitDebounceJob = viewModelScope.launch {
             kotlinx.coroutines.delay(200L)
             processUserMessage(noteText)
+        }
+    }
+
+    /** Người dùng nhấn nút camera → yêu cầu UI mở màn hình chụp ảnh */
+    private fun handleCameraClicked() {
+        viewModelScope.launch {
+            _navEvent.emit(AddTransactionNavEvent.NavigateToCameraCapture(selectedWalletId))
         }
     }
 

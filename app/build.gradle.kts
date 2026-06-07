@@ -91,6 +91,8 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
+    // ML Kit Text Recognition (on-device)
+    implementation("com.google.mlkit:text-recognition:16.0.0")
     // Lottie Compose (hỗ trợ .lottie DotLottie format)
     implementation("com.airbnb.android:lottie-compose:6.5.2")
     testImplementation(libs.junit)

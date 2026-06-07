@@ -106,6 +106,8 @@ fun AIChatScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToRecurring: (walletId: Long) -> Unit = {},
+    onNavigateToCamera: (walletId: Long) -> Unit = {},
+    registerCameraResultListener: (((String) -> Unit) -> Unit) = {},
     walletId: Long = 0L,
 ) {
     val context = LocalContext.current
@@ -120,7 +122,15 @@ fun AIChatScreen(
                 is AddTransactionNavEvent.NavigateBack -> onNavigateBack()
                 is AddTransactionNavEvent.NavigateToParseSettings -> { /* TODO */ }
                 is AddTransactionNavEvent.NavigateToRecurring -> onNavigateToRecurring(event.walletId)
+                is AddTransactionNavEvent.NavigateToCameraCapture -> onNavigateToCamera(event.walletId)
             }
+        }
+    }
+
+    // Đăng ký listener để nhận kết quả OCR trả về từ màn hình Camera (qua savedStateHandle)
+    LaunchedEffect(Unit) {
+        registerCameraResultListener { text ->
+            viewModel.onEvent(AddTransactionEvent.OnOcrResult(text))
         }
     }
 

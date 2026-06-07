@@ -26,6 +26,9 @@ import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
@@ -196,14 +199,23 @@ composable(route = Screen.Main.route) {
             )
         ) { backStackEntry ->
             val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
+            val lifecycleOwner = LocalLifecycleOwner.current
             AIChatScreen(
-                walletId = walletId,
-                onNavigateBack = {
-                    navController.popBackStack()
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToRecurring = { wId -> navController.navigate(Screen.Recurring.createRoute(wId)) },
+                onNavigateToCamera = { wId -> navController.navigate(Screen.CameraCapture.createRoute(wId)) },
+                registerCameraResultListener = { callback ->
+                    val saved = navController.currentBackStackEntry?.savedStateHandle
+                    // Observe LiveData and forward to provided callback
+                    saved?.getLiveData<String>("camera_ocr_result")?.observe(lifecycleOwner) { text ->
+                        if (text != null) {
+                            callback(text)
+                            // remove after consumed
+                            saved.remove<String>("camera_ocr_result")
+                        }
+                    }
                 },
-                onNavigateToRecurring = { wId ->
-                    navController.navigate(Screen.Recurring.createRoute(wId))
-                }
+                walletId = walletId
             )
         }
 
@@ -222,6 +234,11 @@ composable(route = Screen.Main.route) {
                 },
                 onPhotoTaken = { _ ->
                     // Giữ nguyên camera screen sau khi chụp — không pop back
+                },
+                onOcrResult = { text ->
+                    // Forward OCR result back to previous screen via savedStateHandle
+                    navController.previousBackStackEntry?.savedStateHandle?.set("camera_ocr_result", text)
+                    navController.popBackStack()
                 }
             )
         }

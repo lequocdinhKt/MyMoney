@@ -92,6 +92,9 @@ sealed class AddTransactionEvent {
     /** Người dùng nhấn nút settings (cài đặt parsing) */
     data object OnParseSettingsClicked : AddTransactionEvent()
 
+    /** Kết quả OCR từ màn hình camera (văn bản đã được chuyển sang dạng gạch đầu dòng) */
+    data class OnOcrResult(val text: String) : AddTransactionEvent()
+
     /** Người dùng nhấn "Di chuyển quỹ" */
     data object OnTransferFundClicked : AddTransactionEvent()
 
@@ -112,4 +115,7 @@ sealed class AddTransactionNavEvent {
 
     /** Mở màn hình giao dịch định kỳ */
     data class NavigateToRecurring(val walletId: Long) : AddTransactionNavEvent()
+
+    /** Mở màn hình chụp ảnh (camera capture) */
+    data class NavigateToCameraCapture(val walletId: Long) : AddTransactionNavEvent()
 }

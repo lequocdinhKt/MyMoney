@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.example.mymoney.data.local.entity.TransactionEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -76,7 +79,8 @@ fun CameraCaptureScreen(
     walletId: Long,
     onNavigateBack: () -> Unit,
     onPhotoTaken: (Uri) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOcrResult: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     var hasPermission by remember { mutableStateOf(false) }
@@ -196,7 +200,8 @@ fun CameraCaptureScreen(
                         onShowHistory = {
                             scope.launch { pagerState.animateScrollToPage(1) }
                         },
-                        isCameraActive = pagerState.settledPage == 0
+                        isCameraActive = pagerState.settledPage == 0,
+                        onOcrResult = onOcrResult
                     )
                 } else {
                     val tx = photoTransactions.getOrNull(page - 1)
@@ -229,7 +234,8 @@ private fun CameraPreviewWithControls(
     onRetake: () -> Unit,
     onSave: (Double) -> Unit,
     onShowHistory: () -> Unit,
-    isCameraActive: Boolean
+    isCameraActive: Boolean,
+    onOcrResult: (String) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -238,6 +244,9 @@ private fun CameraPreviewWithControls(
     var camera by remember { mutableStateOf<Camera?>(null) }
     var rawDigits by remember { mutableStateOf("") }
     var storedPreviewView by remember { mutableStateOf<PreviewView?>(null) }
+    var ocrText by remember { mutableStateOf<String?>(null) }
+    var compactMode by remember { mutableStateOf(false) }
+    var isAnalyzing by remember { mutableStateOf(false) }
 
     // Reset amount khi chụp lại
     LaunchedEffect(capturedPhotoUri) {
@@ -372,6 +381,86 @@ private fun CameraPreviewWithControls(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+                // ── OCR controls: analyze + preview recognized text ──
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = {
+                                // Run ML Kit Text Recognition on the captured file
+                                val path = capturedPhotoUri.path
+                                if (path != null && !isAnalyzing) {
+                                    isAnalyzing = true
+                                    try {
+                                        val image = InputImage.fromFilePath(context, capturedPhotoUri)
+                                        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                                        recognizer.process(image)
+                                            .addOnSuccessListener { visionText ->
+                                                val lines = visionText.text
+                                                    .lines()
+                                                    .map { it.trim() }
+                                                    .filter { it.isNotBlank() }
+                                                if (lines.isEmpty()) {
+                                                    ocrText = "Không nhận diện được văn bản."
+                                                } else {
+                                                    ocrText = lines.joinToString("\n") { "• ${it}" }
+                                                }
+                                                isAnalyzing = false
+                                            }
+                                            .addOnFailureListener { e ->
+                                                ocrText = "Lỗi khi phân tích: ${e.message}"
+                                                isAnalyzing = false
+                                            }
+                                    } catch (e: Exception) {
+                                        ocrText = "Lỗi khi phân tích: ${e.message}"
+                                        isAnalyzing = false
+                                    }
+                                }
+                            }
+                        ) {
+                            if (isAnalyzing) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                            else Text("Phân tích hoá đơn", color = Color.White)
+                        }
+
+                        // Compact toggle
+                        IconButton(onClick = { compactMode = !compactMode }) {
+                            Icon(imageVector = if (compactMode) Icons.Filled.ZoomOut else Icons.Filled.ZoomIn, contentDescription = "Thu nhỏ/Phóng to", tint = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // OCR result preview
+                    ocrText?.let { txt ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = txt,
+                                    color = Color.White,
+                                    fontSize = if (compactMode) 14.sp else 16.sp,
+                                    lineHeight = if (compactMode) 18.sp else 20.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                                    TextButton(onClick = { onOcrResult(txt) }) {
+                                        Text("Gửi đến AI", color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 // Show live camera preview
