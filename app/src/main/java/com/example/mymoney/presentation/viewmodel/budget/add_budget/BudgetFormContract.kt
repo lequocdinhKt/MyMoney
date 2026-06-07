@@ -1,12 +1,12 @@
-package com.example.mymoney.presentation.viewmodel.budget.budget
+package com.example.mymoney.presentation.viewmodel.budget.add_budget
 
 import com.example.mymoney.domain.model.CategoryModel
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Contract: tập hợp State, Event cho BudgetManualScreen
+// Contract: tập hợp State, Event cho BudgetFormScreen
 // ─────────────────────────────────────────────────────────────────────────────
 
-data class BudgetManualUiState(
+data class BudgetFormUiState(
     val id: Long = 0L,
 
     val selectedCategory: CategoryModel? = null,
@@ -29,17 +29,17 @@ data class BudgetManualUiState(
     val isDeleted: Boolean = false
 )
 
-sealed interface BudgetManualEvent {
-    data class OnAmountChange(val value: String) : BudgetManualEvent
-    data class OnCategorySelected(val category: CategoryModel) : BudgetManualEvent
-    data class OnMonthSelected(val month: Int) : BudgetManualEvent
-    data class OnYearSelected(val year: Int) : BudgetManualEvent
-    data object Save : BudgetManualEvent
-    data object DeleteClicked : BudgetManualEvent // Khi nhấn nút xóa thì hiện dialog
-    data object DeleteConfirm : BudgetManualEvent // Xác nhận bằng cách nhấn nút xóa trên dialog
-    data object DeleteDismissed : BudgetManualEvent // Nhấn nút hủy hoặc click bên ngoài dialog
-    data object CategoryClicked : BudgetManualEvent
-    data object DismissCategorySheet : BudgetManualEvent
-    data object DismissError : BudgetManualEvent
-    data object ClearCategory : BudgetManualEvent
+sealed interface BudgetFormEvent {
+    data class OnAmountChange(val value: String) : BudgetFormEvent
+    data class OnCategorySelected(val category: CategoryModel) : BudgetFormEvent
+    data class OnMonthSelected(val month: Int) : BudgetFormEvent
+    data class OnYearSelected(val year: Int) : BudgetFormEvent
+    data object Save : BudgetFormEvent
+    data object DeleteClicked : BudgetFormEvent // Khi nhấn nút xóa thì hiện dialog
+    data object DeleteConfirm : BudgetFormEvent  // Xác nhận bằng cách nhấn nút xóa trên dialog
+    data object DeleteDismissed : BudgetFormEvent // Nhấn nút hủy hoặc click bên ngoài dialog
+    data object CategoryClicked : BudgetFormEvent
+    data object DismissCategorySheet : BudgetFormEvent
+    data object DismissError : BudgetFormEvent
+    data object ClearCategory : BudgetFormEvent
 }

@@ -15,6 +15,7 @@ import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.AddTransactionUseCase
 import com.example.mymoney.domain.usecase.EnsureDefaultWalletUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
+import com.example.mymoney.domain.usecase.MoneyFormatter
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionNavEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * ViewModel cho AIChatScreen.
@@ -186,6 +186,7 @@ class AddTransactionViewModel(
     private suspend fun processUserMessage(noteText: String) {
         isWaitingForAI = true
         val now = System.currentTimeMillis()
+        val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
 
         // ── Step 1: Hiển thị bubble user + typing indicator ──
         val userMsgId    = ++messageIdCounter
@@ -220,7 +221,7 @@ class AddTransactionViewModel(
             val result = GroqService.chatWithParsing(noteText)
 
             // ── Step 4: Xây text AI và cập nhật bubble ──
-            val aiText   = buildAIDisplayText(result)
+            val aiText   = buildAIDisplayText(result, useGrouping)
             val aiBubble = ChatMessage(id = typingId, content = aiText, sender = ChatSender.AI)
             _uiState.update { state ->
                 state.copy(messages = state.messages.map { if (it.id == typingId) aiBubble else it })
@@ -245,10 +246,7 @@ class AddTransactionViewModel(
                         runCatching { walletRepository.getWalletById(selectedWalletId) }.getOrElse { null }
                             ?: run {
                                 Log.w(TAG, "selectedWalletId=$selectedWalletId not found, falling back to default")
-                                runCatching { ensureDefaultWallet(userId) }.getOrElse {
-                                    Log.e(TAG, "Cannot get/create wallet: ${it.message}")
-                                    return@launch
-                                }
+                                runCatching { ensureDefaultWallet(userId) }.getOrElse { return@launch }
                             }
                     } else {
                         runCatching { ensureDefaultWallet(userId) }.getOrElse {
@@ -274,7 +272,8 @@ class AddTransactionViewModel(
                                 txNote      = parsed.note,
                                 txAmount    = parsed.amount,
                                 balance     = currentBalance,
-                                shortfall   = shortfall
+                                shortfall   = shortfall,
+                                useGrouping = useGrouping
                             )
                             val warnId  = ++messageIdCounter
                             val warnMsg = ChatMessage(id = warnId, content = warnText, sender = ChatSender.AI)
@@ -388,32 +387,33 @@ class AddTransactionViewModel(
         txNote: String,
         txAmount: Double,
         balance: Double,
-        shortfall: Double
+        shortfall: Double,
+        useGrouping: Boolean
     ): String {
-        val amountFmt   = formatAmount(txAmount)
-        val balanceFmt  = formatAmount(balance)
-        val shortFmt    = formatAmount(shortfall)
+        val amountFmt   = MoneyFormatter.format(txAmount, useGrouping)
+        val balanceFmt  = MoneyFormatter.format(balance, useGrouping)
+        val shortFmt    = MoneyFormatter.format(shortfall, useGrouping)
         return "⚠️ Số dư ví không đủ để ghi \"$txNote\"!\n\n" +
-               "• Chi tiêu cần: ${amountFmt}đ\n" +
-               "• Số dư hiện tại: ${balanceFmt}đ\n" +
-               "• Còn thiếu: ${shortFmt}đ\n\n" +
-               "💡 Hãy nộp thêm tiền vào ví trước nhé! " +
-               "Bạn có thể nhắn \"nạp [số tiền]\" để thêm thu nhập."
+                "• Chi tiêu cần: ${amountFmt}đ\n" +
+                "• Số dư hiện tại: ${balanceFmt}đ\n" +
+                "• Còn thiếu: ${shortFmt}đ\n\n" +
+                "💡 Hãy nộp thêm tiền vào ví trước nhé! " +
+                "Bạn có thể nhắn \"nạp [số tiền]\" để thêm thu nhập."
     }
 
-    private fun buildAIDisplayText(result: GroqService.ChatResult): String {
+    private fun buildAIDisplayText(result: GroqService.ChatResult, useGrouping: Boolean): String {
         if (result.transactions.isEmpty()) return result.displayText
 
         val txLines = result.transactions.joinToString("\n") { tx ->
             val sign   = if (tx.type == "income") "+" else "-"
-            val amount = formatAmount(tx.amount)
+            val amount = MoneyFormatter.format(tx.amount, useGrouping)
             "• ${tx.note}: $sign${amount}đ  [${tx.category}]"
         }
         return "${result.displayText}\n\n✅ Đã lưu:\n$txLines"
     }
 
-    private fun formatAmount(amount: Double): String =
-        String.format(Locale.US, "%,.0f", amount).replace(',', '.')
+//    private fun formatAmount(amount: Double): String =
+//        String.format(Locale.US, "%,.0f", amount).replace(',', '.')
 
     private fun handleParseSettings() {
         viewModelScope.launch { _navEvent.emit(AddTransactionNavEvent.NavigateToParseSettings) }

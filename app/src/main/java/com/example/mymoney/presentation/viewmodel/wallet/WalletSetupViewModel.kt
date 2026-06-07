@@ -2,10 +2,12 @@ package com.example.mymoney.presentation.viewmodel.wallet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.domain.model.WalletModel
 import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.AddTransactionUseCase
+import com.example.mymoney.domain.usecase.MoneyFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 class WalletSetupViewModel(
     private val walletRepository: WalletRepository,
     private val addTransactionUseCase: AddTransactionUseCase,
+    private val settingPreferences: SettingPreferences,
     private val userId: String,
     private val walletId: Long?             // null = tạo mới
 ) : ViewModel() {
@@ -42,13 +45,14 @@ class WalletSetupViewModel(
             try {
                 val wallet = walletRepository.getWallets(userId).first()
                     .firstOrNull { it.id == id }
+                val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
                 if (wallet != null) {
                     _uiState.update {
                         it.copy(
                             id              = wallet.id,
                             isEditMode      = true,
                             name            = wallet.name,
-                            initialBalance  = wallet.balance.toLong().toString(),
+                            initialBalance  = MoneyFormatter.formatInput(wallet.balance.toLong().toString(), useGrouping),
                             originalBalance = wallet.balance,
                             selectedColor   = wallet.color,
                             isDefault       = wallet.isDefault,
@@ -67,7 +71,13 @@ class WalletSetupViewModel(
     fun onEvent(event: WalletSetupEvent) {
         when (event) {
             is WalletSetupEvent.NameChanged    -> _uiState.update { it.copy(name = event.name) }
-            is WalletSetupEvent.BalanceChanged -> _uiState.update { it.copy(initialBalance = event.balance) }
+            is WalletSetupEvent.BalanceChanged -> {
+                viewModelScope.launch {
+                    val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
+                    val formatted = MoneyFormatter.formatInput(event.balance, useGrouping)
+                    _uiState.update { it.copy(initialBalance = formatted) }
+                }
+            }
             is WalletSetupEvent.ColorChanged   -> _uiState.update { it.copy(selectedColor = event.color) }
             is WalletSetupEvent.DefaultChanged -> _uiState.update { it.copy(isDefault = event.isDefault) }
             is WalletSetupEvent.Submit         -> submit()

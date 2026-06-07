@@ -49,4 +49,19 @@ interface AuthRepository {
      * @return username (chuỗi) nếu có, null nếu chưa đăng nhập hoặc chưa có metadata
      */
     suspend fun getCurrentUsername(): String?
+
+    /**
+     * Cập nhật username của user hiện tại.
+     */
+    suspend fun updateUsername(newUsername: String)
+
+    /**
+     * Cập nhật mật khẩu của user hiện tại.
+     */
+    suspend fun updatePassword(newPassword: String)
+
+    /**
+     * Xóa tài khoản người dùng hiện tại.
+     */
+    suspend fun deleteAccount()
 }

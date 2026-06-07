@@ -1,15 +1,16 @@
-package com.example.mymoney.presentation.viewmodel.budget
+package com.example.mymoney.presentation.viewmodel.budget.add_budget
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.model.BudgetModel
 import com.example.mymoney.domain.repository.BudgetRepository
 import com.example.mymoney.domain.repository.CategoryRepository
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualEvent
-import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetManualUiState
+import com.example.mymoney.domain.usecase.MoneyFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -22,14 +23,15 @@ import java.time.LocalDate
  *  *  - Chỉnh sửa: budgetId != null → load dữ liệu từ DB rồi điền vào form
  */
 
-class BudgetManualViewModel(
+class BudgetFormViewModel(
     private val budgetRepository: BudgetRepository,
     private val categoryRepository: CategoryRepository,
+    private val settingPreferences: SettingPreferences,
     private val userId: String,
     private val budgetId: Long? // null tạo mới
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(BudgetManualUiState())
-    val uiState: StateFlow<BudgetManualUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(BudgetFormUiState())
+    val uiState: StateFlow<BudgetFormUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -58,12 +60,13 @@ class BudgetManualViewModel(
         viewModelScope.launch {
             try {
                 val budget = budgetRepository.getBudgetById(id)
+                val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
                 if (budget != null) {
                     _uiState.update {
                         it.copy(
                             id                   = budget.id,
                             selectedCategory     = _uiState.value.categories.find { it.id == budget.categoryId },
-                            currentAmountLimit   = budget.amountLimit.toString(),
+                            currentAmountLimit   = MoneyFormatter.formatInput(budget.amountLimit.toString(), useGrouping),
                             originalAmountLimit  = budget.amountLimit.toString(),
                             month                = budget.month,
                             year                 = budget.year,
@@ -94,20 +97,26 @@ class BudgetManualViewModel(
         }
     }
 
-    fun onEvent(event: BudgetManualEvent) {
+    fun onEvent(event: BudgetFormEvent) {
         when (event) {
-            is BudgetManualEvent.OnAmountChange        -> _uiState.update { it.copy(currentAmountLimit = event.value, error = null) }
-            is BudgetManualEvent.OnMonthSelected       -> _uiState.update { it.copy(month = event.month) }
-            is BudgetManualEvent.OnYearSelected        -> _uiState.update { it.copy(year = event.year) }
-            is BudgetManualEvent.Save                  -> saveBudget()
-            is BudgetManualEvent.DeleteConfirm         -> deleteBudget()
-            is BudgetManualEvent.DeleteClicked         -> _uiState.update { it.copy(showDeleteDialog = true) }
-            is BudgetManualEvent.DeleteDismissed       -> _uiState.update { it.copy(showDeleteDialog = false) }
-            is BudgetManualEvent.OnCategorySelected    -> _uiState.update { it.copy(selectedCategory = event.category, showCategorySheet = false) }
-            is BudgetManualEvent.CategoryClicked       -> _uiState.update { it.copy(showCategorySheet = true) }
-            is BudgetManualEvent.DismissCategorySheet  -> _uiState.update { it.copy(showCategorySheet = false) }
-            is BudgetManualEvent.DismissError          -> _uiState.update { it.copy(error = null) }
-            is BudgetManualEvent.ClearCategory         -> _uiState.update { it.copy(selectedCategory = null) }
+            is BudgetFormEvent.OnAmountChange        -> {
+                viewModelScope.launch {
+                    val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
+                    val formatted = MoneyFormatter.formatInput(event.value, useGrouping)
+                    _uiState.update { it.copy(currentAmountLimit = formatted, error = null) }
+                }
+            }
+            is BudgetFormEvent.OnMonthSelected       -> _uiState.update { it.copy(month = event.month) }
+            is BudgetFormEvent.OnYearSelected        -> _uiState.update { it.copy(year = event.year) }
+            is BudgetFormEvent.Save                  -> saveBudget()
+            is BudgetFormEvent.DeleteConfirm         -> deleteBudget()
+            is BudgetFormEvent.DeleteClicked         -> _uiState.update { it.copy(showDeleteDialog = true) }
+            is BudgetFormEvent.DeleteDismissed       -> _uiState.update { it.copy(showDeleteDialog = false) }
+            is BudgetFormEvent.OnCategorySelected    -> _uiState.update { it.copy(selectedCategory = event.category, showCategorySheet = false) }
+            is BudgetFormEvent.CategoryClicked       -> _uiState.update { it.copy(showCategorySheet = true) }
+            is BudgetFormEvent.DismissCategorySheet  -> _uiState.update { it.copy(showCategorySheet = false) }
+            is BudgetFormEvent.DismissError          -> _uiState.update { it.copy(error = null) }
+            is BudgetFormEvent.ClearCategory         -> _uiState.update { it.copy(selectedCategory = null) }
         }
     }
 
