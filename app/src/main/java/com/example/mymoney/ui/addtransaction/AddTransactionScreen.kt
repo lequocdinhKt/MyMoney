@@ -64,11 +64,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+// rememberSaveable not needed after persisting via DataStore
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +84,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.presentation.viewmodel.addtransaction.AddTransactionViewModel
@@ -90,6 +97,9 @@ import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.ChatSender
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.VoiceRecordingState
 import com.example.mymoney.ui.theme.MyMoneyTheme
+
+// Chat tone options for chatbot
+enum class ChatTone { FRIENDLY, STERN }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AIChatScreen — Màn hình chat giữa người dùng và AI để thêm giao dịch
@@ -116,6 +126,13 @@ fun AIChatScreen(
     )
     val uiState by viewModel.uiState.collectAsState()
 
+    // Chatbot tone persisted in DataStore
+    val prefs = com.example.mymoney.data.local.datastore.SettingPreferences(context)
+    val chatToneName by prefs.chatTone.collectAsState(initial = "FRIENDLY")
+    val chatTone = try { ChatTone.valueOf(chatToneName) } catch (_: Exception) { ChatTone.FRIENDLY }
+    var showToneSettings by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(Unit) {
         viewModel.navEvent.collect { event ->
             when (event) {
@@ -134,12 +151,43 @@ fun AIChatScreen(
         }
     }
 
-    AIChatContent(
-        uiState = uiState,
-        onEvent = viewModel::onEvent,
-        onNavigateBack = onNavigateBack,
-        modifier = modifier
-    )
+    // Wrap content in a Box to overlay a small settings icon at top-left
+    Box(modifier = modifier.fillMaxSize()) {
+        AIChatContent(
+            uiState = uiState,
+            onEvent = viewModel::onEvent,
+            onNavigateBack = onNavigateBack,
+            onOpenChatSettings = { showToneSettings = true },
+            modifier = Modifier.fillMaxSize(),
+            chatTone = chatTone,
+        )
+
+        // Small back icon at top-left (below title to avoid overlap)
+        IconButton(
+            onClick = { onNavigateBack() },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = 56.dp)
+                .statusBarsPadding()
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+                if (showToneSettings) {
+                    ChatToneSettingsDialog(
+                        current = chatTone,
+                        onDismiss = { showToneSettings = false },
+                        onSelect = { tone ->
+                            // persist selection
+                            coroutineScope.launch { prefs.setChatTone(tone.name) }
+                            showToneSettings = false
+                        }
+                    )
+                }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,7 +200,9 @@ private fun AIChatContent(
     uiState: AddTransactionUiState,
     onEvent: (AddTransactionEvent) -> Unit,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    onOpenChatSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+    chatTone: ChatTone = ChatTone.FRIENDLY
 ) {
     Column(
         modifier = modifier
@@ -175,16 +225,9 @@ private fun AIChatContent(
                             fontWeight = FontWeight.Medium
                         )
                     },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Quay lại"
-                            )
-                        }
-                    },
+                    navigationIcon = { /* handled by overlay back button */ },
                     actions = {
-                        IconButton(onClick = { onEvent(AddTransactionEvent.OnParseSettingsClicked) }) {
+                        IconButton(onClick = onOpenChatSettings) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Cài đặt"
@@ -272,6 +315,7 @@ private fun AIChatContent(
                     else -> {
                         ChatMessageList(
                             messages = uiState.messages,
+                            chatTone = chatTone,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -640,6 +684,7 @@ private fun VoicePlaybackBar(
 @Composable
 private fun ChatMessageList(
     messages: List<ChatMessage>,
+    chatTone: ChatTone = ChatTone.FRIENDLY,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -659,7 +704,7 @@ private fun ChatMessageList(
         contentPadding = PaddingValues(top = 16.dp, bottom = 8.dp)
     ) {
         items(items = messages.reversed(), key = { it.id }) { message ->
-            ChatBubble(message = message)
+            ChatBubble(message = message, chatTone = chatTone)
         }
     }
 }
@@ -671,6 +716,7 @@ private fun ChatMessageList(
 @Composable
 private fun ChatBubble(
     message: ChatMessage,
+    chatTone: ChatTone = ChatTone.FRIENDLY,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.sender == ChatSender.USER
@@ -717,12 +763,86 @@ private fun ChatBubble(
                 )
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
+            val displayText = if (isUser) message.content else applyToneTransformation(message.content, chatTone)
             Text(
-                text = message.content,
+                text = displayText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isUser) MaterialTheme.colorScheme.onPrimary
                         else MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun ChatToneSettingsDialog(
+    current: ChatTone,
+    onDismiss: () -> Unit,
+    onSelect: (ChatTone) -> Unit
+) {
+    val selected = remember { mutableStateOf(current) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Cài đặt Chatbot") },
+        text = {
+            Column {
+                Text("Chọn phong cách phản hồi của AI:")
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = selected.value == ChatTone.FRIENDLY, onClick = { selected.value = ChatTone.FRIENDLY })
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Thân thiện – dùng emoji, ngôn ngữ mềm mại")
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = selected.value == ChatTone.STERN, onClick = { selected.value = ChatTone.STERN })
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Nghiêm khắc – ngắn gọn, cảnh báo khi cần")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Xem trước:")
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp)
+                ) {
+                    Text(
+                        text = applyToneTransformation("Đã ghi nhận! • Bữa tối: -20,000đ", selected.value),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSelect(selected.value) }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Huỷ") }
+        }
+    )
+}
+
+// Simple tone transformer — heuristic rules to show different styles without changing backend AI
+private fun applyToneTransformation(text: String, tone: ChatTone): String {
+    return when (tone) {
+        ChatTone.FRIENDLY -> {
+            // ensure friendly emojis and softening phrases
+            var t = text
+            if (!t.contains("🤖") && !t.contains("🎉")) {
+                t = t + " 🎉"
+            }
+            t.replace("⚠️", "")
+        }
+        ChatTone.STERN -> {
+            // remove emojis, make concise and add a warning prefix when it contains "Đã lưu" or "Đã ghi nhận"
+            var t = text.replace(Regex("[\\p{So}\\p{C}]"), "") // remove symbols/emojis
+            t = t.replace("Đã ghi nhận", "Được ghi nhận").trim()
+            if (t.contains("Đã lưu") || t.contains("Được ghi nhận") || t.contains("Đã ghi")) {
+                t = "⚠️ Lưu ý: " + t
+            }
+            t
         }
     }
 }
@@ -738,7 +858,8 @@ private fun AIChatEmptyPreview() {
         AIChatContent(
             uiState = AddTransactionUiState(isLoading = false, isEmpty = true),
             onEvent = {},
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onOpenChatSettings = {}
         )
     }
 }
@@ -761,7 +882,8 @@ private fun AIChatWithMessagesPreview() {
                 )
             ),
             onEvent = {},
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onOpenChatSettings = {}
         )
     }
 }
@@ -780,7 +902,8 @@ private fun AIChatDarkPreview() {
                 )
             ),
             onEvent = {},
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onOpenChatSettings = {}
         )
     }
 }

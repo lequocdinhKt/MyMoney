@@ -34,6 +34,7 @@ class SettingPreferences(private val context: Context) {
         val KEY_THEME_MODE               = stringPreferencesKey("theme_mode")
         val KEY_NUMBER_FORMAT            = stringPreferencesKey("number_format")
         val KEY_SHOW_COMPLETED           = booleanPreferencesKey("show_completed_enabled")
+        val KEY_CHAT_TONE                 = stringPreferencesKey("chat_tone")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -78,6 +79,10 @@ class SettingPreferences(private val context: Context) {
     val isShowCompletedEnabled: Flow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[KEY_SHOW_COMPLETED] ?: true }
 
+    /** Chat tone: FRIENDLY or STERN, default FRIENDLY */
+    val chatTone: Flow<String> = context.dataStore.data
+        .map { prefs -> prefs[KEY_CHAT_TONE] ?: "FRIENDLY" }
+
     // ── Write ──────────────────────────────────────────────────────────────────
 
     suspend fun saveOnboardingCompleted() {
@@ -120,6 +125,12 @@ class SettingPreferences(private val context: Context) {
     suspend fun setShowCompletedEnabled(show_enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SHOW_COMPLETED] = show_enabled
+        }
+    }
+
+    suspend fun setChatTone(toneName: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CHAT_TONE] = toneName
         }
     }
 
