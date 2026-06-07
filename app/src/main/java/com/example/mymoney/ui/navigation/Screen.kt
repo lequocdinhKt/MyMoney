@@ -53,6 +53,20 @@ sealed class Screen(val route: String) {
             "budget_form/$userId/$budgetId"
     }
 
+    /** Backward-compatible alias for older navigation code. */
+    data object BudgetManual : Screen(BudgetForm.route) {
+        fun createRoute(userId: String, budgetId: Long = -1L) =
+            BudgetForm.createRoute(userId, budgetId)
+    }
+
+    /** Backward-compatible alias for older navigation code. */
+    data object Streak : Screen("streak")
+
+    /** Backward-compatible alias for older navigation code. */
+    data object Recurring : Screen("recurring/{walletId}") {
+        fun createRoute(walletId: Long = 0L) = "recurring/$walletId"
+    }
+
     // ── Màn hình hồ sơ người dùng ──
     data object Profile : Screen("profile")
 

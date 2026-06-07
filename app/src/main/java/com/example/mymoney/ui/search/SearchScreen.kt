@@ -215,8 +215,7 @@ private fun TransactionItem(tx: TransactionModel) {
             Text(
                 text = MoneyFormatter.formatWithSign(
                     if (tx.type == "expense") -tx.amount else tx.amount,
-                    fmt.useThousandSep,
-                    fmt.numberFormat
+                    fmt.useThousandSep
                 ),
                 color = if (tx.type == "expense")
                     MaterialTheme.colorScheme.error

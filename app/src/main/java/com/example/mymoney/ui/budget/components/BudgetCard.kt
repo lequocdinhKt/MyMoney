@@ -109,7 +109,6 @@ fun BudgetSection(
                 budget = budget,
                 isSelected = budget.id == selectedBudgetId,
                 isDragging = index == draggingIndex,
-                dragOffsetX = if (index == draggingIndex) dragOffsetX else 0f,
                 onClick = { onSelectBudget(budget.id) },
                 onDoubleTap = { onEditBudget(budget.id) },
                 onDeleteClick = { onDeleteClick(budget.id) },
@@ -152,7 +151,6 @@ private fun BudgetCard(
     budget:BudgetModel,
     isSelected: Boolean,
     isDragging: Boolean,
-    dragOffsetX: Float,
     onClick: () -> Unit,
     onDoubleTap: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -243,7 +241,7 @@ private fun BudgetCard(
             )
 
             Text(
-                text = "${MoneyFormatter.format(budget.amountLimit, fmt.useThousandSep, fmt.numberFormat)} đ",
+                text = "${MoneyFormatter.format(budget.amountLimit, fmt.useThousandSep)} đ",
                 modifier = Modifier.padding(top = 12.dp),
                 style = MaterialTheme.typography.bodyLarge
             )

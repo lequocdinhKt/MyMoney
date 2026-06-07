@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.domain.model.BudgetModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModel
-import com.example.mymoney.presentation.viewmodel.budget.BudgetViewModelFactory
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetViewModel
+import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetViewModelFactory
 import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetEvent
 import com.example.mymoney.presentation.viewmodel.budget.budget.BudgetUiState
 import com.example.mymoney.ui.budget.components.BudgetSection

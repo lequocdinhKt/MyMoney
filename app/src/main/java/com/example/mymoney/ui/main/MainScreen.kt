@@ -28,7 +28,6 @@ import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
-import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
@@ -78,7 +77,6 @@ fun MainScreen(
         HomeViewModelFactory(
             getTransactionsByPeriod = GetTransactionsByPeriodUseCase(transactionRepo),
             getPeriodSummary        = GetPeriodSummaryUseCase(transactionRepo),
-            getTotalBalance         = GetTotalBalanceUseCase(walletRepo),
             walletRepository        = walletRepo,
             transactionRepository   = transactionRepo,
             userId                  = userId,
@@ -207,7 +205,7 @@ fun MainScreen(
     // ── Dialog: Thông báo không có ví ──
     if (showNoWalletDialog) {
         AlertDialog(
-            onDismissRequest = { showNoWalletDialog = false },
+            onDismissRequest = { showNoWalletDialog = false; showNoWalletDialog.toString() },
             title = { Text("Tạo ví trước") },
             text = {
                 Text(
@@ -219,6 +217,7 @@ fun MainScreen(
                 Button(
                     onClick = {
                         showNoWalletDialog = false
+                        showNoWalletDialog.toString()
                         onNavigateToAddWallet()  // Điều hướng sang tạo ví
                     }
                 ) {
@@ -227,7 +226,7 @@ fun MainScreen(
             },
             dismissButton = {
                 Button(
-                    onClick = { showNoWalletDialog = false }
+                    onClick = { showNoWalletDialog = false; showNoWalletDialog.toString() }
                 ) {
                     Text("Đóng")
                 }

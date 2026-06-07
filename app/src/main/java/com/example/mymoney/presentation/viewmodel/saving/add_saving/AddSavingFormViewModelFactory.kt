@@ -16,7 +16,7 @@ class AddSavingFormViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AddSavingFormViewModel::class.java)) {
             val db = AppDatabase.getInstance(context.applicationContext)
-            val repository = SavingRepositoryImpl(savingDao = db.savingDao())
+            val repository = SavingRepositoryImpl(db.savingDao())
             val addSavingUseCase = AddSavingGoalUserCase(repository = repository)
             val settingPrefs = SettingPreferences(context.applicationContext)
             return AddSavingFormViewModel(

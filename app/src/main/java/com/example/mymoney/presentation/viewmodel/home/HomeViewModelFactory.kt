@@ -6,7 +6,6 @@ import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.domain.repository.WalletRepository
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
-import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
 
 /**
@@ -15,7 +14,6 @@ import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
 class HomeViewModelFactory(
     private val getTransactionsByPeriod: GetTransactionsByPeriodUseCase,
     private val getPeriodSummary: GetPeriodSummaryUseCase,
-    private val getTotalBalance: GetTotalBalanceUseCase,
     private val walletRepository: WalletRepository,
     private val transactionRepository: TransactionRepository,
     private val userId: String,
@@ -28,7 +26,6 @@ class HomeViewModelFactory(
         return HomeViewModel(
             getTransactionsByPeriod = getTransactionsByPeriod,
             getPeriodSummary        = getPeriodSummary,
-            getTotalBalance         = getTotalBalance,
             walletRepository        = walletRepository,
             transactionRepository   = transactionRepository,
             userId                  = userId,

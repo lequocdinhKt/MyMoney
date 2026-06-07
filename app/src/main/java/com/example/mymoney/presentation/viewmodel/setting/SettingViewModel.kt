@@ -11,7 +11,6 @@ import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.presentation.viewmodel.setting.setting.CurrencyMode
 import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
-import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingNavEvent
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,7 +37,7 @@ private data class SettingExtrasState(
     val showThemeSheet: Boolean = false,
     val selectedCurrency: CurrencyMode = CurrencyMode.VND,
     val showCurrencySheet: Boolean = false,
-//    val selectedNumberFormat: NumberFormat = NumberFormat.COMMA,
+    val selectedNumberFormat: NumberFormat = NumberFormat.DOT,
 //    val showNumberFormat: Boolean = false
 )
 

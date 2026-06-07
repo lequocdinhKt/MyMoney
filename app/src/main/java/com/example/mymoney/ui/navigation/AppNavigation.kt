@@ -26,7 +26,7 @@ import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import com.example.mymoney.ui.budget.BudgetManualScreen
+import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
@@ -220,7 +220,7 @@ composable(route = Screen.Main.route) {
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onPhotoTaken = { photoUri ->
+                onPhotoTaken = { _ ->
                     // Giữ nguyên camera screen sau khi chụp — không pop back
                 }
             )
@@ -261,7 +261,7 @@ composable(route = Screen.Main.route) {
         ) { backStackEntry ->
             val uid = backStackEntry.arguments?.getString("userId") ?: userId
             val bId = backStackEntry.arguments?.getLong("budgetId") ?: -1L
-            BudgetManualScreen(
+            BudgetFormScreen(
                 userId = uid,
                 budgetId = if (bId == -1L) null else bId,
                 onNavigateBack = {

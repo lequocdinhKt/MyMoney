@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
 import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,6 +32,7 @@ class SettingPreferences(private val context: Context) {
         val KEY_USERNAME                 = stringPreferencesKey("username")
         val KEY_THOUSAND_SEPARATOR       = booleanPreferencesKey("thousand_separator_enabled")
         val KEY_THEME_MODE               = stringPreferencesKey("theme_mode")
+        val KEY_NUMBER_FORMAT            = stringPreferencesKey("number_format")
         val KEY_SHOW_COMPLETED           = booleanPreferencesKey("show_completed_enabled")
     }
 
@@ -57,8 +59,18 @@ class SettingPreferences(private val context: Context) {
             val themeName = prefs[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name
             try {
                 ThemeMode.valueOf(themeName)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 ThemeMode.SYSTEM
+            }
+        }
+
+    val numberFormat: Flow<NumberFormat> = context.dataStore.data
+        .map { prefs ->
+            val formatName = prefs[KEY_NUMBER_FORMAT] ?: NumberFormat.DOT.name
+            try {
+                NumberFormat.valueOf(formatName)
+            } catch (_: Exception) {
+                NumberFormat.DOT
             }
         }
 
@@ -95,6 +107,13 @@ class SettingPreferences(private val context: Context) {
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[KEY_THEME_MODE] = mode.name
+        }
+    }
+
+    @Suppress("unused")
+    suspend fun setNumberFormat(format: NumberFormat) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_NUMBER_FORMAT] = format.name
         }
     }
 
