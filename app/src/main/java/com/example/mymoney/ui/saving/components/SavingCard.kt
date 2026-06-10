@@ -26,8 +26,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextAlign
 import com.example.mymoney.presentation.viewmodel.saving.saving.SavingGoalItem
+import com.example.mymoney.ui.theme.MyMoneyTheme
 
 @Composable
 fun SavingSection(
@@ -114,14 +116,12 @@ fun SavingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = if (isCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+            ProgressBarWithCenterLabel(
+                progress = progress,
+                progressColor = if (isCompleted)
+                    Color(0xFF4CAF50)
+                else
+                    MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -149,6 +149,48 @@ fun SavingCard(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ProgressBarWithCenterLabel(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    progressColor: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(36.dp)
+    ) {
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .align(Alignment.Center),
+            color = progressColor,
+            trackColor = trackColor,
+            strokeCap = StrokeCap.Round
+        )
+
+        Surface(
+            modifier = Modifier.align(Alignment.Center),
+            shape = RoundedCornerShape(12.dp),
+            color = progressColor,
+            shadowElevation = 4.dp
+        ) {
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                modifier = Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 4.dp
+                ),
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -266,7 +308,6 @@ private fun StatItem(
     }
 }
 
-
 @Composable
 private fun VerticalDivider(
     modifier: Modifier = Modifier,
@@ -280,16 +321,10 @@ private fun VerticalDivider(
     )
 }
 
-@Preview(
-    name = "SavingSection Preview",
-    showBackground = true,
-    widthDp = 400,
-    showSystemUi = true
-)
+@Preview(showBackground = true, widthDp = 400, showSystemUi = true)
 @Composable
 fun SavingSectionPreview() {
-
-    val fakeData = listOf(
+    val mockData = listOf(
         SavingGoalItem(
             goal = SavingGoalModel(
                 id = 1L,
@@ -334,9 +369,9 @@ fun SavingSectionPreview() {
         )
     )
 
-    MaterialTheme {
+    MyMoneyTheme {
         SavingSection(
-            savings = fakeData,
+            savings = mockData,
             onDeleteSaving = {},
             onDetailSaving = {}
         )
