@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.SavingRecordRepositoryImpl
 import com.example.mymoney.data.repository.SavingRepositoryImpl
 
 class SavingViewModelFactory(
@@ -19,9 +20,11 @@ class SavingViewModelFactory(
         }
         val db   = AppDatabase.getInstance(context.applicationContext)
         val repo = SavingRepositoryImpl(db.savingDao())
+        val recordRepo = SavingRecordRepositoryImpl(db.savingRecordDao())
         return SavingViewModel(
             settingPreferences     = SettingPreferences(context.applicationContext),
             savingRepository       = repo,
+            recordRepository       = recordRepo,
             userId                 = userId,
         )
         as T
