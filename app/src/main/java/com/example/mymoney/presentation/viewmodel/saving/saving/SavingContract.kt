@@ -7,9 +7,14 @@ import com.example.mymoney.domain.model.SavingGoalModel
  */
 data class SavingUiState(
     val isLoading: Boolean = false,
-    val savingGoals: List<SavingGoalModel> = emptyList(),
+    val savingGoals: List<SavingGoalItem> = emptyList(),
     val isShowCompletedEnabled: Boolean = true, // Có hiện mục tiêu đã hoàn thành ko - mặc định là có
     val selectedType: SavingType = SavingType.ONE_TIME
+)
+
+data class SavingGoalItem(
+    val goal: SavingGoalModel,
+    val currentAmount: Double
 )
 
 enum class SavingType {

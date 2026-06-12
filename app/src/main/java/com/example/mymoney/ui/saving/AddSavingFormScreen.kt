@@ -25,12 +25,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -38,10 +41,11 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,6 +72,10 @@ import com.example.mymoney.ui.common.SelectionLayout
 import com.example.mymoney.ui.common.SelectionOption
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SavingFormScreen(
@@ -205,8 +213,25 @@ private fun SavingFormContent(
                 )
             }
 
+            if (uiState.showDatePicker) {
+                SavingDatePickerDialog(
+                    initialDate = uiState.targetDate,
+                    onDateSelected = {
+                        onEvent(
+                            AddSavingEvent.OnTargetDateSelected(it)
+                        )
+                    },
+                    onDismiss = {
+                        onEvent(
+                            AddSavingEvent.OnDismissDatePicker
+                        )
+                    }
+                )
+            }
+
             if (uiState.mode == SavingMode.ONE_TIME) {
                 TargetDateSelector(
+                    date = uiState.targetDate,
                     onClick = {
                         // mở date picker
                         onEvent(AddSavingEvent.OnShowDatePicker)
@@ -421,7 +446,7 @@ private fun RecurringSelector(
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(
-                    MenuAnchorType.PrimaryNotEditable,
+                    ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                     enabled = true
                 )
             ,
@@ -447,34 +472,81 @@ private fun RecurringSelector(
 
 @Composable
 private fun TargetDateSelector(
+    date: LocalDate,
     onClick: () -> Unit
 ) {
-    Box(
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    OutlinedTextField(
+        value = date.format(formatter),
+        onValueChange = {},
+        readOnly = true,
+        label = {
+            Text("Ngày mục tiêu")
+        },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = "Chọn ngày",
+                modifier = Modifier.clickable {
+                    onClick()
+                }
+            )
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Ngày mục tiêu")
+            .clickable {
+                onClick()
+            },
+        shape = RoundedCornerShape(12.dp)
+    )
+}
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+@Composable
+fun SavingDatePickerDialog(
+    initialDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDate
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate =
+                            Instant.ofEpochMilli(millis)
+                                .atZone(ZoneOffset.UTC)
+                                .toLocalDate()
+
+                        onDateSelected(selectedDate)
+                    }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss
+            ) {
+                Text("Hủy")
+            }
         }
+    ) {
+        DatePicker(
+            state = datePickerState,
+            title = null,
+            headline = null,
+            showModeToggle = false
+        )
     }
 }
 

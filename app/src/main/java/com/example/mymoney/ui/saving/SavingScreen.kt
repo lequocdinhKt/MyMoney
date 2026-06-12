@@ -21,6 +21,8 @@ import com.example.mymoney.presentation.viewmodel.saving.saving.SavingType
 import com.example.mymoney.presentation.viewmodel.saving.saving.SavingUiState
 import com.example.mymoney.ui.components.EmptyStateComposable
 import com.example.mymoney.ui.theme.MyMoneyTheme
+import com.example.mymoney.ui.saving.components.SavingSection
+import com.example.mymoney.domain.model.SavingType as DomainSavingType
 
 /**
  * Màn hình Tiết kiệm – tab thứ 3 trong Bottom Navigation.
@@ -50,106 +52,126 @@ private fun SavingContent(
     onEvent: (SavingEvent) -> Unit,
     onNavigateToAddSavingForm: () -> Unit = {},
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        // ── TOP AREA (toggle + buttons) ──
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopEnd)
-                .padding(12.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            // Toggle
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Hiện đã hoàn thành",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(Modifier.width(8.dp))
-
-                Switch(
-                    checked = uiState.isShowCompletedEnabled,
-                    onCheckedChange = {
-                        onEvent(SavingEvent.ToggleShowCompleted(it))
-                    },
-                    modifier = Modifier.scale(0.75f), // 👈 quan trọng nhất
-
-                )
+    val filteredGoals = remember(uiState.savingGoals, uiState.selectedType, uiState.isShowCompletedEnabled) {
+        uiState.savingGoals.filter { item ->
+            val matchesType = if (uiState.selectedType == SavingType.ONE_TIME) {
+                item.goal.savingType == DomainSavingType.ONE_TIME
+            } else {
+                item.goal.savingType == DomainSavingType.WEEKLY || item.goal.savingType == DomainSavingType.MONTHLY
             }
 
-            Spacer(Modifier.height(12.dp))
+            val isCompleted = item.currentAmount >= item.goal.targetAmount
+            val matchesCompleted = uiState.isShowCompletedEnabled || !isCompleted
 
-            // Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
+            matchesType && matchesCompleted
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ── TOP AREA (toggle + buttons) ──
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.End
             ) {
-                OutlinedButton(
-                    onClick = { onEvent(SavingEvent.SelectedType(SavingType.ONE_TIME)) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (uiState.selectedType == SavingType.ONE_TIME)
-                            MaterialTheme.colorScheme.primary
-                        else Color.Transparent
-                    )
+                // Toggle
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Một lần",
-                        color =
-                            if (uiState.selectedType == SavingType.ONE_TIME)
-                                MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurface
+                        text = "Hiện đã hoàn thành",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Switch(
+                        checked = uiState.isShowCompletedEnabled,
+                        onCheckedChange = {
+                            onEvent(SavingEvent.ToggleShowCompleted(it))
+                        },
+                        modifier = Modifier.scale(0.75f),
                     )
                 }
 
-                OutlinedButton(
-                    onClick = { onEvent(SavingEvent.SelectedType(SavingType.RECURRING)) },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (uiState.selectedType == SavingType.RECURRING)
-                            MaterialTheme.colorScheme.primary
-                        else Color.Transparent
-                    )
+                Spacer(Modifier.height(12.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
                 ) {
-                    Text(
-                        "Định kỳ",
-                        color =
-                            if (uiState.selectedType == SavingType.RECURRING)
-                                MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurface
+                    OutlinedButton(
+                        onClick = { onEvent(SavingEvent.SelectedType(SavingType.ONE_TIME)) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (uiState.selectedType == SavingType.ONE_TIME)
+                                MaterialTheme.colorScheme.primary
+                            else Color.Transparent
+                        )
+                    ) {
+                        Text(
+                            "Một lần",
+                            color =
+                                if (uiState.selectedType == SavingType.ONE_TIME)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { onEvent(SavingEvent.SelectedType(SavingType.RECURRING)) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (uiState.selectedType == SavingType.RECURRING)
+                                MaterialTheme.colorScheme.primary
+                            else Color.Transparent
+                        )
+                    ) {
+                        Text(
+                            "Định kỳ",
+                            color =
+                                if (uiState.selectedType == SavingType.RECURRING)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            if (filteredGoals.isEmpty() && !uiState.isLoading) {
+                Box(modifier = Modifier.weight(1f)) {
+                    EmptyStateComposable(
+                        "Hiện tại chưa có khoản tiết kiệm nào.\nBắt đầu thêm mục tiêu tiết kiệm của bạn ngay bây giờ"
                     )
                 }
+            } else {
+                SavingSection(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                savings = filteredGoals,
+                onDeleteSaving = { onEvent(SavingEvent.DeleteGoal(it)) },
+                onDetailSaving = {/* navigate */ }
+                )
             }
         }
 
-        EmptyStateComposable(
-            "Hiện tại chưa có khoản tiết kiệm nào.\nBắt đầu thêm mục tiêu tiết kiệm của bạn ngay bây giờ"
-        )
-
         // FAB
-        Column(
+        ExtendedFloatingActionButton(
+            onClick = { onNavigateToAddSavingForm() },
+            containerColor = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-                .width(IntrinsicSize.Max),
-            horizontalAlignment = Alignment.End
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ExtendedFloatingActionButton(
-                onClick = { onNavigateToAddSavingForm() },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(
-                    text = "Thêm",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
+            Icon(Icons.Default.Add, contentDescription = null)
+            Text(
+                text = "Thêm",
+                style = MaterialTheme.typography.titleMedium
+            )
         }
     }
 }
