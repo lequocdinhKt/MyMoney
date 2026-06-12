@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.mymoney.data.local.dao.BudgetDao
 import com.example.mymoney.data.local.dao.SavingDao
+import com.example.mymoney.data.local.dao.SavingRecordDao
 import com.example.mymoney.data.local.dao.CategoryDao
 import com.example.mymoney.data.local.dao.ChatMessageDao
 import com.example.mymoney.data.local.dao.RecurringTransactionDao
@@ -13,6 +14,7 @@ import com.example.mymoney.data.local.dao.TransactionDao
 import com.example.mymoney.data.local.dao.WalletDao
 import com.example.mymoney.data.local.entity.BudgetEntity
 import com.example.mymoney.data.local.entity.SavingGoalEntity
+import com.example.mymoney.data.local.entity.SavingRecordEntity
 import com.example.mymoney.data.local.entity.CategoryEntity
 import com.example.mymoney.data.local.entity.ChatMessageEntity
 import com.example.mymoney.data.local.entity.RecurringTransactionEntity
@@ -27,9 +29,10 @@ import com.example.mymoney.data.local.entity.WalletEntity
         BudgetEntity::class,
         ChatMessageEntity::class,
         RecurringTransactionEntity::class,
-        SavingGoalEntity::class
+        SavingGoalEntity::class,
+        SavingRecordEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun budgetDao(): BudgetDao
     abstract fun savingDao(): SavingDao
+    abstract fun savingRecordDao(): SavingRecordDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun recurringTransactionDao(): RecurringTransactionDao
 

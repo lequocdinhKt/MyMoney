@@ -134,7 +134,7 @@ fun AIChatScreen(
     var showAiRulesSettings by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-q    LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         viewModel.navEvent.collect { event ->
             when (event) {
                 is AddTransactionNavEvent.NavigateBack -> onNavigateBack()
