@@ -57,7 +57,8 @@ data class AddTransactionUiState(
     val walletName: String = "Ví chính",
     val errorMessage: String? = null,
     val voiceState: VoiceRecordingState = VoiceRecordingState.IDLE,
-    val isVoicePlaying: Boolean = false
+    val isVoicePlaying: Boolean = false,
+    val aiCustomRules: String = ""
 )
 
 /**
@@ -91,6 +92,9 @@ sealed class AddTransactionEvent {
 
     /** Người dùng nhấn nút settings (cài đặt parsing) */
     data object OnParseSettingsClicked : AddTransactionEvent()
+
+    /** Cập nhật quy tắc AI custom */
+    data class OnUpdateAiRules(val rules: String) : AddTransactionEvent()
 
     /** Kết quả OCR từ màn hình camera (văn bản đã được chuyển sang dạng gạch đầu dòng) */
     data class OnOcrResult(val text: String) : AddTransactionEvent()

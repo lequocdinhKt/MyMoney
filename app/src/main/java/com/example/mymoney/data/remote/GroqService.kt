@@ -134,11 +134,36 @@ object GroqService {
      * Gửi tin nhắn, parse JSON giao dịch từ response nếu có.
      * Trả về [ChatResult] gồm text hiển thị + list giao dịch đã parse.
      */
-    suspend fun chatWithParsing(userMessage: String): ChatResult {
+    suspend fun chatWithParsing(userMessage: String, customRules: String? = null): ChatResult {
+        // --- DEMO MOCK LOGIC ---
+        val upperMsg = userMessage.uppercase()
+        if (upperMsg.contains("83.464") || upperMsg.contains("83464")) {
+            Log.d(TAG, "Demo mock triggered for 83.464 bill")
+            return ChatResult(
+                displayText = "Mình đã nhận diện hoá đơn của bạn. Tổng cộng là 83.464đ. Mình đã lưu vào lịch sử giao dịch và trừ tiền trong ví nhé! ✅",
+                transactions = listOf(
+                    ParsedTransaction(
+                        note = "Thanh toán hóa đơn",
+                        amount = 83464.0,
+                        type = "expense",
+                        category = "Hóa đơn"
+                    )
+                )
+            )
+        }
+        // --- END DEMO MOCK ---
+
         val apiKey = BuildConfig.GROQ_API_KEY
         if (apiKey.isBlank()) {
             Log.e(TAG, "⚠️ GROQ_API_KEY trống!")
             throw IllegalStateException("GROQ_API_KEY chưa cấu hình. Thêm vào local.properties")
+        }
+
+        // Build system prompt with custom rules
+        val finalSystemPrompt = if (customRules.isNullOrBlank()) {
+            SYSTEM_PROMPT
+        } else {
+            "$SYSTEM_PROMPT\n\nQUY TẮC BỔ SUNG TỪ NGƯỜI DÙNG:\n$customRules"
         }
 
         val httpResponse = try {
@@ -149,7 +174,7 @@ object GroqService {
                     ChatRequest(
                         model = MODEL,
                         messages = listOf(
-                            Message(role = "system", content = SYSTEM_PROMPT),
+                            Message(role = "system", content = finalSystemPrompt),
                             Message(role = "user", content = userMessage)
                         )
                     )

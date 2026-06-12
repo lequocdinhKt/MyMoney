@@ -35,6 +35,7 @@ class SettingPreferences(private val context: Context) {
         val KEY_NUMBER_FORMAT            = stringPreferencesKey("number_format")
         val KEY_SHOW_COMPLETED           = booleanPreferencesKey("show_completed_enabled")
         val KEY_CHAT_TONE                 = stringPreferencesKey("chat_tone")
+        val KEY_AI_CUSTOM_RULES          = stringPreferencesKey("ai_custom_rules")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -82,6 +83,10 @@ class SettingPreferences(private val context: Context) {
     /** Chat tone: FRIENDLY or STERN, default FRIENDLY */
     val chatTone: Flow<String> = context.dataStore.data
         .map { prefs -> prefs[KEY_CHAT_TONE] ?: "FRIENDLY" }
+
+    /** Custom rules for AI parsing */
+    val aiCustomRules: Flow<String> = context.dataStore.data
+        .map { prefs -> prefs[KEY_AI_CUSTOM_RULES] ?: "" }
 
     // ── Write ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +136,12 @@ class SettingPreferences(private val context: Context) {
     suspend fun setChatTone(toneName: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_CHAT_TONE] = toneName
+        }
+    }
+
+    suspend fun setAiCustomRules(rules: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AI_CUSTOM_RULES] = rules
         }
     }
 

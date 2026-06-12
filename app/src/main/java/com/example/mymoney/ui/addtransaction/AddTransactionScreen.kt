@@ -131,13 +131,16 @@ fun AIChatScreen(
     val chatToneName by prefs.chatTone.collectAsState(initial = "FRIENDLY")
     val chatTone = try { ChatTone.valueOf(chatToneName) } catch (_: Exception) { ChatTone.FRIENDLY }
     var showToneSettings by remember { mutableStateOf(false) }
+    var showAiRulesSettings by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.navEvent.collect { event ->
             when (event) {
                 is AddTransactionNavEvent.NavigateBack -> onNavigateBack()
-                is AddTransactionNavEvent.NavigateToParseSettings -> { /* TODO */ }
+                is AddTransactionNavEvent.NavigateToParseSettings -> {
+                    showAiRulesSettings = true
+                }
                 is AddTransactionNavEvent.NavigateToRecurring -> onNavigateToRecurring(event.walletId)
                 is AddTransactionNavEvent.NavigateToCameraCapture -> onNavigateToCamera(event.walletId)
             }
@@ -184,6 +187,17 @@ fun AIChatScreen(
                             // persist selection
                             coroutineScope.launch { prefs.setChatTone(tone.name) }
                             showToneSettings = false
+                        }
+                    )
+                }
+
+                if (showAiRulesSettings) {
+                    AiRulesSettingsDialog(
+                        initialRules = uiState.aiCustomRules,
+                        onDismiss = { showAiRulesSettings = false },
+                        onSave = { rules ->
+                            viewModel.onEvent(AddTransactionEvent.OnUpdateAiRules(rules))
+                            showAiRulesSettings = false
                         }
                     )
                 }
@@ -498,8 +512,8 @@ private fun BottomInputCard(
             )
 
             IconButton(onClick = { onEvent(AddTransactionEvent.OnParseSettingsClicked) }) {
-                Icon(Icons.Default.Settings, "Cài đặt phân tích",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                Icon(Icons.Default.Settings, "Cài đặt quy tắc AI",
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp))
             }
         }
@@ -772,6 +786,61 @@ private fun ChatBubble(
             )
         }
     }
+}
+
+@Composable
+private fun AiRulesSettingsDialog(
+    initialRules: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var rules by remember { mutableStateOf(initialRules) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.SmartToy, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cấu hình Quy tắc AI")
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Hãy viết các quy tắc để AI hiểu cách bạn nói chuyện hơn (ví dụ: quy ước về số tiền).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = rules,
+                    onValueChange = { rules = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    placeholder = {
+                        Text(
+                            "Ví dụ:\n- 1 củ = 1 triệu\n- 5 xị = 500k\n- 1 tỏi = 1 tỷ",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    "Mẹo: Bạn có thể nhập nhiều quy tắc, mỗi quy tắc một dòng.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(rules) }) { Text("Lưu quy tắc") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Hủy") }
+        }
+    )
 }
 
 @Composable

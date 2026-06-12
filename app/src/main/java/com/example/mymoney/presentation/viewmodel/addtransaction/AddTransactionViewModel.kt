@@ -125,7 +125,7 @@ class AddTransactionViewModel(
                         )
                     }
                     messageIdCounter = (chatMessages.maxOfOrNull { it.id } ?: 0L)
-                    _uiState.update { state ->
+                        _uiState.update { state ->
                         state.copy(
                             messages  = chatMessages,
                             isEmpty   = chatMessages.isEmpty(),
@@ -133,9 +133,16 @@ class AddTransactionViewModel(
                         )
                     }
                 }
+
+            // 4. Load AI Custom Rules
+            viewModelScope.launch {
+                settingPreferences.aiCustomRules.collect { rules ->
+                    _uiState.update { it.copy(aiCustomRules = rules) }
+                }
+            }
         }
 
-        // 4. Load tên ví đang active cho chip header
+        // 5. Load tên ví đang active cho chip header
         viewModelScope.launch {
             val userId = settingPreferences.currentUserId.first() ?: return@launch
             // Dùng selectedWalletId nếu được truyền, không thì fallback về ví mặc định
@@ -163,7 +170,12 @@ class AddTransactionViewModel(
             is AddTransactionEvent.OnVoicePlayback        -> handleVoicePlayback()
             is AddTransactionEvent.OnVoiceCancel          -> handleVoiceCancel()
             is AddTransactionEvent.OnParseSettingsClicked -> handleParseSettings()
-            is AddTransactionEvent.OnOcrResult            -> _uiState.update { it.copy(noteInput = event.text) }
+            is AddTransactionEvent.OnUpdateAiRules        -> handleUpdateAiRules(event.rules)
+            is AddTransactionEvent.OnOcrResult            -> {
+                _uiState.update { it.copy(noteInput = event.text) }
+                // Auto-submit when receiving OCR result for a smoother demo experience
+                handleSubmit()
+            }
             is AddTransactionEvent.OnTransferFundClicked  -> { /* TODO */ }
             is AddTransactionEvent.OnRecurringClicked     -> handleRecurring()
         }
@@ -226,7 +238,10 @@ class AddTransactionViewModel(
 
         // ── Step 3: Gọi Groq API ──
         try {
-            val result = GroqService.chatWithParsing(noteText)
+            val result = GroqService.chatWithParsing(
+                userMessage = noteText,
+                customRules = _uiState.value.aiCustomRules
+            )
 
             // ── Step 4: Xây text AI và cập nhật bubble ──
             val aiText   = buildAIDisplayText(result, useGrouping)
@@ -425,6 +440,12 @@ class AddTransactionViewModel(
 
     private fun handleParseSettings() {
         viewModelScope.launch { _navEvent.emit(AddTransactionNavEvent.NavigateToParseSettings) }
+    }
+
+    private fun handleUpdateAiRules(rules: String) {
+        viewModelScope.launch {
+            settingPreferences.setAiCustomRules(rules)
+        }
     }
 
     private fun handleRecurring() {
