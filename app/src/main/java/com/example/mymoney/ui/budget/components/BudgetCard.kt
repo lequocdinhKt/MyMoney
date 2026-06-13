@@ -2,17 +2,21 @@ package com.example.mymoney.ui.budget.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -20,7 +24,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,17 +37,21 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mymoney.domain.model.BudgetModel
 import com.example.mymoney.domain.usecase.MoneyFormatter
 import com.example.mymoney.ui.common.LocalMoneyFormatConfig
-import androidx.compose.foundation.gestures.detectDragGestures
+import com.example.mymoney.ui.common.mapEmojiToDrawable
 import java.util.Collections
 
 /**
@@ -76,7 +86,7 @@ fun BudgetSection(
     modifier: Modifier = Modifier
 ) {
     // Danh sách nội bộ để hoán đổi vị trí khi kéo thả
-    val localBudgets = remember { mutableStateListOf<BudgetModel>() }
+    val localBudgets = remember { mutableStateListOf<BudgetModel>().apply { addAll(budgets) } }
 
     // Trạng thái scroll – dùng để reset về thẻ đầu tiên khi danh sách ví thay đổi
     val listState = rememberLazyListState()
@@ -91,12 +101,10 @@ fun BudgetSection(
     val cardStepPx = with(density) { 212.dp.toPx() }
 
     // Đồng bộ localWallets với DB, nhưng không làm gián đoạn kéo thả.
-    // Sau khi cập nhật, luôn cuộn về card đầu tiên để ưu tiên hiển thị từ đầu.
     LaunchedEffect(budgets) {
         if (!isDragging) {
             localBudgets.clear()
             localBudgets.addAll(budgets)
-            listState.scrollToItem(0)
         }
     }
 
@@ -211,16 +219,46 @@ private fun BudgetCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Danh mục ${budget.categoryId}",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                IconButton(
-                    onClick = onDeleteClick
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Icon
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = mapEmojiToDrawable(budget.categoryIcon)),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = budget.categoryName.ifBlank { "Danh mục ${budget.categoryId}" },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Tháng ${budget.month}/${budget.year}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                IconButton(onClick = onDeleteClick) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
@@ -229,24 +267,101 @@ private fun BudgetCard(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .background(
-                        Color.LightGray,
-                        RoundedCornerShape(999.dp)
-                    )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val progress = if (budget.amountLimit > 0) (budget.spentAmount / budget.amountLimit).toFloat().coerceIn(0f, 1f) else 0f
+
+            ProgressBarWithCenterLabel(
+                progress = progress,
+                progressColor = if (progress >= 1f) Color.Red else MaterialTheme.colorScheme.primary
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Đã chi: ${MoneyFormatter.format(budget.spentAmount, fmt.useThousandSep)} đ",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "Giới hạn: ${MoneyFormatter.format(budget.amountLimit, fmt.useThousandSep)} đ",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProgressBarWithCenterLabel(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    progressColor: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(36.dp)
+    ) {
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .align(Alignment.Center),
+            color = progressColor,
+            trackColor = trackColor,
+            strokeCap = StrokeCap.Round
+        )
+
+        Surface(
+            modifier = Modifier.align(Alignment.Center),
+            shape = RoundedCornerShape(12.dp),
+            color = progressColor,
+            shadowElevation = 4.dp
+        ) {
             Text(
-                text = "${MoneyFormatter.format(budget.amountLimit, fmt.useThousandSep)} đ",
-                modifier = Modifier.padding(top = 12.dp),
-                style = MaterialTheme.typography.bodyLarge
+                text = "${(progress * 100).toInt()}%",
+                modifier = Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 4.dp
+                ),
+                color = Color.White,
+                fontWeight = FontWeight.Bold
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BudgetCardPreview() {
+    BudgetCard(
+        budget = BudgetModel(
+            id = 1L,
+            userId = "u1",
+            categoryId = 1L,
+            categoryName = "Ăn uống",
+            categoryIcon = "🍜",
+            amountLimit = 2000000.0,
+            spentAmount = 1200000.0,
+            month = 5,
+            year = 2026
+        ),
+        isSelected = false,
+        isDragging = false,
+        onClick = {},
+        onDoubleTap = {},
+        onDeleteClick = {},
+        onDragStart = {},
+        onDrag = {},
+        onDragEnd = {}
+    )
 }
 
 // ── Previews ──
@@ -262,4 +377,3 @@ fun BudgetSectionPreview() {
         onReorderBudget = {}
     )
 }
-

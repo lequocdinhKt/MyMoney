@@ -15,6 +15,7 @@ import com.example.mymoney.presentation.viewmodel.home.home.HomeUiState
 import com.example.mymoney.presentation.viewmodel.home.home.TimePeriod
 import com.example.mymoney.presentation.viewmodel.home.home.TransactionItem
 import com.example.mymoney.presentation.viewmodel.home.home.WalletItem
+import com.example.mymoney.ui.common.mapEmojiToDrawable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,7 +98,7 @@ class HomeViewModel(
                     val amountVal = if (model.type == "income") model.amount else -model.amount
                     TransactionItem(
                         id              = model.id.toString(),
-                        categoryIconRes = null,
+                        categoryIconRes = mapEmojiToDrawable(model.categoryIcon),
                         title           = model.note.ifBlank { model.category },
                         dateTime        = formatTimestamp(model.timestamp),
                         amount          = amountVal.toLong(),

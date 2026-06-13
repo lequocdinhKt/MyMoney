@@ -22,7 +22,6 @@ import kotlinx.serialization.json.Json
 /**
  * Service gọi Groq API (MIỄN PHÍ) - model llama3-8b-8192
  * Lấy key tại: https://console.groq.com/keys
- * Free tier: 30 req/phút, 14,400 req/ngày — thoải mái hơn Gemini nhiều
  */
 object GroqService {
     private const val TAG = "GroqService"
@@ -58,9 +57,20 @@ object GroqService {
         - Mặc định: "expense" (chi tiêu)
         - "income" khi rõ ràng là thu nhập: lương, thưởng, nhận tiền, bán hàng...
 
-        Danh mục (category) gợi ý:
-        - Chi tiêu: Ăn uống, Di chuyển, Mua sắm, Giải trí, Sức khỏe, Giáo dục, Hóa đơn, Khác
+        Danh mục (category) gợi ý (HÃY CHỌN CHÍNH XÁC TÊN DƯỚI ĐÂY):
+        - Chi tiêu: Ăn uống, Di chuyển, Mua sắm, Giải trí, Sức khỏe, Giáo dục, Hóa đơn, Nhà cửa, Khác
         - Thu nhập: Thu nhập, Thưởng, Đầu tư, Khác
+
+        Mô tả danh mục:
+        - Ăn uống: cơm, cafe, trà sữa, ăn vặt, nhà hàng...
+        - Di chuyển: xăng, grab, taxi, xe buýt, sửa xe...
+        - Mua sắm: quần áo, giày dép, mỹ phẩm, đồ gia dụng...
+        - Giải trí: xem phim, du lịch, game, karaoke...
+        - Sức khỏe: thuốc, khám bệnh, gym, yoga...
+        - Giáo dục: học phí, sách, khóa học...
+        - Hóa đơn: điện, nước, internet, cước điện thoại...
+        - Nhà cửa: tiền thuê nhà, sửa nhà, mua đồ nội thất...
+        - Khác: các khoản chi tiêu không thuộc các mục trên.
 
         Nếu tin nhắn không liên quan đến giao dịch tài chính,
         hãy trả lời thân thiện và KHÔNG trả về JSON.
@@ -104,25 +114,15 @@ object GroqService {
         val code: String = ""
     )
 
-    /**
-     * Gửi tin nhắn tới Groq (llama3-8b) và nhận phản hồi.
-     * Giao diện giữ nguyên tên "GroqService.chat()" để không cần sửa ViewModel.
-     */
     suspend fun chat(userMessage: String): String {
         return chatWithParsing(userMessage).displayText
     }
 
-    /**
-     * Kết quả parse từ Groq: text hiển thị + danh sách giao dịch đã parse.
-     */
     data class ChatResult(
         val displayText: String,
         val transactions: List<ParsedTransaction> = emptyList()
     )
 
-    /**
-     * Giao dịch đã được AI parse ra từ tin nhắn.
-     */
     data class ParsedTransaction(
         val note: String,
         val amount: Double,
@@ -130,10 +130,6 @@ object GroqService {
         val category: String
     )
 
-    /**
-     * Gửi tin nhắn, parse JSON giao dịch từ response nếu có.
-     * Trả về [ChatResult] gồm text hiển thị + list giao dịch đã parse.
-     */
     suspend fun chatWithParsing(userMessage: String, customRules: String? = null): ChatResult {
         // --- DEMO MOCK LOGIC ---
         val upperMsg = userMessage.uppercase()
@@ -159,7 +155,6 @@ object GroqService {
             throw IllegalStateException("GROQ_API_KEY chưa cấu hình. Thêm vào local.properties")
         }
 
-        // Build system prompt with custom rules
         val finalSystemPrompt = if (customRules.isNullOrBlank()) {
             SYSTEM_PROMPT
         } else {
@@ -198,13 +193,11 @@ object GroqService {
         val fullText = response.choices.firstOrNull()?.message?.content
             ?: "Xin lỗi, mình chưa hiểu ý bạn. Thử lại nhé! 😊"
 
-        // Tách phần text hiển thị (bỏ JSON block)
         val displayText = fullText
             .replace(Regex("```json[\\s\\S]*?```"), "")
             .trim()
             .ifBlank { "✅ Đã ghi nhận giao dịch!" }
 
-        // Tìm và parse JSON block nếu có
         val jsonMatch = Regex("```json([\\s\\S]*?)```").find(fullText)
         val transactions = if (jsonMatch != null) {
             try {
@@ -228,18 +221,10 @@ object GroqService {
         return ChatResult(displayText = displayText, transactions = transactions)
     }
 
-    /**
-     * Nhận dạng giọng nói từ file audio bằng Groq Whisper API.
-     * @param audioFile File âm thanh (m4a/mp4) đã ghi từ VoiceRecorder
-     * @return Văn bản đã nhận dạng
-     */
     suspend fun transcribeAudio(audioFile: File): String {
         val apiKey = BuildConfig.GROQ_API_KEY
         if (apiKey.isBlank()) throw IllegalStateException("GROQ_API_KEY chưa cấu hình")
 
-        Log.d(TAG, "Uploading audio file: ${audioFile.absolutePath} (${audioFile.length()} bytes)")
-
-        // Manually create multipart payload
         val boundary = UUID.randomUUID().toString()
         val body = buildMultipartBody(boundary, audioFile)
 
@@ -255,7 +240,6 @@ object GroqService {
             throw Exception("Lỗi nhận dạng giọng nói: ${response.status.value}")
         }
         val result = response.bodyAsText().trim()
-        Log.d(TAG, "Whisper transcript: $result")
         return result
     }
 
@@ -263,25 +247,21 @@ object GroqService {
         val sb = StringBuilder()
         val CRLF = "\r\n"
 
-        // model field
         sb.append("--$boundary$CRLF")
         sb.append("Content-Disposition: form-data; name=\"model\"$CRLF")
         sb.append("$CRLF")
         sb.append("whisper-large-v3$CRLF")
 
-        // language field
         sb.append("--$boundary$CRLF")
         sb.append("Content-Disposition: form-data; name=\"language\"$CRLF")
         sb.append("$CRLF")
         sb.append("vi$CRLF")
 
-        // response_format field
         sb.append("--$boundary$CRLF")
         sb.append("Content-Disposition: form-data; name=\"response_format\"$CRLF")
         sb.append("$CRLF")
         sb.append("text$CRLF")
 
-        // file field
         sb.append("--$boundary$CRLF")
         sb.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"$CRLF")
         sb.append("Content-Type: audio/m4a$CRLF")
@@ -293,15 +273,11 @@ object GroqService {
 
         val result = ByteArray(headerBytes.size + fileBytes.size + footerBytes.size)
         var pos = 0
-
         System.arraycopy(headerBytes, 0, result, pos, headerBytes.size)
         pos += headerBytes.size
-
         System.arraycopy(fileBytes, 0, result, pos, fileBytes.size)
         pos += fileBytes.size
-
         System.arraycopy(footerBytes, 0, result, pos, footerBytes.size)
-
         return result
     }
 

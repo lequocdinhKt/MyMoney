@@ -39,10 +39,11 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun BudgetScreen(
     userId: String = "",
-    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {}
+    onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
 ) {
     val context = LocalContext.current
     val viewModel: BudgetViewModel = viewModel(
+        key = "budget_viewmodel_$userId",
         factory = BudgetViewModelFactory(context, userId)
     )
     val uiState by viewModel.uiState.collectAsState()
@@ -50,7 +51,7 @@ fun BudgetScreen(
     BudgetContent(
         uiState = uiState,
         onNavigateToBudgetManual = onNavigateToBudgetManual,
-        onDeleteBudget = { id -> viewModel.onEvent(BudgetEvent.DeleteBudget(id)) }
+        onDeleteBudget = { id -> viewModel.onEvent(BudgetEvent.DeleteBudget(id)) },
     )
 }
 
@@ -133,8 +134,34 @@ private fun BudgetScreenWithDataPreview() {
             uiState = BudgetUiState(
                 isLoading = false,
                 budgets = listOf(
-                    BudgetModel(id = 1L, userId = "u1", categoryId = 1L, categoryName = "Ăn uống", amountLimit = 2000000.0, month = 5, year = 2026),
-                    BudgetModel(id = 2L, userId = "u1", categoryId = 2L, categoryName = "Di chuyển", amountLimit = 500000.0, month = 5, year = 2026),
+                    BudgetModel(
+                        1L,
+                        "u1",
+                        1L,
+                        "Ăn uống",
+                        "🍜",
+                        2000000.0,
+                        1200000.0,
+                        5,
+                        2026,
+                        0L,
+                        0L,
+                        null
+                    ),
+                    BudgetModel(
+                        2L,
+                        "u1",
+                        2L,
+                        "Di chuyển",
+                        "🚗",
+                        500000.0,
+                        450000.0,
+                        5,
+                        2026,
+                        0L,
+                        0L,
+                        null
+                    ),
                 )
             ),
             onNavigateToBudgetManual = {}

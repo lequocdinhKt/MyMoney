@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
+import kotlinx.coroutines.flow.catch
+
 /**
  * ViewModel quản lý logic và trạng thái cho màn hình Ngân sách.
  */
@@ -28,8 +30,9 @@ class BudgetViewModel(
     }
 
     private fun loadBudgets(month: Int, year: Int) {
-        budgetRepository.getBudgets(userId, month, year)
+        budgetRepository.getBudgetsWithDetails(userId, month, year)
             .onEach { list -> _uiState.value = _uiState.value.copy(budgets = list, isLoading = false) }
+            .catch { e -> _uiState.value = _uiState.value.copy(isLoading = false) }
             .launchIn(viewModelScope)
     }
 

@@ -3,6 +3,7 @@ package com.example.mymoney.data.repository
 import com.example.mymoney.data.local.dao.TransactionDao
 import com.example.mymoney.data.local.entity.SyncStatus
 import com.example.mymoney.data.local.entity.TransactionEntity
+import com.example.mymoney.data.local.entity.TransactionWithCategoryEntity
 import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
@@ -17,13 +18,22 @@ class TransactionRepositoryImpl(
 ) : TransactionRepository {
 
     override fun getAllTransactions(userId: String): Flow<List<TransactionModel>> =
-        transactionDao.observeTransactions(userId).map { list -> list.map { it.toModel() } }
+        transactionDao.observeByDateRange(userId, 0, Long.MAX_VALUE).map { list -> list.map { it.toModel() } }
+
+    override fun getAllTransactionsWithCategory(userId: String): Flow<List<TransactionModel>> =
+        transactionDao.observeTransactionsWithCategory(userId).map { list -> list.map { it.toModel() } }
 
     override fun getTransactionsByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>> =
         transactionDao.observeByDateRange(userId, from, to).map { list -> list.map { it.toModel() } }
 
+    override fun getTransactionsWithCategoryByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>> =
+        transactionDao.observeByDateRange(userId, from, to).map { list -> list.map { it.toModel() } }
+
     override fun getTransactionsByWalletAndPeriod(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>> =
         transactionDao.observeByWalletAndDateRange(userId, walletId, from, to).map { list -> list.map { it.toModel() } }
+
+    override fun getTransactionsWithCategoryByWalletAndPeriod(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>> =
+        transactionDao.observeByWalletAndDateRangeWithCategory(userId, walletId, from, to).map { list -> list.map { it.toModel() } }
 
     override fun getTotalIncome(userId: String, from: Long, to: Long): Flow<Double> =
         transactionDao.observeByDateRange(userId, from, to).map { list ->
@@ -56,6 +66,11 @@ class TransactionRepositoryImpl(
         transactionDao.softDelete(id)
 
     // ── Mappers ──
+
+    private fun TransactionWithCategoryEntity.toModel() = transaction.toModel().copy(
+        category = category?.name ?: transaction.categoryName,
+        categoryIcon = category?.icon ?: ""
+    )
 
     private fun TransactionEntity.toModel() = TransactionModel(
         id           = id,
@@ -94,4 +109,3 @@ class TransactionRepositoryImpl(
         )
     }
 }
-

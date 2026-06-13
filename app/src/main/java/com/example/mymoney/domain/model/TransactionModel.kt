@@ -18,6 +18,7 @@ data class TransactionModel(
     val amount: Double,
     val type: String = "expense",           // "income" | "expense"
     val category: String = "Khác",          // tên danh mục (display)
+    val categoryIcon: String = "",          // icon danh mục (emoji)
     val categoryId: Long? = null,           // FK → CategoryEntity (null = chưa liên kết)
     val walletId: Long = 0L,
     val aiGenerated: Boolean = false,

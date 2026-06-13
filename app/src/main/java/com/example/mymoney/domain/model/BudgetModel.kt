@@ -5,7 +5,9 @@ data class BudgetModel(
     val userId: String,
     val categoryId: Long,
     val categoryName: String = "",          // denormalized display field
+    val categoryIcon: String = "",          // denormalized display field
     val amountLimit: Double,
+    val spentAmount: Double = 0.0,          // Calculated field
     val month: Int,
     val year: Int,
     val createdAt: Long = System.currentTimeMillis(),

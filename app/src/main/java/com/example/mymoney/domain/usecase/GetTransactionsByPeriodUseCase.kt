@@ -19,5 +19,5 @@ class GetTransactionsByPeriodUseCase(
         repository.getTransactionsByPeriod(userId, from, to)
 
     fun byWallet(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>> =
-        repository.getTransactionsByWalletAndPeriod(userId, walletId, from, to)
+        repository.getTransactionsWithCategoryByWalletAndPeriod(userId, walletId, from, to)
 }

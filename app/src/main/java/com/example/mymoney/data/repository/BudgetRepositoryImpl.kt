@@ -8,12 +8,30 @@ import com.example.mymoney.domain.repository.BudgetRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+import com.example.mymoney.data.local.entity.BudgetWithDetailsEntity
+import com.example.mymoney.domain.usecase.PeriodRangeUtil
+import java.time.LocalDate
+
 class BudgetRepositoryImpl(
     private val budgetDao: BudgetDao
 ) : BudgetRepository {
 
     override fun getBudgets(userId: String, month: Int, year: Int): Flow<List<BudgetModel>> =
         budgetDao.observeBudgets(userId, month, year).map { list -> list.map { it.toModel() } }
+
+    override fun getBudgetsWithDetails(userId: String, month: Int, year: Int): Flow<List<BudgetModel>> {
+        val range = calculateMonthRange(month, year)
+        return budgetDao.observeBudgetsWithDetails(userId, month, year, range.from, range.to)
+            .map { list -> list.map { it.toModel() } }
+    }
+
+    private fun calculateMonthRange(month: Int, year: Int): PeriodRangeUtil.Range {
+        val startOfMonth = LocalDate.of(year, month, 1)
+        val zone = java.time.ZoneId.systemDefault()
+        val from = startOfMonth.atStartOfDay(zone).toInstant().toEpochMilli()
+        val to   = startOfMonth.plusMonths(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        return PeriodRangeUtil.Range(from, to)
+    }
 
     override suspend fun getBudget(userId: String, categoryId: Long, month: Int, year: Int): BudgetModel? =
         budgetDao.getBudget(userId, categoryId, month, year)?.toModel()
@@ -31,6 +49,21 @@ class BudgetRepositoryImpl(
         budgetDao.softDelete(id)
 
     // ── Mappers ──
+
+    private fun BudgetWithDetailsEntity.toModel() = BudgetModel(
+        id           = id,
+        userId       = userId,
+        categoryId   = categoryId,
+        amountLimit  = amountLimit,
+        month        = month,
+        year         = year,
+        createdAt    = createdAt,
+        updatedAt    = updatedAt,
+        supabaseId   = supabaseId,
+        categoryName = categoryName,
+        categoryIcon = categoryIcon,
+        spentAmount  = spentAmount
+    )
 
     private fun BudgetEntity.toModel() = BudgetModel(
         id          = id,

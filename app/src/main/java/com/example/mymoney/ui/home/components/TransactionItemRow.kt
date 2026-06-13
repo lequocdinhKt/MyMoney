@@ -38,10 +38,6 @@ import com.example.mymoney.ui.theme.SuccessGreen
 /**
  * Composable hiển thị một dòng giao dịch trong LazyColumn.
  * Hỗ trợ vuốt từ phải sang trái để xóa giao dịch.
- *
- * @param transaction     Dữ liệu dòng giao dịch
- * @param onDelete        Callback khi người dùng xác nhận xóa
- * @param modifier        Modifier tuỳ chỉnh
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +61,6 @@ fun TransactionItemRow(
             positionalThreshold = { totalDistance -> totalDistance * 0.35f }
         )
 
-        // Reset state sau khi xóa để tránh item bị dismiss ở trạng thái kẹt
         LaunchedEffect(dismissState.currentValue) {
             if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
                 dismissState.reset()
@@ -77,7 +72,6 @@ fun TransactionItemRow(
             enableDismissFromStartToEnd = false,
             enableDismissFromEndToStart = true,
             backgroundContent = {
-                // Nền đỏ + icon thùng rác hiện khi vuốt trái
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -120,7 +114,6 @@ private fun TransactionRowContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ── Icon danh mục (hình tròn xám) ──
         Box(
             modifier = Modifier
                 .size(44.dp)
@@ -132,11 +125,10 @@ private fun TransactionRowContent(
                 Icon(
                     painter = painterResource(id = transaction.categoryIconRes),
                     contentDescription = transaction.title,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(28.dp)
                 )
             } else {
-                // Placeholder icon khi chưa có resource
                 Icon(
                     imageVector = Icons.Default.AttachMoney,
                     contentDescription = null,
@@ -146,7 +138,6 @@ private fun TransactionRowContent(
             }
         }
 
-        // ── Tiêu đề + Thời gian ──
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -166,8 +157,6 @@ private fun TransactionRowContent(
             )
         }
 
-        // ── Số tiền ──
-        // Dùng MaterialTheme.colorScheme.error trong Composable scope (không thể trong remember)
         val resolvedAmountColor = amountColor ?: MaterialTheme.colorScheme.error
         Text(
             text = transaction.formattedAmount,
@@ -187,7 +176,7 @@ private fun TransactionItemExpensePreview() {
         TransactionItemRow(
             transaction = TransactionItem(
                 id = "1",
-                categoryIconRes = null,
+                categoryIconRes = com.example.mymoney.R.drawable.ic_category_expense_noodle,
                 title = "Ăn sáng",
                 dateTime = "7:00, 02/04/2026",
                 amount = -50_000L,
@@ -205,7 +194,7 @@ private fun TransactionItemIncomePreview() {
         TransactionItemRow(
             transaction = TransactionItem(
                 id = "2",
-                categoryIconRes = null,
+                categoryIconRes = com.example.mymoney.R.drawable.ic_category_income_money,
                 title = "Lương tháng 4",
                 dateTime = "8:00, 01/04/2026",
                 amount = 10_000_000L,
@@ -223,8 +212,8 @@ private fun TransactionItemDarkPreview() {
         TransactionItemRow(
             transaction = TransactionItem(
                 id = "3",
-                categoryIconRes = null,
-                title = "Tiền điện",
+                categoryIconRes = com.example.mymoney.R.drawable.ic_category_expense_car,
+                title = "Đổ xăng",
                 dateTime = "9:00, 02/04/2026",
                 amount = -300_000L,
                 formattedAmount = "-300.000"

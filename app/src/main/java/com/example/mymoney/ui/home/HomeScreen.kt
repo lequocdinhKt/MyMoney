@@ -40,19 +40,6 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 /**
  * Màn hình Trang chủ – tab đầu tiên trong Bottom Navigation.
  * UI stateless: chỉ nhận state từ ViewModel, không chứa logic nghiệp vụ.
- *
- * Cấu trúc:
- *   Column
- *     ├── BalanceSection        (Thẻ số dư + Nút "+")
- *     ├── HorizontalDivider
- *     ├── Text "Lịch sử giao dịch:"
- *     ├── TimePeriodFilter      (Ngày / Tuần / Tháng / Năm / ...)
- *     └── LazyColumn
- *           ├── header: TransactionSummaryHeader
- *           └── items : TransactionItemRow × N  (key = id, contentType = "transaction")
- *
- * @param viewModel ViewModel cung cấp trạng thái cho màn hình
- * @param modifier  Modifier tuỳ chỉnh từ bên ngoài (thường là innerPadding từ Scaffold)
  */
 @Composable
 fun HomeScreen(
@@ -87,7 +74,6 @@ fun HomeScreen(
 
 /**
  * Nội dung hiển thị của màn hình Trang chủ.
- * Composable thuần tuý – không phụ thuộc ViewModel, dễ test và preview.
  */
 @Composable
 private fun HomeContent(
@@ -97,9 +83,6 @@ private fun HomeContent(
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // UiStateContainer tự động crossfade skeleton ↔ content dựa trên isLoading.
-    // Dùng overload Boolean vì HomeViewModel chưa extend BaseViewModel
-    // (giữ nguyên logic combine/flatMapLatest phức tạp của nó).
     UiStateContainer(
         isLoading = uiState.isLoading,
         modifier  = modifier.fillMaxSize(),
@@ -142,7 +125,6 @@ private fun HomeContent(
                     EmptyStateComposable(message = "Chưa có giao dịch nào trong kỳ này")
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        // Sticky header: tóm tắt Thu nhập / Chi tiêu / Số dư
                         item(key = "summary_header", contentType = "header") {
                             TransactionSummaryHeader(
                                 groupLabel   = uiState.groupLabel,
@@ -151,9 +133,6 @@ private fun HomeContent(
                                 totalBalance = uiState.totalBalance
                             )
                         }
-                        // Danh sách giao dịch
-                        // key = id       → Compose chỉ recompose đúng item thay đổi
-                        // contentType    → tái sử dụng node khi scroll (tương tự RecyclerView)
                         items(
                             items       = uiState.transactions,
                             key         = { it.id },
@@ -170,10 +149,9 @@ private fun HomeContent(
                         }
                     }
                 }
-        }   // end Column
-    }       // end UiStateContainer
+        }
+    }
 
-    // ── Dialog: Yêu cầu tạo ví ──
     if (uiState.showCreateWalletDialog) {
         AlertDialog(
             onDismissRequest = { onEvent(HomeEvent.DismissCreateWalletDialog) },
@@ -185,22 +163,14 @@ private fun HomeContent(
                 )
             },
             confirmButton = {
-                Button(
-                    onClick = { onNavigateToAddWallet() }
-                ) {
-                    Text("Tạo ví")
-                }
+                Button(onClick = { onNavigateToAddWallet() }) { Text("Tạo ví") }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { onEvent(HomeEvent.DismissCreateWalletDialog) }
-                ) {
-                    Text("Để sau")
-                }
+                TextButton(onClick = { onEvent(HomeEvent.DismissCreateWalletDialog) }) { Text("Để sau") }
             }
         )
     }
-}           // end HomeContent
+}
 
 // ── Previews ──
 
@@ -224,56 +194,10 @@ private fun HomeScreenLightPreview() {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun HomeScreenDarkPreview() {
-    MyMoneyTheme(darkTheme = true) {
-        HomeContent(
-            uiState = HomeUiState(
-                isLoading      = false,
-                wallets        = listOf(
-                    WalletItem(1L, "Ví chính",  "1.000.000 vnđ", "#0088F0"),
-                    WalletItem(2L, "Tiết kiệm", "5.000.000 vnđ", "#FF8C00")
-                ),
-                selectedPeriod = TimePeriod.MONTH,
-                groupLabel     = "Tháng 4, 2026",
-                totalIncome    = "5.000.000",
-                totalExpense   = "3.000.000",
-                totalBalance   = "2.000.000",
-                transactions   = previewTransactions()
-            ),
-            onEvent = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun HomeScreenEmptyPreview() {
-    MyMoneyTheme(darkTheme = false) {
-        HomeContent(
-            uiState = HomeUiState(isLoading = false, transactions = emptyList()),
-            onEvent = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun HomeScreenLoadingPreview() {
-    MyMoneyTheme(darkTheme = false) {
-        HomeContent(
-            uiState = HomeUiState(isLoading = true),
-            onEvent = {}
-        )
-    }
-}
-
-/** Dữ liệu mẫu chỉ dùng trong Preview */
 private fun previewTransactions() = listOf(
-    TransactionItem("1", null, "Ăn sáng",      "7:00, 02/04/2026",  -50_000L,     "-50.000"),
-    TransactionItem("2", null, "Lương tháng 4", "8:00, 01/04/2026",  10_000_000L, "+10.000.000"),
-    TransactionItem("3", null, "Tiền điện",     "9:00, 02/04/2026",  -300_000L,   "-300.000"),
-    TransactionItem("4", null, "Cafe sáng",     "7:30, 02/04/2026",  -35_000L,    "-35.000"),
-    TransactionItem("5", null, "Thưởng dự án",  "10:00, 02/04/2026", 2_000_000L,  "+2.000.000"),
+    TransactionItem("1", com.example.mymoney.R.drawable.ic_category_expense_noodle, "Ăn sáng", "7:00, 02/04/2026", -50_000L, "-50.000"),
+    TransactionItem("2", com.example.mymoney.R.drawable.ic_category_income_money, "Lương tháng 4", "8:00, 01/04/2026", 10_000_000L, "+10.000.000"),
+    TransactionItem("3", com.example.mymoney.R.drawable.ic_category_expense_bill, "Tiền điện", "9:00, 02/04/2026", -300_000L, "-300.000"),
+    TransactionItem("4", com.example.mymoney.R.drawable.ic_category_expense_noodle, "Cafe sáng", "7:30, 02/04/2026", -35_000L, "-35.000"),
+    TransactionItem("5", com.example.mymoney.R.drawable.ic_category_income_bonus, "Thưởng dự án", "10:00, 02/04/2026", 2_000_000L, "+2.000.000"),
 )
