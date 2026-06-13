@@ -30,6 +30,7 @@ import com.example.mymoney.domain.model.SavingType as DomainSavingType
 @Composable
 fun SavingScreen(
     userId: String = "",
+    onNavigateToDetailSaving: (savingId: Long) -> Unit = {},
     onNavigateToAddSavingForm: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -42,6 +43,7 @@ fun SavingScreen(
     SavingContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
+        onNavigateToDetailSaving = onNavigateToDetailSaving,
         onNavigateToAddSavingForm = onNavigateToAddSavingForm
     )
 }
@@ -50,6 +52,7 @@ fun SavingScreen(
 private fun SavingContent(
     uiState: SavingUiState,
     onEvent: (SavingEvent) -> Unit,
+    onNavigateToDetailSaving: (savingId: Long) -> Unit = {},
     onNavigateToAddSavingForm: () -> Unit = {},
 ) {
     val filteredGoals = remember(uiState.savingGoals, uiState.selectedType, uiState.isShowCompletedEnabled) {
@@ -154,7 +157,7 @@ private fun SavingContent(
                     .fillMaxWidth(),
                 savings = filteredGoals,
                 onDeleteSaving = { onEvent(SavingEvent.DeleteGoal(it)) },
-                onDetailSaving = {/* navigate */ }
+                onDetailSaving = { savingId -> onNavigateToDetailSaving(savingId) }
                 )
             }
         }

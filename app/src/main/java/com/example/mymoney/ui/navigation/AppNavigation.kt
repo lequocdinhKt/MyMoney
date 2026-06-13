@@ -28,6 +28,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.profile.ProfileScreen
+import com.example.mymoney.ui.saving.SavingDetailScreen
 import com.example.mymoney.ui.saving.SavingFormScreen
 
 /**
@@ -127,6 +128,9 @@ composable(route = Screen.Main.route) {
 
         onNavigateToAddSavingForm = {
             navController.navigate(Screen.SavingForm.createRoute(userId))
+        },
+        onNavigateToDetailSaving = { goalId ->
+            navController.navigate(Screen.SavingDetail.createRoute(goalId))
         },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
@@ -292,6 +296,18 @@ composable(route = Screen.Main.route) {
             val uid = backStackEntry.arguments?.getString("userId") ?: userId
             SavingFormScreen(
                 userId = uid,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Màn hình chi tiết tiết kiệm ──
+        composable(
+            route = Screen.SavingDetail.route,
+            arguments = listOf(navArgument("goalId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getLong("goalId") ?: 0L
+            SavingDetailScreen(
+                goalId = goalId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

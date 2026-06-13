@@ -265,7 +265,7 @@ private fun SavingFormContent(
                 )
             } else {
                 Text(
-                    text = "Lưu",
+                    text = "Tiếp tục",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold

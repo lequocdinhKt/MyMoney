@@ -40,9 +40,7 @@ class SavingRepositoryImpl(
         title = title,
         currency = currency,
         targetAmount = targetAmount,
-        savingType = runCatching {
-            SavingType.valueOf(savingType)
-        }.getOrDefault(SavingType.ONE_TIME),
+        savingType = runCatching { SavingType.valueOf(savingType) }.getOrDefault(SavingType.ONE_TIME),
         targetDate = targetDate,
         createdAt = createdAt,
         updatedAt = updatedAt,

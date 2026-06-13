@@ -56,8 +56,14 @@ sealed class Screen(val route: String) {
     // ── Màn hình hồ sơ người dùng ──
     data object Profile : Screen("profile")
 
+    // ── Màn hình thêm tiết kiệm ──
     data object SavingForm : Screen("saving_form/{userId}") {
         fun createRoute(userId: String) = "saving_form/$userId"
+    }
+
+    // ── Màn hình chi tiết tiết kiệm ──
+    data object SavingDetail : Screen("saving_detail/{goalId}") {
+        fun createRoute(goalId: Long) = "saving_detail/$goalId"
     }
 }
 

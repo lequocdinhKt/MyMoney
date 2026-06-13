@@ -34,8 +34,8 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 @Composable
 fun SavingSection(
     savings: List<SavingGoalItem>,
-    onDeleteSaving: (Long) -> Unit,
-    onDetailSaving: (Long) -> Unit,
+    onDeleteSaving: (savingId: Long) -> Unit,
+    onDetailSaving: (savingId: Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
