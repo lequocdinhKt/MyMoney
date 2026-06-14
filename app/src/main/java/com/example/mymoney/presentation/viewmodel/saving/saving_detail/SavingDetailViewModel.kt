@@ -3,7 +3,6 @@ package com.example.mymoney.presentation.viewmodel.saving.saving_detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.domain.repository.SavingRecordRepository
-import com.example.mymoney.domain.usecase.AddSavingRecordUseCase
 import com.example.mymoney.domain.usecase.GetSavingGoalDetailUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +13,6 @@ import kotlinx.coroutines.launch
 class SavingDetailViewModel (
     private val savingRecordRepository: SavingRecordRepository,
     private val getSavingGoalDetailUseCase: GetSavingGoalDetailUseCase,
-    private val addSavingRecordUseCase: AddSavingRecordUseCase,
     private val goalId: Long
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SavingDetailUiState())
@@ -38,11 +36,6 @@ class SavingDetailViewModel (
 
     fun onEvent(event: SavingDetailEvent) {
         when (event) {
-            is SavingDetailEvent.SaveRecord -> viewModelScope.launch {
-                addSavingRecordUseCase(event.record)
-                loadSavingRecords()
-            }
-
             is SavingDetailEvent.DeleteRecord -> viewModelScope.launch {
                 savingRecordRepository.deleteRecord(event.recordId)
                 loadSavingRecords()

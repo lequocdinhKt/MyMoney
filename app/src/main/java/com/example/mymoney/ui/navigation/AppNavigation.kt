@@ -28,6 +28,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.profile.ProfileScreen
+import com.example.mymoney.ui.saving.AddSavingRecordScreen
 import com.example.mymoney.ui.saving.SavingDetailScreen
 import com.example.mymoney.ui.saving.SavingFormScreen
 
@@ -308,6 +309,26 @@ composable(route = Screen.Main.route) {
             val goalId = backStackEntry.arguments?.getLong("goalId") ?: 0L
             SavingDetailScreen(
                 goalId = goalId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddRecord = { gId ->
+                    navController.navigate(Screen.AddSavingRecord.createRoute(userId, gId))
+                }
+            )
+        }
+
+        // ── Màn hình thêm bản ghi tiết kiệm ──
+        composable(
+            route = Screen.AddSavingRecord.route,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("goalId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("userId") ?: userId
+            val gId = backStackEntry.arguments?.getLong("goalId") ?: 0L
+            AddSavingRecordScreen(
+                userId = uid,
+                goalId = gId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

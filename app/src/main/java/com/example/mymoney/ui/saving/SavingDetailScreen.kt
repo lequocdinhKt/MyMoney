@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mymoney.domain.model.SavingGoalDetailModel
 import com.example.mymoney.domain.model.SavingType
-import com.example.mymoney.presentation.viewmodel.saving.saving_detail.SavingDetailEvent
 import com.example.mymoney.presentation.viewmodel.saving.saving_detail.SavingDetailUiState
 import com.example.mymoney.presentation.viewmodel.saving.saving_detail.SavingDetailViewModel
 import com.example.mymoney.presentation.viewmodel.saving.saving_detail.SavingDetailViewModelFactory
@@ -42,6 +42,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
 import com.example.mymoney.domain.model.SavingGoalModel
 import com.example.mymoney.ui.components.EmptyStateComposable
 
@@ -49,6 +50,7 @@ import com.example.mymoney.ui.components.EmptyStateComposable
 fun SavingDetailScreen(
     goalId: Long,
     onNavigateBack: () -> Unit = {},
+    onNavigateToAddRecord: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: SavingDetailViewModel = viewModel(
@@ -59,136 +61,158 @@ fun SavingDetailScreen(
 
     SavingDetailContent(
         uiState = uiState,
-        onEvent = viewModel::onEvent,
-        onNavigateBack = onNavigateBack
+        onNavigateBack = onNavigateBack,
+        onNavigateToAddRecord = onNavigateToAddRecord
     )
 }
 
 @Composable
 private fun SavingDetailContent(
     uiState: SavingDetailUiState,
-    onEvent: (SavingDetailEvent) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAddRecord: (Long) -> Unit
 ) {
     val detail = uiState.detail
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .statusBarsPadding()
-                .imePadding()
+                .imePadding(),
+            contentPadding = PaddingValues(bottom = 100.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onNavigateBack
+            // ── HEADER ──
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại"
+                    IconButton(
+                        onClick = onNavigateBack
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại"
+                        )
+                    }
+
+                    Text(
+                        text = "Chi tiết mục tiêu tiết kiệm",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-
-                Text(
-                    text = "Chi tiết mục tiêu tiết kiệm",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
             }
 
-            Spacer(Modifier.height(12.dp))
+            item { Spacer(Modifier.height(12.dp)) }
 
+            // ── LOADING / ERROR ──
             when {
                 uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                    item {
+                        Box(
+                            Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
 
                 uiState.error != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(uiState.error)
+                    item {
+                        Box(
+                            Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(uiState.error)
+                        }
                     }
                 }
 
                 detail != null -> {
-                    SavingProgressSection(
-                        detail = detail
-                    )
+                    // ── PROGRESS ──
+                    item {
+                        SavingProgressSection(detail)
+                    }
 
-                    Spacer(Modifier.height(12.dp))
+                    item { Spacer(Modifier.height(12.dp)) }
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                    // ── INFO CARD ──
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                                .padding(16.dp)
                         ) {
-                            if (detail.goal.savingType == SavingType.ONE_TIME) {
-                                InfoRow(
-                                    "Ngày bắt đầu",
-                                    formatDate(detail.goal.createdAt)
-                                )
-                                InfoRow(
-                                    "Ngày mục tiêu",
-                                    formatDate(detail.goal.targetDate)
-                                )
-                                InfoRow(
-                                    "Số ngày còn lại",
-                                    "${detail.daysRemaining ?: 0} ngày"
-                                )
-                            } else {
-                                InfoRow(
-                                    "Tổng đã tiết kiệm",
-                                    formatMoney(detail.totalSavedAllTime)
-                                )
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                if (detail.goal.savingType == SavingType.ONE_TIME) {
+                                    InfoRow(
+                                        "Ngày bắt đầu",
+                                        formatDate(detail.goal.createdAt)
+                                    )
+                                    InfoRow(
+                                        "Ngày mục tiêu",
+                                        formatDate(detail.goal.targetDate)
+                                    )
+                                    InfoRow(
+                                        "Số ngày còn lại",
+                                        "${detail.daysRemaining ?: 0} ngày"
+                                    )
+                                } else {
+                                    InfoRow(
+                                        "Tổng đã tiết kiệm",
+                                        formatMoney(detail.totalSavedAllTime)
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    item { Spacer(Modifier.height(12.dp)) }
 
-                    Text(
-                        text = "Lịch sử tiết kiệm",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(
-                            horizontal = 16.dp,
-                            vertical = 8.dp
+                    // ── TITLE ──
+                    item {
+                        Text(
+                            "Lịch sử tiết kiệm",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
-                    )
+                    }
 
-                    EmptyStateComposable("Chưa có hồ sơ nào. Thêm mới ngay nào")
+                    item { Spacer(Modifier.height(8.dp)) }
+
+                    // ── RECORD LIST ──
+                    if (detail.records.isEmpty()) {
+                        item {
+                            EmptyStateComposable("Chưa có hồ sơ nào. Thêm mới ngay nào")
+                        }
+                    } else {
+                        // TODO: Hiển thị lịch sử tiết kiệm
+                    }
                 }
             }
         }
-
-        ExtendedFloatingActionButton(
-            onClick = {
-                // Navigate Add Record
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null
-            )
-            Text(text = "Thêm")
+        if (detail != null) {
+            // FAB
+            ExtendedFloatingActionButton(
+                onClick = { onNavigateToAddRecord(detail.goal.id) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null
+                )
+                Text(text = "Thêm")
+            }
         }
     }
 }
@@ -359,7 +383,7 @@ fun SavingDetailPreview() {
 
     SavingDetailContent(
         uiState = SavingDetailUiState(detail = detail),
-        onEvent = {},
-        onNavigateBack = {}
+        onNavigateBack = {},
+        onNavigateToAddRecord = {}
     )
 }

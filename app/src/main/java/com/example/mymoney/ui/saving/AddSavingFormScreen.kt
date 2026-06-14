@@ -108,9 +108,7 @@ private fun SavingFormContent(
     onNavigateBack: () -> Unit
 ) {
     val cleanAmount = uiState.amount.replace(".", "").replace(",", "").toLongOrNull() ?: 0L
-
-    val isValid =
-        uiState.title.isNotBlank() && cleanAmount > 0
+    val isValid = uiState.title.isNotBlank() && cleanAmount > 0
 
     Column(
         modifier = Modifier
