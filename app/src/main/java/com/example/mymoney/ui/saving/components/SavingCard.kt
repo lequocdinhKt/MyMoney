@@ -231,6 +231,12 @@ private fun OneTimeDetails(targetDateMillis: Long?) {
                     daysRemaining > 0 -> "$daysRemaining ngày"
                     daysRemaining == 0L -> "Hôm nay"
                     else -> "Quá hạn"
+                },
+                valueColor = when {
+                    daysRemaining < 0 -> MaterialTheme.colorScheme.error
+                    daysRemaining <= 3 -> MaterialTheme.colorScheme.error
+                    daysRemaining <= 7 -> Color(0xFFFF9800)
+                    else -> MaterialTheme.colorScheme.onSurface
                 }
             )
         }
@@ -286,7 +292,8 @@ private fun RecurringDetails(type: SavingType) {
 private fun StatItem(
     modifier: Modifier = Modifier,
     label: String,
-    value: String
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -303,7 +310,8 @@ private fun StatItem(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            color = valueColor
         )
     }
 }

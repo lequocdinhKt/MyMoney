@@ -43,8 +43,11 @@ import java.util.Locale
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.CardDefaults
 import com.example.mymoney.domain.model.SavingGoalModel
 import com.example.mymoney.ui.components.EmptyStateComposable
+import com.example.mymoney.ui.theme.MyMoneyTheme
+import com.example.mymoney.ui.theme.SuccessGreen
 
 @Composable
 fun SavingDetailScreen(
@@ -95,7 +98,8 @@ private fun SavingDetailContent(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại"
+                            contentDescription = "Quay lại",
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
 
@@ -103,6 +107,7 @@ private fun SavingDetailContent(
                         text = "Chi tiết mục tiêu tiết kiệm",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -182,11 +187,12 @@ private fun SavingDetailContent(
                             "Lịch sử tiết kiệm",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                     }
 
-                    item { Spacer(Modifier.height(8.dp)) }
+                    item { Spacer(Modifier.height(28.dp)) }
 
                     // ── RECORD LIST ──
                     if (detail.records.isEmpty()) {
@@ -205,7 +211,8 @@ private fun SavingDetailContent(
                 onClick = { onNavigateToAddRecord(detail.goal.id) },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -221,6 +228,11 @@ private fun SavingDetailContent(
 private fun SavingProgressSection(
     detail: SavingGoalDetailModel
 ) {
+    val isCompleted = detail.progress >= 1f
+    val progressColor =
+        if (isCompleted) SuccessGreen
+        else MaterialTheme.colorScheme.primary
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
@@ -246,11 +258,10 @@ private fun SavingProgressSection(
                 text = "${formatDate(detail.currentCycleStart)} - ${
                     formatDate(detail.currentCycleEnd)
                 }",
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-
-        Spacer(Modifier.height(6.dp))
 
         Box(
             modifier = Modifier
@@ -261,13 +272,32 @@ private fun SavingProgressSection(
             CircularProgressIndicator(
                 progress = { detail.progress },
                 modifier = Modifier.fillMaxSize(),
-                strokeWidth = 10.dp
+                strokeWidth = 10.dp,
+                color = progressColor
             )
 
             Text(
                 text = "${(detail.progress * 100).toInt()}%",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = progressColor
             )
+        }
+
+        if (isCompleted) {
+            Spacer(Modifier.height(18.dp))
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = SuccessGreen.copy(alpha = 0.1f)
+                )
+            ) {
+                Text(
+                    text = "Hoàn thành",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    color = SuccessGreen,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
 
         Spacer(Modifier.height(6.dp))
@@ -283,17 +313,20 @@ private fun SavingProgressSection(
                 value = if (detail.goal.savingType == SavingType.ONE_TIME)
                     detail.totalSavedAllTime
                 else
-                    detail.currentCycleSaved
+                    detail.currentCycleSaved,
+                valueColor = SuccessGreen
             )
 
             StatisticItem(
                 title = "Còn lại",
-                value = detail.remainingAmount
+                value = detail.remainingAmount,
+                valueColor = MaterialTheme.colorScheme.primary
             )
 
             StatisticItem(
                 title = "Mục tiêu",
-                value = detail.goal.targetAmount
+                value = detail.goal.targetAmount,
+                valueColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -302,7 +335,8 @@ private fun SavingProgressSection(
 @Composable
 private fun StatisticItem(
     title: String,
-    value: Double
+    value: Double,
+    valueColor: androidx.compose.ui.graphics.Color
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -310,12 +344,14 @@ private fun StatisticItem(
 
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
         Text(
             text = formatMoney(value),
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = valueColor
         )
     }
 }
@@ -386,4 +422,37 @@ fun SavingDetailPreview() {
         onNavigateBack = {},
         onNavigateToAddRecord = {}
     )
+}
+
+@Preview(showBackground = true, name = "Saving Detail - Completed")
+@Composable
+fun SavingDetailCompletedPreview() {
+    val now = System.currentTimeMillis()
+
+    val detail = SavingGoalDetailModel(
+        goal = SavingGoalModel(
+            id = 1,
+            userId = "1",
+            title = "Mua xe",
+            targetAmount = 10000000.0,
+            createdAt = System.currentTimeMillis(),
+            targetDate = System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000,
+            savingType = SavingType.MONTHLY
+        ),
+        records = emptyList(),
+        totalSavedAllTime = 10000000.0,
+        currentCycleSaved = 10000000.0,
+        progress = 1f, // 👈 QUAN TRỌNG: completed
+        remainingAmount = 0.0,
+        currentCycleStart = now,
+        currentCycleEnd = now + 30L * 24 * 60 * 60 * 1000
+    )
+
+    MyMoneyTheme {
+        SavingDetailContent(
+            uiState = SavingDetailUiState(detail = detail),
+            onNavigateBack = {},
+            onNavigateToAddRecord = {}
+        )
+    }
 }

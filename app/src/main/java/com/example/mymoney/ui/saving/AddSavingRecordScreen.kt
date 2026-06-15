@@ -3,6 +3,7 @@ package com.example.mymoney.ui.saving
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,8 +52,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.core.graphics.toColorInt
 import com.example.mymoney.domain.model.WalletModel
 
 @Composable
@@ -211,6 +214,8 @@ private fun AddSavingRecordContent(
                 )
             }
         }
+
+        Spacer(Modifier.height(18.dp))
     }
 }
 
@@ -224,10 +229,11 @@ private fun WalletSelector(
         Text(
             text = "Từ ví",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -235,6 +241,9 @@ private fun WalletSelector(
         ) {
             items(wallets) { wallet ->
                 val isSelected = wallet.id == selectedWalletId
+                val cardColor = runCatching {
+                    Color(wallet.color.toColorInt())
+                }.getOrElse { MaterialTheme.colorScheme.primary }
 
                 Card(
                     modifier = Modifier
@@ -244,11 +253,14 @@ private fun WalletSelector(
                         },
                     colors = CardDefaults.cardColors(
                         containerColor =
-                            if (isSelected) MaterialTheme.colorScheme.primary
+                            if (isSelected) cardColor
                             else MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Column(Modifier.padding(16.dp)) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             wallet.name,
                             fontWeight = FontWeight.Bold,
@@ -256,13 +268,20 @@ private fun WalletSelector(
                             else MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.weight(1f))
 
-                        Text(
-                            formatMoney(wallet.balance),
-                            color = if (isSelected) Color.White
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Box(
+                            modifier = Modifier.size(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Đã chọn",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -275,10 +294,6 @@ private fun formatDate(millis: Long): String {
         "dd/MM/yyyy",
         Locale.getDefault()
     ).format(Date(millis))
-}
-
-private fun formatMoney(amount: Double): String {
-    return "%,.0f ₫".format(amount)
 }
 
 @Preview(showBackground = true, showSystemUi = true)
