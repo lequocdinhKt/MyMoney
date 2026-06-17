@@ -6,9 +6,12 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.ChatRepositoryImpl
+import com.example.mymoney.data.repository.SavingRecordRepositoryImpl
+import com.example.mymoney.data.repository.SavingRepositoryImpl
 import com.example.mymoney.data.repository.SupabaseTransactionRepository
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
+import com.example.mymoney.domain.usecase.AddSavingRecordUseCase
 import com.example.mymoney.domain.usecase.AddTransactionUseCase
 import com.example.mymoney.domain.usecase.EnsureDefaultWalletUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
@@ -34,6 +37,8 @@ class AddTransactionViewModelFactory(
         val db        = AppDatabase.getInstance(appCtx)
         val txRepo    = TransactionRepositoryImpl(db.transactionDao())
         val walletRepo = WalletRepositoryImpl(db.walletDao())
+        val savingRepo = SavingRepositoryImpl(db.savingDao())
+        val savingRecordRepo = SavingRecordRepositoryImpl(db.savingRecordDao())
 
         return AddTransactionViewModel(
             getTransactionsUseCase  = GetTransactionsUseCase(txRepo),
@@ -41,6 +46,8 @@ class AddTransactionViewModelFactory(
             walletRepository        = walletRepo,
             ensureDefaultWallet     = EnsureDefaultWalletUseCase(walletRepo),
             chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
+            savingRepository        = savingRepo,
+            addSavingRecordUseCase  = AddSavingRecordUseCase(walletRepo, savingRecordRepo),
             supabaseTransactionRepo = SupabaseTransactionRepository(),
             settingPreferences      = SettingPreferences(appCtx),
             categoryDao             = db.categoryDao(),

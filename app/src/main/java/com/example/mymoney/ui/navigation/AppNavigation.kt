@@ -37,6 +37,7 @@ import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
 import com.example.mymoney.ui.saving.AddSavingRecordScreen
 import com.example.mymoney.ui.saving.SavingDetailScreen
+import com.example.mymoney.ui.saving.SavingFormScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
 import com.example.mymoney.ui.statistics.StatisticsScreen
@@ -137,6 +138,9 @@ composable(route = Screen.Main.route) {
         },
         onNavigateToDetailSaving = { goalId ->
             navController.navigate(Screen.SavingDetail.createRoute(goalId))
+        },
+        onNavigateToAddSavingForm = {
+            navController.navigate(Screen.SavingForm.createRoute(userId))
         },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
@@ -387,6 +391,20 @@ composable(route = Screen.Main.route) {
             AddSavingRecordScreen(
                 userId = uid,
                 goalId = gId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Màn hình Form tiết kiệm ──
+        composable(
+            route = Screen.SavingForm.route,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("userId") ?: userId
+            SavingFormScreen(
+                userId = uid,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

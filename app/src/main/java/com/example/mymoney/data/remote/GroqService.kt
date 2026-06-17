@@ -30,7 +30,7 @@ object GroqService {
 
     private val SYSTEM_PROMPT = """
         Bạn là trợ lý tài chính AI trong ứng dụng MyMoney.
-        Khi người dùng nhắn một giao dịch (ví dụ: "bữa tối 20k", "lương 10tr"), bạn phải:
+        Khi người dùng nhắn một giao dịch (ví dụ: "bữa tối 20k", "lương 10tr") hoặc một khoản tiết kiệm (ví dụ: "tiết kiệm được 100k cho quần áo"), bạn phải:
         1. Phản hồi ngắn gọn, vui vẻ bằng tiếng Việt (1-2 câu, có thể dùng emoji)
         2. Trả về JSON ở cuối trong block ```json ... ```
 
@@ -44,35 +44,37 @@ object GroqService {
               "type": "expense",
               "category": "Ăn uống"
             }
+          ],
+          "savings": [
+            {
+              "goal_title": "Tên mục tiêu tiết kiệm",
+              "amount": 100000,
+              "note": "Ghi chú nếu có"
+            }
           ]
         }
         ```
+
+        Quy tắc:
+        - Nếu là chi tiêu/thu nhập bình thường -> điền vào "transactions".
+        - Nếu người dùng nói "tiết kiệm được...", "bỏ heo...", "để dành cho [mục tiêu]..." -> điền vào "savings". 
+        - Bạn có thể trả về cả hai nếu người dùng nhắn nhiều việc cùng lúc.
+        - "goal_title" PHẢI khớp chính xác với tên trong "DANH SÁCH MỤC TIÊU TIẾT KIỆM HIỆN CÓ" (nếu có). Không tự ý thêm bớt từ (ví dụ: người dùng nói "tiết kiệm cho quần áo" nhưng mục tiêu là "mua quần áo" thì hãy dùng "mua quần áo").
 
         Quy tắc chuyển đổi số tiền:
         - "k" hoặc "K" = × 1,000  (20k → 20000)
         - "tr" hoặc "triệu" = × 1,000,000  (10tr → 10000000)
         - Số thuần túy = nguyên xi (500000 → 500000)
 
-        Quy tắc xác định type:
+        Quy tắc xác định type (cho transactions):
         - Mặc định: "expense" (chi tiêu)
         - "income" khi rõ ràng là thu nhập: lương, thưởng, nhận tiền, bán hàng...
 
-        Danh mục (category) gợi ý (HÃY CHỌN CHÍNH XÁC TÊN DƯỚI ĐÂY):
+        Danh mục (category) gợi ý cho transactions (HÃY CHỌN CHÍNH XÁC TÊN DƯỚI ĐÂY):
         - Chi tiêu: Ăn uống, Di chuyển, Mua sắm, Giải trí, Sức khỏe, Giáo dục, Hóa đơn, Nhà cửa, Khác
         - Thu nhập: Thu nhập, Thưởng, Đầu tư, Khác
 
-        Mô tả danh mục:
-        - Ăn uống: cơm, cafe, trà sữa, ăn vặt, nhà hàng...
-        - Di chuyển: xăng, grab, taxi, xe buýt, sửa xe...
-        - Mua sắm: quần áo, giày dép, mỹ phẩm, đồ gia dụng...
-        - Giải trí: xem phim, du lịch, game, karaoke...
-        - Sức khỏe: thuốc, khám bệnh, gym, yoga...
-        - Giáo dục: học phí, sách, khóa học...
-        - Hóa đơn: điện, nước, internet, cước điện thoại...
-        - Nhà cửa: tiền thuê nhà, sửa nhà, mua đồ nội thất...
-        - Khác: các khoản chi tiêu không thuộc các mục trên.
-
-        Nếu tin nhắn không liên quan đến giao dịch tài chính,
+        Nếu tin nhắn không liên quan đến giao dịch hay tiết kiệm,
         hãy trả lời thân thiện và KHÔNG trả về JSON.
     """.trimIndent()
 
@@ -120,7 +122,8 @@ object GroqService {
 
     data class ChatResult(
         val displayText: String,
-        val transactions: List<ParsedTransaction> = emptyList()
+        val transactions: List<ParsedTransaction> = emptyList(),
+        val savings: List<ParsedSaving> = emptyList()
     )
 
     data class ParsedTransaction(
@@ -128,6 +131,12 @@ object GroqService {
         val amount: Double,
         val type: String,       // "income" | "expense"
         val category: String
+    )
+
+    data class ParsedSaving(
+        val goalTitle: String,
+        val amount: Double,
+        val note: String
     )
 
     suspend fun chatWithParsing(userMessage: String, customRules: String? = null): ChatResult {
@@ -199,11 +208,15 @@ object GroqService {
             .ifBlank { "✅ Đã ghi nhận giao dịch!" }
 
         val jsonMatch = Regex("```json([\\s\\S]*?)```").find(fullText)
-        val transactions = if (jsonMatch != null) {
+        var transactions = emptyList<ParsedTransaction>()
+        var savings = emptyList<ParsedSaving>()
+
+        if (jsonMatch != null) {
             try {
                 val jsonBlock = jsonMatch.groupValues[1].trim()
                 val parsed = json.decodeFromString<TransactionListWrapper>(jsonBlock)
-                parsed.transactions.map { dto ->
+                
+                transactions = parsed.transactions.map { dto ->
                     ParsedTransaction(
                         note     = dto.note,
                         amount   = dto.amount,
@@ -211,14 +224,25 @@ object GroqService {
                         category = dto.category
                     )
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse transaction JSON: ${e.message}")
-                emptyList()
-            }
-        } else emptyList()
 
-        Log.d(TAG, "Parsed ${transactions.size} transaction(s)")
-        return ChatResult(displayText = displayText, transactions = transactions)
+                savings = parsed.savings.map { dto ->
+                    ParsedSaving(
+                        goalTitle = dto.goal_title,
+                        amount = dto.amount,
+                        note = dto.note
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse JSON block: ${e.message}")
+            }
+        }
+
+        Log.d(TAG, "Parsed ${transactions.size} transaction(s), ${savings.size} saving(s)")
+        return ChatResult(
+            displayText = displayText,
+            transactions = transactions,
+            savings = savings
+        )
     }
 
     suspend fun transcribeAudio(audioFile: File): String {
@@ -283,7 +307,8 @@ object GroqService {
 
     @Serializable
     private data class TransactionListWrapper(
-        val transactions: List<ParsedTransactionDto> = emptyList()
+        val transactions: List<ParsedTransactionDto> = emptyList(),
+        val savings: List<ParsedSavingDto> = emptyList()
     )
 
     @Serializable
@@ -292,5 +317,12 @@ object GroqService {
         val amount: Double = 0.0,
         val type: String = "expense",
         val category: String = "Khác"
+    )
+
+    @Serializable
+    private data class ParsedSavingDto(
+        val goal_title: String = "",
+        val amount: Double = 0.0,
+        val note: String = ""
     )
 }

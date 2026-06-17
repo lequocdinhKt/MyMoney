@@ -12,6 +12,8 @@ import com.example.mymoney.domain.model.ChatMessageModel
 import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.domain.repository.ChatRepository
 import com.example.mymoney.domain.repository.WalletRepository
+import com.example.mymoney.domain.repository.SavingRepository
+import com.example.mymoney.domain.usecase.AddSavingRecordUseCase
 import com.example.mymoney.domain.usecase.AddTransactionUseCase
 import com.example.mymoney.domain.usecase.EnsureDefaultWalletUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
@@ -56,6 +58,8 @@ class AddTransactionViewModel(
     private val walletRepository: WalletRepository,
     private val ensureDefaultWallet: EnsureDefaultWalletUseCase,
     private val chatRepository: ChatRepository,
+    private val savingRepository: SavingRepository,
+    private val addSavingRecordUseCase: AddSavingRecordUseCase,
     private val supabaseTransactionRepo: SupabaseTransactionRepository,
     private val settingPreferences: SettingPreferences,
     private val categoryDao: CategoryDao,
@@ -238,9 +242,14 @@ class AddTransactionViewModel(
 
         // ── Step 3: Gọi Groq API ──
         try {
+            val goals = runCatching { savingRepository.getSavingGoals(userId).first() }.getOrDefault(emptyList())
+            val goalsContext = if (goals.isNotEmpty()) {
+                "\nDANH SÁCH MỤC TIÊU TIẾT KIỆM HIỆN CÓ: " + goals.joinToString { it.title }
+            } else ""
+
             val result = GroqService.chatWithParsing(
                 userMessage = noteText,
-                customRules = _uiState.value.aiCustomRules
+                customRules = _uiState.value.aiCustomRules + goalsContext
             )
 
             // ── Step 4: Xây text AI và cập nhật bubble ──
@@ -261,10 +270,10 @@ class AddTransactionViewModel(
                 }
             }
 
-            // ── Step 5 & 6: Xử lý từng giao dịch parse được ──
-            if (result.transactions.isNotEmpty() && userId.isNotBlank()) {
+            // ── Step 5 & 6: Xử lý giao dịch và tiết kiệm ──
+            if ((result.transactions.isNotEmpty() || result.savings.isNotEmpty()) && userId.isNotBlank()) {
                 viewModelScope.launch {
-                    // Resolve đúng ví đang active (không fallback ngầm về ví mặc định)
+                    // Resolve đúng ví đang active
                     val wallet = if (selectedWalletId != 0L) {
                         runCatching { walletRepository.getWalletById(selectedWalletId) }.getOrElse { null }
                             ?: run {
@@ -278,97 +287,80 @@ class AddTransactionViewModel(
                         }
                     }
 
-                    Log.d(TAG, "▶ Processing batch: selectedWalletId=$selectedWalletId → using wallet id=${wallet.id} name='${wallet.name}'")
-
+                    // 6. Xử lý Transactions
                     result.transactions.forEach { parsed ->
-                        // ── Lấy số dư hiện tại của ĐÚNG ví (không cộng dồn tất cả ví) ──
                         val currentBalance = runCatching {
                             walletRepository.getWalletById(wallet.id)?.balance ?: 0.0
                         }.getOrElse { 0.0 }
 
-                        Log.d(TAG, "  TX payload: note='${parsed.note}' amount=${parsed.amount} type=${parsed.type} walletId=${wallet.id} currentBalance=$currentBalance")
-
                         if (parsed.type == "expense" && currentBalance < parsed.amount) {
-                            // Số dư không đủ → KHÔNG lưu, thêm bubble cảnh báo
                             val shortfall   = parsed.amount - currentBalance
-                            val warnText    = buildInsufficientBalanceText(
-                                txNote      = parsed.note,
-                                txAmount    = parsed.amount,
-                                balance     = currentBalance,
-                                shortfall   = shortfall,
-                                useGrouping = useGrouping
-                            )
+                            val warnText    = buildInsufficientBalanceText(parsed.note, parsed.amount, currentBalance, shortfall, useGrouping)
                             val warnId  = ++messageIdCounter
                             val warnMsg = ChatMessage(id = warnId, content = warnText, sender = ChatSender.AI)
                             _uiState.update { s -> s.copy(messages = s.messages + warnMsg) }
-
-                            // Lưu cảnh báo vào Room chat history
-                            runCatching {
-                                chatRepository.saveMessage(
-                                    ChatMessageModel(
-                                        userId    = userId,
-                                        content   = warnText,
-                                        sender    = "ai",
-                                        sessionId = sessionId,
-                                        timestamp = System.currentTimeMillis()
-                                    )
-                                )
-                            }
-                            Log.d(TAG, "Insufficient balance: $currentBalance < ${parsed.amount}, skipped")
-                            return@forEach  // bỏ qua giao dịch này
+                            return@forEach
                         }
 
-                        // Resolve category name → id (fallback to "Khác" nếu không tìm thấy)
                         val resolvedCategoryId = runCatching {
                             categoryDao.getCategoryByName(userId, parsed.category, parsed.type)?.id
                                 ?: categoryDao.getDefaultCategory(userId, parsed.type)?.id
                         }.getOrNull()
 
                         val transaction = TransactionModel(
-                            userId    = userId,
-                            note      = parsed.note,
-                            amount    = parsed.amount,
-                            type      = parsed.type,
-                            category  = parsed.category,
-                            categoryId = resolvedCategoryId,
-                            walletId  = wallet.id,
-                            aiGenerated = true,
-                            timestamp = now
+                            userId = userId, note = parsed.note, amount = parsed.amount,
+                            type = parsed.type, category = parsed.category, categoryId = resolvedCategoryId,
+                            walletId = wallet.id, aiGenerated = true, timestamp = now
                         )
 
-                        // 6a. Lưu giao dịch vào Room
-                        val saveResult = runCatching { addTransactionUseCase(transaction) }
-                        if (saveResult.isFailure) {
-                            Log.e(TAG, "Room insert failed: ${saveResult.exceptionOrNull()?.message}")
-                            return@forEach
-                        }
-                        Log.d(TAG, "Saved to Room: ${parsed.note} ${parsed.amount}")
-
-                        // 6b. Cập nhật balance ví
-                        //   income  → balance + amount
-                        //   expense → balance - amount (đã kiểm tra đủ tiền ở trên)
-                        val delta      = if (parsed.type == "income") parsed.amount else -parsed.amount
-                        val newBalance = currentBalance + delta
-                        runCatching {
-                            walletRepository.updateWalletBalance(wallet.id, newBalance)
-                        }.onFailure {
-                            Log.e(TAG, "Wallet balance update failed: ${it.message}")
-                        }
-                        Log.d(TAG, "Wallet balance: $currentBalance → $newBalance (delta=$delta)")
-
-                        // 6c. Upload lên Supabase (non-blocking, non-fatal)
+                        runCatching { addTransactionUseCase(transaction) }
+                        val delta = if (parsed.type == "income") parsed.amount else -parsed.amount
+                        runCatching { walletRepository.updateWalletBalance(wallet.id, currentBalance + delta) }
+                        
                         launch {
                             runCatching {
                                 supabaseTransactionRepo.insertTransaction(
-                                    userId          = userId,
-                                    note            = parsed.note,
-                                    amount          = parsed.amount,
-                                    type            = parsed.type,
-                                    category        = parsed.category,
-                                    timestampMillis = now,
-                                    walletSupabaseId = wallet.supabaseId  // null nếu ví chưa sync
+                                    userId = userId, note = parsed.note, amount = parsed.amount,
+                                    type = parsed.type, category = parsed.category, timestampMillis = now,
+                                    walletSupabaseId = wallet.supabaseId
                                 )
-                            }.onFailure { Log.w(TAG, "Supabase insert failed (non-critical): ${it.message}") }
+                            }
+                        }
+                    }
+
+                    // 7. Xử lý Savings
+                    if (result.savings.isNotEmpty()) {
+                        Log.d(TAG, "🔍 AI found ${result.savings.size} savings. Starting processing...")
+                        val goals = runCatching { savingRepository.getSavingGoals(userId).first() }.getOrDefault(emptyList())
+                        
+                        result.savings.forEach { parsed ->
+                            val cleanParsedTitle = parsed.goalTitle.trim().lowercase()
+                            val matchedGoal = goals.find { it.title.trim().lowercase() == cleanParsedTitle }
+                                ?: goals.find { it.title.trim().lowercase().contains(cleanParsedTitle) }
+                                ?: goals.find { cleanParsedTitle.contains(it.title.trim().lowercase()) }
+
+                            if (matchedGoal != null) {
+                                val saveRecordResult = runCatching {
+                                    addSavingRecordUseCase(
+                                        userId = userId, goalId = matchedGoal.id, walletId = wallet.id,
+                                        amount = parsed.amount, note = parsed.note.ifBlank { "Ghi nhận qua AI" }
+                                    )
+                                }
+                                if (saveRecordResult.isSuccess) {
+                                    Log.d(TAG, "✨ SUCCESS: Record added for goalId=${matchedGoal.id}")
+                                } else {
+                                    val e = saveRecordResult.exceptionOrNull()
+                                    Log.e(TAG, "❌ FAILURE: ${e?.message}")
+                                    val warnId  = ++messageIdCounter
+                                    val warnMsg = ChatMessage(id = warnId, content = "⚠️ Lỗi: ${e?.message}", sender = ChatSender.AI)
+                                    _uiState.update { s -> s.copy(messages = s.messages + warnMsg) }
+                                }
+                            } else {
+                                Log.w(TAG, "❓ NOT FOUND: No goal for '$cleanParsedTitle'")
+                                val warnId  = ++messageIdCounter
+                                val warnMsg = ChatMessage(id = warnId, content = "⚠️ Không tìm thấy mục tiêu '${parsed.goalTitle}'", sender = ChatSender.AI)
+                                _uiState.update { s -> s.copy(messages = s.messages + warnMsg) }
+                            }
                         }
                     }
                 }
