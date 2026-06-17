@@ -35,6 +35,8 @@ import com.example.mymoney.ui.security.PinSetupScreen
 import com.example.mymoney.ui.security.PinEntryScreen
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
+import com.example.mymoney.ui.saving.AddSavingRecordScreen
+import com.example.mymoney.ui.saving.SavingDetailScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
 import com.example.mymoney.ui.statistics.StatisticsScreen
@@ -132,6 +134,9 @@ composable(route = Screen.Main.route) {
         },
         onNavigateToBudgetManual = { budgetId ->
             navController.navigate(Screen.BudgetManual.createRoute(userId, budgetId))
+        },
+        onNavigateToDetailSaving = { goalId ->
+            navController.navigate(Screen.SavingDetail.createRoute(goalId))
         },
         onWalletColorChanged = onWalletColorChanged,
         onSearchClick = {
@@ -351,6 +356,38 @@ composable(route = Screen.Main.route) {
                         popUpTo(Screen.PinEntry.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // ── Màn hình chi tiết tiết kiệm ──
+        composable(
+            route = Screen.SavingDetail.route,
+            arguments = listOf(navArgument("goalId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getLong("goalId") ?: 0L
+            SavingDetailScreen(
+                goalId = goalId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddRecord = { gId ->
+                    navController.navigate(Screen.AddSavingRecord.createRoute(userId, gId))
+                }
+            )
+        }
+
+        // ── Màn hình thêm bản ghi tiết kiệm ──
+        composable(
+            route = Screen.AddSavingRecord.route,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("goalId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("userId") ?: userId
+            val gId = backStackEntry.arguments?.getLong("goalId") ?: 0L
+            AddSavingRecordScreen(
+                userId = uid,
+                goalId = gId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

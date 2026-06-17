@@ -9,50 +9,41 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * Sealed class định nghĩa tất cả các route trong ứng dụng.
- * Dùng sealed class thay vì raw string để tránh lỗi chính tả và dễ refactor.
  */
 sealed class Screen(val route: String) {
 
     // ── Onboarding ──
-    /** Màn hình onboarding thống nhất (thay thế Start1, Start2, Start3) */
     data object Onboarding : Screen("onboarding")
 
     // ── Auth ──
-    /** Màn hình đăng nhập */
     data object SignIn : Screen("sign_in")
-
-    /** Màn hình đăng ký */
     data object SignUp : Screen("sign_up")
 
-    // ── Màn hình chính (shell chứa bottom bar + nội dung tab) ──
+    // ── Màn hình chính ──
     data object Main : Screen("main")
 
-    // ── Màn hình thêm giao dịch (mở từ FAB trong Bottom Bar) ──
-    // walletId = 0  → fallback về ví mặc định
-    // walletId > 0  → dùng ví đang được chọn trên HomeScreen
+    // ── Giao dịch & Camera ──
     data object AddTransaction : Screen("add_transaction/{walletId}") {
         fun createRoute(walletId: Long = 0L) = "add_transaction/$walletId"
     }
 
-    // ── Màn hình chụp ảnh (Locket-style) ──
     data object CameraCapture : Screen("camera_capture/{walletId}") {
         fun createRoute(walletId: Long = 0L) = "camera_capture/$walletId"
     }
 
-    // ── Màn hình thiết lập ví ──
-    // walletId = -1  → tạo mới
-    // walletId > 0   → chỉnh sửa ví có id đó
+    // ── Thiết lập ví ──
     data object WalletSetup : Screen("wallet_setup/{userId}/{walletId}") {
         fun createRoute(userId: String, walletId: Long = -1L) =
             "wallet_setup/$userId/$walletId"
     }
 
-    // ── Màn hình thiết lập ngân sách ──
+    // ── Thiết lập ngân sách ──
     data object BudgetForm : Screen("budget_form/{userId}/{budgetId}") {
         fun createRoute(userId: String, budgetId: Long = -1L) =
             "budget_form/$userId/$budgetId"
     }
 
+    // ── Màn hình hồ sơ ──
     /** Backward-compatible alias for older navigation code. */
     data object BudgetManual : Screen(BudgetForm.route) {
         fun createRoute(userId: String, budgetId: Long = -1L) =
@@ -73,8 +64,18 @@ sealed class Screen(val route: String) {
     // ── Màn hình hồ sơ người dùng ──
     data object Profile : Screen("profile")
 
+    // ── Tiết kiệm ──
     data object SavingForm : Screen("saving_form/{userId}") {
         fun createRoute(userId: String) = "saving_form/$userId"
+    }
+
+    data object SavingDetail : Screen("saving_detail/{goalId}") {
+        fun createRoute(goalId: Long) = "saving_detail/$goalId"
+    }
+
+    // ── Màn hình thêm bản ghi tiết kiệm ──
+    data object AddSavingRecord : Screen("add_saving_record/{userId}/{goalId}") {
+        fun createRoute(userId: String, goalId: Long) = "add_saving_record/$userId/$goalId"
     }
 
     // ── Security ──
@@ -100,46 +101,13 @@ sealed class BottomTab(
     val icon: ImageVector,
     val title: String? = null
 ) {
-    // ── Cụm bên trái (trước chỗ lõm) ──
-    data object Home : BottomTab(
-        route = "tab_home",
-        label = "Trang chủ",
-        icon = Icons.Filled.Home,
-        title = "Trang chủ"
-    )
-
-    data object Budget : BottomTab(
-        route = "tab_budget",
-        label = "Ngân sách",
-        icon = Icons.Filled.AccountBalanceWallet,
-        title = "Ngân sách"
-    )
-
-    // ── Cụm bên phải (sau chỗ lõm) ──
-    data object Saving : BottomTab(
-        route = "tab_saving",
-        label = "Tiết kiệm",
-        icon = Icons.Filled.Savings,
-        title = "Tiết kiệm"
-    )
-
-    /** Màn hình "Khác" – title = null → Top Bar sẽ bị ẩn */
-    data object Other : BottomTab(
-        route = "tab_other",
-        label = "Khác",
-        icon = Icons.Filled.MoreHoriz,
-        title = null
-    )
+    data object Home : BottomTab("tab_home", "Trang chủ", Icons.Filled.Home, "Trang chủ")
+    data object Budget : BottomTab("tab_budget", "Ngân sách", Icons.Filled.AccountBalanceWallet, "Ngân sách")
+    data object Saving : BottomTab("tab_saving", "Tiết kiệm", Icons.Filled.Savings, "Tiết kiệm")
+    data object Other : BottomTab("tab_other", "Khác", Icons.Filled.MoreHoriz, null)
 
     companion object {
-        /** Danh sách tất cả các tab — dùng để render Bottom Bar */
         val all = listOf(Home, Budget, Saving, Other)
-
-        /**
-         * Tìm BottomTab tương ứng với route hiện tại.
-         * Dùng trong MainScreen để xác định tab đang hiển thị → truyền title cho Top Bar.
-         */
-        fun fromRoute(route: String?): BottomTab? =
-            all.firstOrNull { it.route == route }
+        fun fromRoute(route: String?): BottomTab? = all.firstOrNull { it.route == route }
     }
 }

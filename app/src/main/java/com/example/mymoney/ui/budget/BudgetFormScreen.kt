@@ -265,6 +265,8 @@ private fun BudgetFormContent(
                 )
             }
         }
+
+        Spacer(Modifier.height(18.dp))
     }
 }
 

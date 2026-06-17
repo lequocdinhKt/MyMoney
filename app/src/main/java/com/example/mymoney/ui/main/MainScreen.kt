@@ -28,6 +28,7 @@ import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.GetPeriodSummaryUseCase
+import com.example.mymoney.domain.usecase.GetTotalBalanceUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsByPeriodUseCase
 import com.example.mymoney.presentation.viewmodel.home.HomeViewModelFactory
 import com.example.mymoney.ui.components.CustomBottomBar
@@ -62,6 +63,9 @@ fun MainScreen(
     onNavigateToAddWallet: () -> Unit = {},
     onNavigateToEditWallet: (walletId: Long) -> Unit = {},
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
+    onNavigateToBudgetForm: (budgetId: Long) -> Unit = {},
+    onNavigateToAddSavingForm: () -> Unit = {},
+    onNavigateToDetailSaving: (savingId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
     onStatisticsClick: () -> Unit = {},
@@ -194,6 +198,9 @@ fun MainScreen(
                 onSelectedWalletIdChanged = { walletId -> selectedWalletId = walletId },
                 onWalletColorChanged      = onWalletColorChanged,
                 onNavigateToBudgetManual  = onNavigateToBudgetManual
+                onNavigateToBudgetForm    = { onNavigateToBudgetForm(-1L) },
+                onNavigateToAddSavingForm = { onNavigateToAddSavingForm() },
+                onNavigateToDetailSaving  = onNavigateToDetailSaving
             )
         }
 

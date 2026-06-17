@@ -108,9 +108,7 @@ private fun SavingFormContent(
     onNavigateBack: () -> Unit
 ) {
     val cleanAmount = uiState.amount.replace(".", "").replace(",", "").toLongOrNull() ?: 0L
-
-    val isValid =
-        uiState.title.isNotBlank() && cleanAmount > 0
+    val isValid = uiState.title.isNotBlank() && cleanAmount > 0
 
     Column(
         modifier = Modifier
@@ -265,13 +263,15 @@ private fun SavingFormContent(
                 )
             } else {
                 Text(
-                    text = "Lưu",
+                    text = "Tiếp tục",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
         }
+
+        Spacer(Modifier.height(18.dp))
     }
 }
 
