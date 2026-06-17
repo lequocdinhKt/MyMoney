@@ -21,7 +21,8 @@ import com.example.mymoney.ui.auth.SignUpScreen
 import com.example.mymoney.ui.camera.CameraCaptureScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
-import com.example.mymoney.ui.wallet.WalletSetupScreen
+import com.example.mymoney.ui.security.PinSetupScreen
+import com.example.mymoney.ui.security.PinEntryScreen
 import com.example.mymoney.ui.search.SearchScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -29,10 +30,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.example.mymoney.ui.wallet.WalletSetupScreen
+import com.example.mymoney.ui.security.PinSetupScreen
+import com.example.mymoney.ui.security.PinEntryScreen
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
+import com.example.mymoney.ui.statistics.StatisticsScreen
 
 /**
  * Navigation graph chính của ứng dụng.
@@ -132,6 +137,9 @@ composable(route = Screen.Main.route) {
         onSearchClick = {
             navController.navigate("search")
         },
+        onStatisticsClick = {
+            navController.navigate(Screen.Statistics.route)
+        },
         onNavigateToStreak = {
             navController.navigate(Screen.Streak.route)
         },
@@ -139,6 +147,9 @@ composable(route = Screen.Main.route) {
             navController.navigate(Screen.SignIn.route) {
                 popUpTo(0) { inclusive = true }
             }
+        },
+        onNavigateToPinSetup = {
+            navController.navigate(Screen.PinSetup.route)
         }
     )
 }
@@ -312,6 +323,34 @@ composable(route = Screen.Main.route) {
             RecurringScreen(
                 walletId = walletId,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Màn hình thống kê ──
+        composable(route = Screen.Statistics.route) {
+            StatisticsScreen(
+                userId = userId,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToBudget = {
+                    navController.navigate(Screen.BudgetManual.createRoute(userId))
+                }
+            )
+        }
+
+        // ── Security ──
+        composable(route = Screen.PinSetup.route) {
+            PinSetupScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.PinEntry.route) {
+            PinEntryScreen(
+                onSuccess = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.PinEntry.route) { inclusive = true }
+                    }
+                }
             )
         }
     }

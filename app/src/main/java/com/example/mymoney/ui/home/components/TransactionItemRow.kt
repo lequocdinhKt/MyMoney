@@ -44,6 +44,7 @@ import com.example.mymoney.ui.theme.SuccessGreen
 fun TransactionItemRow(
     transaction: TransactionItem,
     onDelete: (() -> Unit)? = null,
+    isDeleting: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val amountColor = remember(transaction.amount) {
@@ -55,14 +56,15 @@ fun TransactionItemRow(
             confirmValueChange = { value ->
                 if (value == SwipeToDismissBoxValue.EndToStart) {
                     onDelete()
-                    true
+                    false // Trả về false để không auto-dismiss, chờ ViewModel xóa hoặc hủy
                 } else false
             },
             positionalThreshold = { totalDistance -> totalDistance * 0.35f }
         )
 
-        LaunchedEffect(dismissState.currentValue) {
-            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+        // Khi trạng thái isDeleting thay đổi từ true -> false (người dùng hủy), reset animation
+        LaunchedEffect(isDeleting) {
+            if (!isDeleting && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
                 dismissState.reset()
             }
         }

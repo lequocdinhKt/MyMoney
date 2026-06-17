@@ -60,7 +60,9 @@ data class HomeUiState(
     val totalBalance: String = "0",
     val transactions: List<TransactionItem> = emptyList(),
     /** Hiển thị dialog yêu cầu tạo ví khi không có ví nào */
-    val showCreateWalletDialog: Boolean = false
+    val showCreateWalletDialog: Boolean = false,
+    /** ID giao dịch đang chờ xác nhận xóa */
+    val transactionToDeleteId: String? = null
 )
 
 /**
@@ -71,7 +73,9 @@ sealed interface HomeEvent {
     /** Chọn khoảng ngày tùy chỉnh – tự động set period = CUSTOM */
     data class SelectCustomPeriod(val fromMs: Long, val toMs: Long) : HomeEvent
     data class SelectWallet(val walletId: Long) : HomeEvent
-    data class DeleteTransaction(val transactionId: String) : HomeEvent
+    data class RequestDeleteTransaction(val transactionId: String) : HomeEvent
+    data object ConfirmDeleteTransaction : HomeEvent
+    data object CancelDeleteTransaction : HomeEvent
     data object AddTransactionClick : HomeEvent
     data object AddWalletClick : HomeEvent
     data class EditWalletClick(val walletId: Long) : HomeEvent

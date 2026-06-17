@@ -144,6 +144,12 @@ class SettingViewModel(
             is SettingEvent.ThemeDismissed -> {
                 _extrasState.update { it.copy(showThemeSheet = false) }
             }
+            // ── PIN ──
+            is SettingEvent.PinClicked -> {
+                viewModelScope.launch {
+                    _navEvent.emit(SettingNavEvent.NavigateToPinSetup)
+                }
+            }
             // ── Currency ──
             is SettingEvent.CurrencyClicked -> {
                 _extrasState.update { it.copy(showCurrencySheet = true) }

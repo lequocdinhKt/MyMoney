@@ -16,6 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import androidx.fragment.app.FragmentActivity
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.presentation.viewmodel.setting.setting.ThemeMode
 import com.example.mymoney.ui.navigation.AppNavigation
@@ -24,7 +25,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 import com.example.mymoney.worker.ChatCleanupWorker
 import com.example.mymoney.worker.RecurringTransactionWorker
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -52,6 +53,8 @@ class MainActivity : ComponentActivity() {
                 initial = ThemeMode.SYSTEM
             )
 
+            val pinCode by prefs.pinCode.collectAsState(initial = "loading")
+
             val useDarkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
@@ -64,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 primaryHex = primaryHex,
                 darkTheme = useDarkTheme
             ) {
-                if (isOnboardingCompleted == null || currentUserId == "loading") {
+                if (isOnboardingCompleted == null || currentUserId == "loading" || pinCode == "loading") {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -75,6 +78,7 @@ class MainActivity : ComponentActivity() {
 
                 val startDestination: String = when {
                     isOnboardingCompleted == false -> Screen.Onboarding.route
+                    pinCode != null && currentUserId != null -> Screen.PinEntry.route
                     currentUserId != null -> Screen.Main.route
                     else -> Screen.SignIn.route
                 }

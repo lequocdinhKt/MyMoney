@@ -36,6 +36,8 @@ class SettingPreferences(private val context: Context) {
         val KEY_SHOW_COMPLETED           = booleanPreferencesKey("show_completed_enabled")
         val KEY_CHAT_TONE                 = stringPreferencesKey("chat_tone")
         val KEY_AI_CUSTOM_RULES          = stringPreferencesKey("ai_custom_rules")
+        val KEY_PIN_CODE                  = stringPreferencesKey("pin_code")
+        val KEY_BIOMETRIC_ENABLED         = booleanPreferencesKey("biometric_enabled")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -87,6 +89,14 @@ class SettingPreferences(private val context: Context) {
     /** Custom rules for AI parsing */
     val aiCustomRules: Flow<String> = context.dataStore.data
         .map { prefs -> prefs[KEY_AI_CUSTOM_RULES] ?: "" }
+
+    /** PIN Code - null nếu chưa thiết lập */
+    val pinCode: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[KEY_PIN_CODE] }
+
+    /** Biometric enabled status */
+    val isBiometricEnabled: Flow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[KEY_BIOMETRIC_ENABLED] ?: false }
 
     // ── Write ──────────────────────────────────────────────────────────────────
 
@@ -142,6 +152,19 @@ class SettingPreferences(private val context: Context) {
     suspend fun setAiCustomRules(rules: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_AI_CUSTOM_RULES] = rules
+        }
+    }
+
+    suspend fun savePinCode(pin: String?) {
+        context.dataStore.edit { prefs ->
+            if (pin == null) prefs.remove(KEY_PIN_CODE)
+            else prefs[KEY_PIN_CODE] = pin
+        }
+    }
+
+    suspend fun setBiometricEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BIOMETRIC_ENABLED] = enabled
         }
     }
 

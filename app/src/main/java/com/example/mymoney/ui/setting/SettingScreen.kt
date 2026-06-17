@@ -64,6 +64,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
 fun SettingScreen(
     onItemClick: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToPinSetup: () -> Unit = {},
     onSignOut: () -> Unit = {},
     viewModel: SettingViewModel = viewModel(
         factory = SettingViewModel.factory(LocalContext.current)
@@ -77,6 +78,7 @@ fun SettingScreen(
         viewModel.navEvent.collect { event ->
             when (event) {
                 is SettingNavEvent.NavigateToSignIn -> onSignOut()
+                is SettingNavEvent.NavigateToPinSetup -> onNavigateToPinSetup()
             }
         }
     }
@@ -95,6 +97,7 @@ fun SettingScreen(
                 "backup" -> viewModel.onEvent(SettingEvent.BackupToSupabaseClicked)
                 "theme"  -> viewModel.onEvent(SettingEvent.ThemeClicked)
                 "currency" -> viewModel.onEvent(SettingEvent.CurrencyClicked)
+                "pin"    -> viewModel.onEvent(SettingEvent.PinClicked)
 //                "number_format" -> viewModel.onEvent(SettingEvent.NumberFormatClicked)
                 else     -> onItemClick()
             }

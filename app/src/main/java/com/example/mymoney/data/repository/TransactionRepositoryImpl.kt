@@ -27,7 +27,7 @@ class TransactionRepositoryImpl(
         transactionDao.observeByDateRange(userId, from, to).map { list -> list.map { it.toModel() } }
 
     override fun getTransactionsWithCategoryByPeriod(userId: String, from: Long, to: Long): Flow<List<TransactionModel>> =
-        transactionDao.observeByDateRange(userId, from, to).map { list -> list.map { it.toModel() } }
+        transactionDao.observeByDateRangeWithCategory(userId, from, to).map { list -> list.map { it.toModel() } }
 
     override fun getTransactionsByWalletAndPeriod(userId: String, walletId: Long, from: Long, to: Long): Flow<List<TransactionModel>> =
         transactionDao.observeByWalletAndDateRange(userId, walletId, from, to).map { list -> list.map { it.toModel() } }

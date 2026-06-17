@@ -53,6 +53,8 @@ sealed interface SettingEvent {
 
     data object ThemeDismissed : SettingEvent             // đóng ô lựa chọn giao diện
 
+    data object PinClicked : SettingEvent                 // nhấn "Mã PIN"
+
     // ── Currency ──
     data object CurrencyClicked : SettingEvent
     data class CurrencySelected(val currency: CurrencyMode) : SettingEvent
@@ -66,4 +68,5 @@ sealed interface SettingEvent {
 
 sealed interface SettingNavEvent {
     data object NavigateToSignIn : SettingNavEvent
+    data object NavigateToPinSetup : SettingNavEvent
 }

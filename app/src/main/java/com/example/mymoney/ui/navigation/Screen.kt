@@ -67,12 +67,22 @@ sealed class Screen(val route: String) {
         fun createRoute(walletId: Long = 0L) = "recurring/$walletId"
     }
 
+    // ── Màn hình thống kê ──
+    data object Statistics : Screen("statistics")
+
     // ── Màn hình hồ sơ người dùng ──
     data object Profile : Screen("profile")
 
     data object SavingForm : Screen("saving_form/{userId}") {
         fun createRoute(userId: String) = "saving_form/$userId"
     }
+
+    // ── Security ──
+    /** Màn hình thiết lập/chỉnh sửa mã PIN */
+    data object PinSetup : Screen("pin_setup")
+
+    /** Màn hình nhập mã PIN để mở app */
+    data object PinEntry : Screen("pin_entry")
 }
 
 /**

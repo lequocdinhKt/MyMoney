@@ -156,19 +156,16 @@ class HomeViewModel(
                     walletRepository.updateSortOrders(orders)
                 }
             }
-            is HomeEvent.DeleteTransaction -> {
-                viewModelScope.launch {
-                    val txId = event.transactionId.toLongOrNull() ?: return@launch
-                    // Lấy thông tin giao dịch trước khi xóa để hoàn trả số dư ví
-                    val tx = transactionRepository.getTransactionById(txId) ?: return@launch
-                    // Xóa giao dịch (soft-delete)
-                    transactionRepository.deleteTransaction(txId)
-                    // Hoàn trả số dư ví: income → trừ lại, expense → cộng lại
-                    val wallet = walletRepository.getWalletById(tx.walletId) ?: return@launch
-                    val delta = if (tx.type == "income") -tx.amount else tx.amount
-                    walletRepository.updateWalletBalance(wallet.id, wallet.balance + delta)
-                    Log.d(TAG, "Deleted tx $txId (${tx.type} ${tx.amount}), wallet balance: ${wallet.balance} → ${wallet.balance + delta}")
-                }
+            is HomeEvent.RequestDeleteTransaction -> {
+                _uiState.update { it.copy(transactionToDeleteId = event.transactionId) }
+            }
+            is HomeEvent.ConfirmDeleteTransaction -> {
+                val txIdStr = _uiState.value.transactionToDeleteId ?: return
+                _uiState.update { it.copy(transactionToDeleteId = null) }
+                performDeleteTransaction(txIdStr)
+            }
+            is HomeEvent.CancelDeleteTransaction -> {
+                _uiState.update { it.copy(transactionToDeleteId = null) }
             }
             is HomeEvent.AddTransactionClick -> { /* NavHost xử lý */ }
             is HomeEvent.AddWalletClick      -> { /* NavHost xử lý */ }
@@ -185,5 +182,20 @@ class HomeViewModel(
         val hour = dateTime.hour.toString().padStart(2, '0')
         val min  = dateTime.minute.toString().padStart(2, '0')
         return "$hour:$min, ${dateTime.dayOfMonth.toString().padStart(2,'0')}/${dateTime.monthValue.toString().padStart(2,'0')}/${dateTime.year}"
+    }
+
+    private fun performDeleteTransaction(transactionId: String) {
+        viewModelScope.launch {
+            val txId = transactionId.toLongOrNull() ?: return@launch
+            // Lấy thông tin giao dịch trước khi xóa để hoàn trả số dư ví
+            val tx = transactionRepository.getTransactionById(txId) ?: return@launch
+            // Xóa giao dịch (soft-delete)
+            transactionRepository.deleteTransaction(txId)
+            // Hoàn trả số dư ví: income → trừ lại, expense → cộng lại
+            val wallet = walletRepository.getWalletById(tx.walletId) ?: return@launch
+            val delta = if (tx.type == "income") -tx.amount else tx.amount
+            walletRepository.updateWalletBalance(wallet.id, wallet.balance + delta)
+            Log.d(TAG, "Deleted tx $txId (${tx.type} ${tx.amount}), wallet balance: ${wallet.balance} → ${wallet.balance + delta}")
+        }
     }
 }

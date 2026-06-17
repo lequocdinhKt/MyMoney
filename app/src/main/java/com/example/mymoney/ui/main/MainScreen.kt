@@ -64,7 +64,9 @@ fun MainScreen(
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onStatisticsClick: () -> Unit = {},
     onNavigateToStreak: () -> Unit = {},
+    onNavigateToPinSetup: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -137,6 +139,7 @@ fun MainScreen(
                     title = currentTab.title ?: currentTab.label,
                     onSettingsClick = { isDrawerOpen = true },
                     onSearchClick = onSearchClick,
+                    onStatisticsClick = onStatisticsClick,
                     onCalendarClick = onNavigateToStreak
                 )
             },
@@ -198,6 +201,7 @@ fun MainScreen(
         MainDrawerOverlay(
             isOpen = isDrawerOpen,
             onClose = { isDrawerOpen = false },
+            onNavigateToPinSetup = onNavigateToPinSetup,
             onSignOut = onSignOut
         )
     }

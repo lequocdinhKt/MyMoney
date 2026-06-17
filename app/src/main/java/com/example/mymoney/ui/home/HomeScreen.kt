@@ -140,7 +140,8 @@ private fun HomeContent(
                         ) { transaction ->
                             TransactionItemRow(
                                 transaction = transaction,
-                                onDelete = { onEvent(HomeEvent.DeleteTransaction(transaction.id)) }
+                                onDelete = { onEvent(HomeEvent.RequestDeleteTransaction(transaction.id)) },
+                                isDeleting = uiState.transactionToDeleteId == transaction.id
                             )
                             HorizontalDivider(
                                 color    = MaterialTheme.colorScheme.surfaceVariant,
@@ -150,6 +151,29 @@ private fun HomeContent(
                     }
                 }
         }
+    }
+
+    if (uiState.transactionToDeleteId != null) {
+        AlertDialog(
+            onDismissRequest = { onEvent(HomeEvent.CancelDeleteTransaction) },
+            title = { Text("Xác nhận xóa") },
+            text = { Text("Bạn có chắc chắn muốn xóa giao dịch này không?") },
+            confirmButton = {
+                Button(
+                    onClick = { onEvent(HomeEvent.ConfirmDeleteTransaction) },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Xóa")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onEvent(HomeEvent.CancelDeleteTransaction) }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 
     if (uiState.showCreateWalletDialog) {

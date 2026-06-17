@@ -58,6 +58,7 @@ fun MainDrawerOverlay(
     isOpen: Boolean,
     onClose: () -> Unit,
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToPinSetup: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -127,6 +128,7 @@ fun MainDrawerOverlay(
                 onItemClick = onClose,
                 onSignOut = onSignOut,
                 onNavigateToProfile = onNavigateToProfile,
+                onNavigateToPinSetup = onNavigateToPinSetup,
                 viewModel = settingViewModel
             )
         }

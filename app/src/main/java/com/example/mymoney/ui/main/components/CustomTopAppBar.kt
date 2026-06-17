@@ -2,6 +2,7 @@ package com.example.mymoney.ui.main.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -27,6 +28,7 @@ import com.example.mymoney.ui.theme.MyMoneyTheme
  * @param title          Tiêu đề hiển thị (lấy từ BottomTab.title)
  * @param onSettingsClick Callback khi nhấn icon Settings (bên trái)
  * @param onSearchClick   Callback khi nhấn icon Search (bên phải)
+ * @param onStatisticsClick Callback khi nhấn icon Statistics (bên phải)
  * @param onCalendarClick Callback khi nhấn icon Calendar (bên phải)
  * @param modifier        Modifier tùy chỉnh
  */
@@ -38,6 +40,7 @@ fun CustomTopAppBar(
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit,
     onSearchClick: () -> Unit,
+    onStatisticsClick: () -> Unit = {},
     onCalendarClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,12 +67,19 @@ fun CustomTopAppBar(
                 }
             }
         },
-        // ── Icon phải: Search + Calendar ──
+        // ── Icon phải: Search + Statistics + Calendar ──
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Tìm kiếm",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            IconButton(onClick = onStatisticsClick) {
+                Icon(
+                    imageVector = Icons.Default.BarChart,
+                    contentDescription = "Thống kê",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
