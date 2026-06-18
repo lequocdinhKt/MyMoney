@@ -19,9 +19,9 @@ class SavingDetailViewModelFactory(
             val savingRepository = SavingRepositoryImpl(savingDao = db.savingDao())
             val savingRecordRepository = SavingRecordRepositoryImpl(dao = db.savingRecordDao())
             val getSavingGoalDetailUseCase = GetSavingGoalDetailUseCase(
-                    goalRepository = savingRepository,
-                    recordRepository = savingRecordRepository
-                )
+                goalRepository = savingRepository,
+                recordRepository = savingRecordRepository
+            )
             return SavingDetailViewModel(
                 savingRecordRepository = savingRecordRepository,
                 getSavingGoalDetailUseCase = getSavingGoalDetailUseCase,
