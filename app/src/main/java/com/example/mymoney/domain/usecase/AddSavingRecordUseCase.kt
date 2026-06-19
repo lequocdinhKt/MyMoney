@@ -38,6 +38,8 @@ class AddSavingRecordUseCase (
             SavingRecordModel(
                 userId = userId,
                 savingGoalId = goalId,
+                walletId = walletId,
+                walletName = wallet.name,
                 amount = amount,
                 note = note,
                 recordDate = System.currentTimeMillis()

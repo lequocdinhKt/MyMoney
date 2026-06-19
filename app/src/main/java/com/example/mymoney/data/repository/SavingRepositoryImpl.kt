@@ -20,6 +20,9 @@ class SavingRepositoryImpl(
     override suspend fun getSavingGoalById(savingGoalId: Long): SavingGoalModel? =
         savingDao.getSavingGoalById(savingGoalId)?.toModel()
 
+    override fun observeSavingGoalById(savingGoalId: Long): Flow<SavingGoalModel?> =
+        savingDao.observeSavingGoalById(savingGoalId).map { it?.toModel() }
+
     override suspend fun addSavingGoal(savingGoal: SavingGoalModel): Long {
         val now = System.currentTimeMillis()
         return savingDao.insert(savingGoal.toEntityForInsert(now))

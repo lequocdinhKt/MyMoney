@@ -4,58 +4,64 @@ import com.example.mymoney.domain.model.SavingGoalDetailModel
 import com.example.mymoney.domain.model.SavingType
 import com.example.mymoney.domain.repository.SavingRecordRepository
 import com.example.mymoney.domain.repository.SavingRepository
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import java.util.Calendar
 
 class GetSavingGoalDetailUseCase(
     private val goalRepository: SavingRepository,
     private val recordRepository: SavingRecordRepository
 ) {
-    suspend operator fun invoke(goalId: Long): SavingGoalDetailModel? {
-        val goal = goalRepository.getSavingGoalById(goalId) ?: return null
-        val records = recordRepository.getRecordsByGoalId(goalId).first()
-        val totalSavedAllTime = records.sumOf { it.amount }
-        val now = System.currentTimeMillis()
-        val daysRemaining = goal.targetDate?.let {((it - now) / (24 * 60 * 60 * 1000)).coerceAtLeast(0)}
-        val cycleStart: Long?
-        val cycleEnd: Long?
-        val currentCycleSaved: Double
-        when(goal.savingType) {
-            SavingType.ONE_TIME -> {
-                cycleStart = null
-                cycleEnd = null
-                currentCycleSaved = totalSavedAllTime
-            }
+    operator fun invoke(goalId: Long): Flow<SavingGoalDetailModel?> {
+        return combine(
+            goalRepository.observeSavingGoalById(goalId),
+            recordRepository.getRecordsByGoalId(goalId)
+        ) { goal, records ->
+            if (goal == null) return@combine null
 
-            SavingType.WEEKLY -> {
-                val range = getCurrentWeeklyCycle(goal.createdAt, now)
-                cycleStart = range.first
-                cycleEnd = range.second
-                currentCycleSaved = records.filter { it.recordDate in cycleStart..cycleEnd }.sumOf { it.amount }
+            val totalSavedAllTime = records.sumOf { it.amount }
+            val now = System.currentTimeMillis()
+            val daysRemaining = goal.targetDate?.let { ((it - now) / (24 * 60 * 60 * 1000)).coerceAtLeast(0) }
+            
+            val cycleStart: Long?
+            val cycleEnd: Long?
+            val currentCycleSaved: Double
+            
+            when (goal.savingType) {
+                SavingType.ONE_TIME -> {
+                    cycleStart = null
+                    cycleEnd = null
+                    currentCycleSaved = totalSavedAllTime
+                }
+                SavingType.WEEKLY -> {
+                    val range = getCurrentWeeklyCycle(goal.createdAt, now)
+                    cycleStart = range.first
+                    cycleEnd = range.second
+                    currentCycleSaved = records.filter { it.recordDate in cycleStart..cycleEnd }.sumOf { it.amount }
+                }
+                SavingType.MONTHLY -> {
+                    val range = getCurrentMonthlyCycle(goal.createdAt, now)
+                    cycleStart = range.first
+                    cycleEnd = range.second
+                    currentCycleSaved = records.filter { it.recordDate in cycleStart..cycleEnd }.sumOf { it.amount }
+                }
             }
+            
+            val progress = if (goal.targetAmount > 0) (currentCycleSaved / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
+            val remainingAmount = (goal.targetAmount - currentCycleSaved).coerceAtLeast(0.0)
 
-            SavingType.MONTHLY -> {
-                val range = getCurrentMonthlyCycle(goal.createdAt, now)
-                cycleStart = range.first
-                cycleEnd = range.second
-                currentCycleSaved = records.filter { it.recordDate in cycleStart..cycleEnd }.sumOf { it.amount }
-            }
-
+            SavingGoalDetailModel(
+                goal = goal,
+                records = records,
+                totalSavedAllTime = totalSavedAllTime,
+                progress = progress,
+                remainingAmount = remainingAmount,
+                daysRemaining = daysRemaining,
+                currentCycleSaved = currentCycleSaved,
+                currentCycleStart = cycleStart,
+                currentCycleEnd = cycleEnd
+            )
         }
-        val progress = (currentCycleSaved / goal.targetAmount).toFloat().coerceIn(0f, 1f)
-        val remainingAmount = (goal.targetAmount - currentCycleSaved).coerceAtLeast(0.0)
-
-        return SavingGoalDetailModel(
-            goal = goal,
-            records = records,
-            totalSavedAllTime = totalSavedAllTime,
-            progress = progress,
-            remainingAmount = remainingAmount,
-            daysRemaining = daysRemaining,
-            currentCycleSaved = currentCycleSaved,
-            currentCycleStart = cycleStart,
-            currentCycleEnd = cycleEnd
-        )
     }
 
     /**
@@ -75,10 +81,7 @@ class GetSavingGoalDetailUseCase(
      * 08/06 - 14/06
      * 15/06 - 21/06  ← now nằm trong đây
      */
-    private fun getCurrentWeeklyCycle(
-        createdAt: Long,
-        now: Long
-    ): Pair<Long, Long> {
+    private fun getCurrentWeeklyCycle(createdAt: Long, now: Long): Pair<Long, Long> {
         val weekMillis = 7L * 24 * 60 * 60 * 1000 // 7 ngày tính theo milliseconds
 
         /**
@@ -127,10 +130,7 @@ class GetSavingGoalDetailUseCase(
      * 15/03 - 14/04
      * ...
      */
-    private fun getCurrentMonthlyCycle(
-        createdAt: Long,
-        now: Long
-    ): Pair<Long, Long> {
+    private fun getCurrentMonthlyCycle(createdAt: Long, now: Long): Pair<Long, Long> {
         // Convert timestamp -> Calendar để xử lý theo YEAR/MONTH
         val startCal = Calendar.getInstance().apply { timeInMillis = createdAt }
         val nowCal = Calendar.getInstance().apply { timeInMillis = now }
@@ -153,9 +153,10 @@ class GetSavingGoalDetailUseCase(
          * Mục đích:
          * - kiểm tra xem có bị vượt quá "now" không
          */
-        val candidateStart = Calendar.getInstance().apply { timeInMillis = createdAt
-                add(Calendar.MONTH, monthsPassed)
-            }
+        val candidateStart = Calendar.getInstance().apply {
+            timeInMillis = createdAt
+            add(Calendar.MONTH, monthsPassed)
+        }
 
         /**
          * Nếu start dự đoán bị vượt quá now → lùi lại 1 tháng
@@ -167,19 +168,21 @@ class GetSavingGoalDetailUseCase(
         /**
          * Tính lại start chính xác của chu kỳ hiện tại
          */
-        val cycleStart = Calendar.getInstance().apply { timeInMillis = createdAt
-                add(Calendar.MONTH, monthsPassed)
-            }
+        val cycleStart = Calendar.getInstance().apply { 
+            timeInMillis = createdAt
+            add(Calendar.MONTH, monthsPassed)
+        }
 
         /**
          * End = start + 1 tháng - 1ms
          *
          * - dùng MONTH để đảm bảo đúng số ngày của từng tháng
          */
-        val cycleEnd = Calendar.getInstance().apply { timeInMillis = cycleStart.timeInMillis
-                add(Calendar.MONTH, 1)
-                add(Calendar.MILLISECOND, -1)
-            }
+        val cycleEnd = Calendar.getInstance().apply { 
+            timeInMillis = cycleStart.timeInMillis
+            add(Calendar.MONTH, 1)
+            add(Calendar.MILLISECOND, -1)
+        }
         return cycleStart.timeInMillis to cycleEnd.timeInMillis
     }
 }

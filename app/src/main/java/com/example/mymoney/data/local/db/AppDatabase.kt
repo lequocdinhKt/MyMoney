@@ -17,7 +17,7 @@ import com.example.mymoney.data.local.entity.*
         SavingGoalEntity::class,
         SavingRecordEntity::class
     ],
-    version = 6,
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

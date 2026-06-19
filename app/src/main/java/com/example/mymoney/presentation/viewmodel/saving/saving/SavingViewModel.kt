@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.domain.repository.SavingRecordRepository
 import com.example.mymoney.domain.repository.SavingRepository
+import com.example.mymoney.domain.usecase.DeleteSavingGoalUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ class SavingViewModel(
     private val settingPreferences: SettingPreferences,
     private val userId: String,
     private val savingRepository: SavingRepository,
-    private val recordRepository: SavingRecordRepository
+    private val recordRepository: SavingRecordRepository,
+    private val deleteSavingGoalUseCase: DeleteSavingGoalUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SavingUiState())
@@ -80,7 +82,7 @@ class SavingViewModel(
                 savingRepository.addSavingGoal(event.goal)
             }
             is SavingEvent.DeleteGoal -> viewModelScope.launch {
-                savingRepository.deleteSavingGoal(event.id)
+                deleteSavingGoalUseCase(event.id)
             }
         }
     }

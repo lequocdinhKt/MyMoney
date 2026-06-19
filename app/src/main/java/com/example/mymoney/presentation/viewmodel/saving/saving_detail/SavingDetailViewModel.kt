@@ -2,16 +2,18 @@ package com.example.mymoney.presentation.viewmodel.saving.saving_detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mymoney.domain.repository.SavingRecordRepository
+import com.example.mymoney.domain.usecase.DeleteSavingRecordUseCase
 import com.example.mymoney.domain.usecase.GetSavingGoalDetailUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SavingDetailViewModel (
-    private val savingRecordRepository: SavingRecordRepository,
+    private val deleteSavingRecordUseCase: DeleteSavingRecordUseCase,
     private val getSavingGoalDetailUseCase: GetSavingGoalDetailUseCase,
     private val goalId: Long
 ) : ViewModel() {
@@ -19,26 +21,28 @@ class SavingDetailViewModel (
     val uiState: StateFlow<SavingDetailUiState> = _uiState.asStateFlow()
 
     init {
-        loadSavingRecords()
+        observeSavingRecords()
     }
 
-    private fun loadSavingRecords() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    private fun observeSavingRecords() {
         viewModelScope.launch {
-            try {
-                val result = getSavingGoalDetailUseCase(goalId)
-                _uiState.update { it.copy(isLoading = false, detail = result) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "Tải thất bại: ${e.message}") }
-            }
+            getSavingGoalDetailUseCase(goalId)
+                .onStart { _uiState.update { it.copy(isLoading = true) } }
+                .catch { e -> _uiState.update { it.copy(isLoading = false, error = "Tải thất bại: ${e.message}") } }
+                .collect { result ->
+                    _uiState.update { it.copy(isLoading = false, detail = result, error = null) }
+                }
         }
     }
 
     fun onEvent(event: SavingDetailEvent) {
         when (event) {
             is SavingDetailEvent.DeleteRecord -> viewModelScope.launch {
-                savingRecordRepository.deleteRecord(event.recordId)
-                loadSavingRecords()
+                try {
+                    deleteSavingRecordUseCase(event.recordId)
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(error = "Xóa thất bại: ${e.message}") }
+                }
             }
         }
     }

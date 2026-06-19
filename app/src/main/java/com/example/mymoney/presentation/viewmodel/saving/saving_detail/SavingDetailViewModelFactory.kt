@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.SavingRecordRepositoryImpl
 import com.example.mymoney.data.repository.SavingRepositoryImpl
+import com.example.mymoney.data.repository.WalletRepositoryImpl
+import com.example.mymoney.domain.usecase.DeleteSavingRecordUseCase
 import com.example.mymoney.domain.usecase.GetSavingGoalDetailUseCase
 
 class SavingDetailViewModelFactory(
@@ -18,12 +20,17 @@ class SavingDetailViewModelFactory(
             val db = AppDatabase.getInstance(context.applicationContext)
             val savingRepository = SavingRepositoryImpl(savingDao = db.savingDao())
             val savingRecordRepository = SavingRecordRepositoryImpl(dao = db.savingRecordDao())
+            val walletRepository = WalletRepositoryImpl(walletDao = db.walletDao())
             val getSavingGoalDetailUseCase = GetSavingGoalDetailUseCase(
                 goalRepository = savingRepository,
                 recordRepository = savingRecordRepository
             )
-            return SavingDetailViewModel(
+            val deleteSavingRecordUseCase = DeleteSavingRecordUseCase(
                 savingRecordRepository = savingRecordRepository,
+                walletRepository = walletRepository
+            )
+            return SavingDetailViewModel(
+                deleteSavingRecordUseCase = deleteSavingRecordUseCase,
                 getSavingGoalDetailUseCase = getSavingGoalDetailUseCase,
                 goalId = goalId
             ) as T

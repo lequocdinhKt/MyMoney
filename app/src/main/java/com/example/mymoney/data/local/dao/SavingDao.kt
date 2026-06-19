@@ -13,6 +13,9 @@ interface SavingDao {
     @Query("SELECT * FROM saving_goals WHERE id = :id AND is_deleted = 0")
     suspend fun getSavingGoalById(id: Long): SavingGoalEntity?
 
+    @Query("SELECT * FROM saving_goals WHERE id = :id AND is_deleted = 0")
+    fun observeSavingGoalById(id: Long): Flow<SavingGoalEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(goal: SavingGoalEntity): Long
 

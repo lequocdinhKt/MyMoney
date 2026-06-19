@@ -14,10 +14,17 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["saving_goal_id"],
             onDelete = ForeignKey.RESTRICT
+        ),
+        ForeignKey(
+            entity = WalletEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["wallet_id"],
+            onDelete = ForeignKey.RESTRICT
         )
     ],
     indices = [
-        Index("saving_goal_id")
+        Index("saving_goal_id"),
+        Index("wallet_id")
     ]
 )
 data class SavingRecordEntity(
@@ -25,6 +32,8 @@ data class SavingRecordEntity(
     @ColumnInfo(name = "supabase_id") val supabaseId: String? = null,
     @ColumnInfo(name = "user_id") val userId: String,
     @ColumnInfo(name = "saving_goal_id") val savingGoalId: Long,
+    @ColumnInfo(name = "wallet_id") val walletId: Long,
+    @ColumnInfo(name = "wallet_name") val walletName: String,
     val amount: Double,
     val note: String?,
     @ColumnInfo(name = "record_date") val recordDate: Long,

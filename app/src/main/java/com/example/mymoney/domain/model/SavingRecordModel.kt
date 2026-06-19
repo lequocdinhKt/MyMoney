@@ -4,6 +4,8 @@ data class SavingRecordModel(
     val id: Long = 0L,
     val userId: String,
     val savingGoalId: Long,
+    val walletId: Long = 0L,
+    val walletName: String = "",
     val amount: Double,
     val note: String? = null,
     val recordDate: Long,

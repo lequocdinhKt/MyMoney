@@ -45,7 +45,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CardDefaults
 import com.example.mymoney.domain.model.SavingGoalModel
+import com.example.mymoney.presentation.viewmodel.saving.saving_detail.SavingDetailEvent
 import com.example.mymoney.ui.components.EmptyStateComposable
+import com.example.mymoney.ui.saving.components.SavingRecordSection
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import com.example.mymoney.ui.theme.SuccessGreen
 
@@ -64,6 +66,7 @@ fun SavingDetailScreen(
 
     SavingDetailContent(
         uiState = uiState,
+        onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
         onNavigateToAddRecord = onNavigateToAddRecord
     )
@@ -72,6 +75,7 @@ fun SavingDetailScreen(
 @Composable
 private fun SavingDetailContent(
     uiState: SavingDetailUiState,
+    onEvent: (SavingDetailEvent) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAddRecord: (Long) -> Unit
 ) {
@@ -192,7 +196,7 @@ private fun SavingDetailContent(
                         )
                     }
 
-                    item { Spacer(Modifier.height(28.dp)) }
+                    item { Spacer(Modifier.height(8.dp)) }
 
                     // ── RECORD LIST ──
                     if (detail.records.isEmpty()) {
@@ -200,7 +204,14 @@ private fun SavingDetailContent(
                             EmptyStateComposable("Chưa có hồ sơ nào. Thêm mới ngay nào")
                         }
                     } else {
-                        // TODO: Hiển thị lịch sử tiết kiệm
+                        item {
+                            SavingRecordSection(
+                                records = detail.records,
+                                onDeleteRecord = { recordId ->
+                                    onEvent(SavingDetailEvent.DeleteRecord(recordId))
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -419,6 +430,7 @@ fun SavingDetailPreview() {
 
     SavingDetailContent(
         uiState = SavingDetailUiState(detail = detail),
+        onEvent = {},
         onNavigateBack = {},
         onNavigateToAddRecord = {}
     )
@@ -442,7 +454,7 @@ fun SavingDetailCompletedPreview() {
         records = emptyList(),
         totalSavedAllTime = 10000000.0,
         currentCycleSaved = 10000000.0,
-        progress = 1f, // 👈 QUAN TRỌNG: completed
+        progress = 1f,
         remainingAmount = 0.0,
         currentCycleStart = now,
         currentCycleEnd = now + 30L * 24 * 60 * 60 * 1000
@@ -451,6 +463,7 @@ fun SavingDetailCompletedPreview() {
     MyMoneyTheme {
         SavingDetailContent(
             uiState = SavingDetailUiState(detail = detail),
+            onEvent = {},
             onNavigateBack = {},
             onNavigateToAddRecord = {}
         )
