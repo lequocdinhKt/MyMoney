@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.mymoney.data.local.dao.BudgetDao
+import com.example.mymoney.data.local.dao.CleanupDao
 import com.example.mymoney.data.local.dao.SavingDao
 import com.example.mymoney.data.local.dao.SavingRecordDao
 import com.example.mymoney.data.local.dao.CategoryDao
@@ -45,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun savingRecordDao(): SavingRecordDao
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun recurringTransactionDao(): RecurringTransactionDao
+    abstract fun cleanupDao(): CleanupDao
 
     companion object {
         private const val DB_NAME = "mymoney.db"

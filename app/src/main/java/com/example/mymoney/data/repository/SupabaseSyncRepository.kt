@@ -456,8 +456,30 @@ class SupabaseSyncRepository(private val db: AppDatabase) {
         val pending = dao.getPendingSync(userId)
 
         pending.forEach { s ->
+            // Thử tìm remote ID nếu local đang null để tránh lỗi RLS/Duplicate khi upsert
+            var remoteId = s.supabaseId
+            if (remoteId == null) {
+                try {
+                    val existing = SupabaseClient.client.postgrest["savings"]
+                        .select {
+                            filter {
+                                eq("user_id", userId)
+                                eq("name", s.name)
+                            }
+                        }
+                        .decodeList<RemoteIdDto>()
+                        .firstOrNull()
+                    remoteId = existing?.id
+                    if (remoteId != null) {
+                        Log.d(TAG, "Found existing remote saving ID for ${s.name}: $remoteId")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Check existing saving failed: ${e.message}")
+                }
+            }
+
             val dto = SavingUpsertDto(
-                id = s.supabaseId,
+                id = remoteId,
                 userId = userId,
                 name = s.name,
                 targetAmount = s.targetAmount,
@@ -490,8 +512,32 @@ class SupabaseSyncRepository(private val db: AppDatabase) {
             val category = db.categoryDao().getCategoryById(b.categoryId) ?: return@forEach
             val catSupabaseId = categoryMap[category.name] ?: return@forEach
 
+            // Thử tìm remote ID nếu local đang null để tránh lỗi Unique Constraint
+            var remoteId = b.supabaseId
+            if (remoteId == null) {
+                try {
+                    val existing = SupabaseClient.client.postgrest["budgets"]
+                        .select {
+                            filter {
+                                eq("user_id", userId)
+                                eq("category_id", catSupabaseId)
+                                eq("month", b.month)
+                                eq("year", b.year)
+                            }
+                        }
+                        .decodeList<RemoteIdDto>()
+                        .firstOrNull()
+                    remoteId = existing?.id
+                    if (remoteId != null) {
+                        Log.d(TAG, "Found existing remote budget ID: $remoteId")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Check existing budget failed: ${e.message}")
+                }
+            }
+
             val dto = BudgetUpsertDto(
-                id = b.supabaseId,
+                id = remoteId,
                 userId = userId,
                 categoryId = catSupabaseId,
                 amountLimit = b.amountLimit,

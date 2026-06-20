@@ -195,12 +195,16 @@ class SettingViewModel(
 
                 if (success) {
                     // 2. Dọn dẹp dữ liệu local (Hard delete các bản ghi đã xóa tạm)
-                    db.transactionDao().hardDeleteDeletedItems(userId)
-                    db.walletDao().hardDeleteDeletedItems(userId)
-                    db.categoryDao().hardDeleteDeletedItems(userId)
-                    db.budgetDao().hardDeleteDeletedItems(userId)
-                    db.savingDao().hardDeleteDeletedItems(userId)
-                    db.savingRecordDao().hardDeleteDeletedItems(userId)
+                    // Sử dụng CleanupDao để thực hiện xóa nguyên tử trong một Transaction
+                    db.cleanupDao().hardDeleteAllDeleted(
+                        userId = userId,
+                        transactionDao = db.transactionDao(),
+                        budgetDao = db.budgetDao(),
+                        savingRecordDao = db.savingRecordDao(),
+                        walletDao = db.walletDao(),
+                        categoryDao = db.categoryDao(),
+                        savingDao = db.savingDao()
+                    )
 
                     _backupState.update { BackupViewState(resultMsg = "✅ Sao lưu và dọn dẹp dữ liệu thành công.") }
                 } else {
