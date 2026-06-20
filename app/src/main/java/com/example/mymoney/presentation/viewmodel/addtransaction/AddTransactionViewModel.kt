@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.audio.VoiceRecorder
 import com.example.mymoney.data.local.dao.CategoryDao
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.data.remote.GroqService
-import com.example.mymoney.data.repository.SupabaseTransactionRepository
+import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.SupabaseSyncRepository
 import com.example.mymoney.domain.model.ChatMessageModel
 import com.example.mymoney.domain.model.TransactionModel
 import com.example.mymoney.domain.repository.ChatRepository
@@ -18,6 +18,8 @@ import com.example.mymoney.domain.usecase.AddTransactionUseCase
 import com.example.mymoney.domain.usecase.EnsureDefaultWalletUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
 import com.example.mymoney.domain.usecase.MoneyFormatter
+import com.example.mymoney.domain.usecase.ParseTransactionMessageUseCase
+import com.example.mymoney.domain.usecase.TranscribeVoiceUseCase
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionNavEvent
 import com.example.mymoney.presentation.viewmodel.addtransaction.addtransaction.AddTransactionUiState
@@ -60,7 +62,9 @@ class AddTransactionViewModel(
     private val chatRepository: ChatRepository,
     private val savingRepository: SavingRepository,
     private val addSavingRecordUseCase: AddSavingRecordUseCase,
-    private val supabaseTransactionRepo: SupabaseTransactionRepository,
+    private val parseTransactionMessageUseCase: ParseTransactionMessageUseCase,
+    private val transcribeVoiceUseCase: TranscribeVoiceUseCase,
+    db: AppDatabase,
     private val settingPreferences: SettingPreferences,
     private val categoryDao: CategoryDao,
     /** ID ví đang active trên HomeScreen. 0L = chưa chọn → fallback về ví mặc định. */
@@ -72,6 +76,7 @@ class AddTransactionViewModel(
     private val TAG = "AddTransactionVM"
 
     private val voiceRecorder = VoiceRecorder(appContext)
+    private val syncRepository = SupabaseSyncRepository(db)
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState: StateFlow<AddTransactionUiState> = _uiState.asStateFlow()
@@ -244,16 +249,16 @@ class AddTransactionViewModel(
         try {
             val goals = runCatching { savingRepository.getSavingGoals(userId).first() }.getOrDefault(emptyList())
             val goalsContext = if (goals.isNotEmpty()) {
-                "\nDANH SÁCH MỤC TIÊU TIẾT KIỆM HIỆN CÓ: " + goals.joinToString { it.title }
+                "\nDANH SÁCH MỤC TIÊU TIẾT KIỆM HIỆN CÓ: " + goals.joinToString { it.name }
             } else ""
 
-            val result = GroqService.chatWithParsing(
-                userMessage = noteText,
+            val result = parseTransactionMessageUseCase(
+                message = noteText,
                 customRules = _uiState.value.aiCustomRules + goalsContext
             )
 
             // ── Step 4: Xây text AI và cập nhật bubble ──
-            val aiText   = buildAIDisplayText(result, useGrouping)
+            val aiText   = buildAIDisplayText(result.displayText, result.transactions, useGrouping)
             val aiBubble = ChatMessage(id = typingId, content = aiText, sender = ChatSender.AI)
             _uiState.update { state ->
                 state.copy(messages = state.messages.map { if (it.id == typingId) aiBubble else it })
@@ -319,11 +324,7 @@ class AddTransactionViewModel(
                         
                         launch {
                             runCatching {
-                                supabaseTransactionRepo.insertTransaction(
-                                    userId = userId, note = parsed.note, amount = parsed.amount,
-                                    type = parsed.type, category = parsed.category, timestampMillis = now,
-                                    walletSupabaseId = wallet.supabaseId
-                                )
+                                syncRepository.syncAll(userId, settingPreferences.currentUsername.first() ?: "User")
                             }
                         }
                     }
@@ -335,9 +336,9 @@ class AddTransactionViewModel(
                         
                         result.savings.forEach { parsed ->
                             val cleanParsedTitle = parsed.goalTitle.trim().lowercase()
-                            val matchedGoal = goals.find { it.title.trim().lowercase() == cleanParsedTitle }
-                                ?: goals.find { it.title.trim().lowercase().contains(cleanParsedTitle) }
-                                ?: goals.find { cleanParsedTitle.contains(it.title.trim().lowercase()) }
+                            val matchedGoal = goals.find { it.name.trim().lowercase() == cleanParsedTitle }
+                                ?: goals.find { it.name.trim().lowercase().contains(cleanParsedTitle) }
+                                ?: goals.find { cleanParsedTitle.contains(it.name.trim().lowercase()) }
 
                             if (matchedGoal != null) {
                                 val saveRecordResult = runCatching {
@@ -416,15 +417,19 @@ class AddTransactionViewModel(
                 "Bạn có thể nhắn \"nạp [số tiền]\" để thêm thu nhập."
     }
 
-    private fun buildAIDisplayText(result: GroqService.ChatResult, useGrouping: Boolean): String {
-        if (result.transactions.isEmpty()) return result.displayText
+    private fun buildAIDisplayText(
+        displayText: String,
+        transactions: List<com.example.mymoney.domain.model.AIParsedTransaction>,
+        useGrouping: Boolean
+    ): String {
+        if (transactions.isEmpty()) return displayText
 
-        val txLines = result.transactions.joinToString("\n") { tx ->
+        val txLines = transactions.joinToString("\n") { tx ->
             val sign   = if (tx.type == "income") "+" else "-"
             val amount = MoneyFormatter.format(tx.amount, useGrouping)
             "• ${tx.note}: $sign${amount}đ  [${tx.category}]"
         }
-        return "${result.displayText}\n\n✅ Đã lưu:\n$txLines"
+        return "${displayText}\n\n✅ Đã lưu:\n$txLines"
     }
 
 //    private fun formatAmount(amount: Double): String =
@@ -477,7 +482,7 @@ class AddTransactionViewModel(
         _uiState.update { it.copy(voiceState = VoiceRecordingState.PROCESSING) }
         viewModelScope.launch {
             try {
-                val transcript = GroqService.transcribeAudio(audioFile)
+                val transcript = transcribeVoiceUseCase(audioFile)
                 if (transcript.isNotBlank()) {
                     _uiState.update { state ->
                         state.copy(noteInput = transcript, voiceState = VoiceRecordingState.RECORDED)

@@ -402,7 +402,7 @@ fun SavingDetailPreview() {
         goal = SavingGoalModel(
             id = 1,
             userId = "1",
-            title = "Mua xe",
+            name = "Mua xe",
             targetAmount = 10000000.0,
             createdAt = System.currentTimeMillis(),
             targetDate = System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000,
@@ -433,7 +433,7 @@ fun SavingDetailCompletedPreview() {
         goal = SavingGoalModel(
             id = 1,
             userId = "1",
-            title = "Mua xe",
+            name = "Mua xe",
             targetAmount = 10000000.0,
             createdAt = System.currentTimeMillis(),
             targetDate = System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000,

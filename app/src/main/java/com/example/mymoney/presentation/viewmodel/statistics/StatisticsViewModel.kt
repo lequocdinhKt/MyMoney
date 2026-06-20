@@ -146,7 +146,7 @@ class StatisticsViewModel(
                 val start = getStartOfMonth(tempCal)
                 val end = getEndOfOfMonth(tempCal)
                 
-                val sdf = SimpleDateFormat("ThMM", Locale("vi", "VN"))
+                val sdf = SimpleDateFormat("'Th'MM", Locale("vi", "VN"))
                 val label = sdf.format(tempCal.time)
                 
                 // We need a one-shot query or sum for this.

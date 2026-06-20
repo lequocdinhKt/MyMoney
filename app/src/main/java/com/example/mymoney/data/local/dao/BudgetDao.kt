@@ -66,4 +66,7 @@ interface BudgetDao {
 
     @Query("UPDATE budgets SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
+
+    @Query("DELETE FROM budgets WHERE user_id = :userId AND is_deleted = 1")
+    suspend fun hardDeleteDeletedItems(userId: String)
 }

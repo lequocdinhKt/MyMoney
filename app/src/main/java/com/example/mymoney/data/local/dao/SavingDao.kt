@@ -27,4 +27,7 @@ interface SavingDao {
 
     @Query("UPDATE saving_goals SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
+
+    @Query("DELETE FROM saving_goals WHERE user_id = :userId AND is_deleted = 1")
+    suspend fun hardDeleteDeletedItems(userId: String)
 }

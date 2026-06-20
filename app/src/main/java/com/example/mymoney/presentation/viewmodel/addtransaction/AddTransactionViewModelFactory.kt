@@ -5,16 +5,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.AIParsingRepositoryImpl
 import com.example.mymoney.data.repository.ChatRepositoryImpl
 import com.example.mymoney.data.repository.SavingRecordRepositoryImpl
 import com.example.mymoney.data.repository.SavingRepositoryImpl
-import com.example.mymoney.data.repository.SupabaseTransactionRepository
 import com.example.mymoney.data.repository.TransactionRepositoryImpl
 import com.example.mymoney.data.repository.WalletRepositoryImpl
 import com.example.mymoney.domain.usecase.AddSavingRecordUseCase
 import com.example.mymoney.domain.usecase.AddTransactionUseCase
 import com.example.mymoney.domain.usecase.EnsureDefaultWalletUseCase
 import com.example.mymoney.domain.usecase.GetTransactionsUseCase
+import com.example.mymoney.domain.usecase.ParseTransactionMessageUseCase
+import com.example.mymoney.domain.usecase.TranscribeVoiceUseCase
 
 /**
  * Factory inject toàn bộ dependency chain:
@@ -39,6 +41,7 @@ class AddTransactionViewModelFactory(
         val walletRepo = WalletRepositoryImpl(db.walletDao())
         val savingRepo = SavingRepositoryImpl(db.savingDao())
         val savingRecordRepo = SavingRecordRepositoryImpl(db.savingRecordDao())
+        val aiParsingRepo = AIParsingRepositoryImpl()
 
         return AddTransactionViewModel(
             getTransactionsUseCase  = GetTransactionsUseCase(txRepo),
@@ -48,7 +51,9 @@ class AddTransactionViewModelFactory(
             chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
             savingRepository        = savingRepo,
             addSavingRecordUseCase  = AddSavingRecordUseCase(walletRepo, savingRecordRepo),
-            supabaseTransactionRepo = SupabaseTransactionRepository(),
+            parseTransactionMessageUseCase = ParseTransactionMessageUseCase(aiParsingRepo),
+            transcribeVoiceUseCase = TranscribeVoiceUseCase(aiParsingRepo),
+            db                      = db,
             settingPreferences      = SettingPreferences(appCtx),
             categoryDao             = db.categoryDao(),
             selectedWalletId        = walletId,

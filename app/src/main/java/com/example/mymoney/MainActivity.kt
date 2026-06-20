@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -36,7 +37,7 @@ class MainActivity : FragmentActivity() {
         RecurringTransactionWorker.schedule(this)
 
         setContent {
-            val prefs = SettingPreferences(this)
+            val prefs = remember { SettingPreferences(this) }
 
             // Màu primary động theo ví đang active — survive recomposition
             var primaryHex by rememberSaveable { mutableStateOf("#0088F0") }
@@ -45,7 +46,7 @@ class MainActivity : FragmentActivity() {
                 .isOnboardingCompleted
                 .collectAsState(initial = null)
 
-            val currentUserId by prefs
+            val currentUserId: String? by prefs
                 .currentUserId
                 .collectAsState(initial = "loading")
 
@@ -53,7 +54,7 @@ class MainActivity : FragmentActivity() {
                 initial = ThemeMode.SYSTEM
             )
 
-            val pinCode by prefs.pinCode.collectAsState(initial = "loading")
+            val pinCode: String? by prefs.pinCode.collectAsState(initial = "loading")
 
             val useDarkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
@@ -67,6 +68,7 @@ class MainActivity : FragmentActivity() {
                 primaryHex = primaryHex,
                 darkTheme = useDarkTheme
             ) {
+                // Đợi dữ liệu load xong để tránh nhảy màn hình (white screen)
                 if (isOnboardingCompleted == null || currentUserId == "loading" || pinCode == "loading") {
                     Box(
                         modifier = Modifier
@@ -76,11 +78,15 @@ class MainActivity : FragmentActivity() {
                     return@MyMoneyTheme
                 }
 
-                val startDestination: String = when {
-                    isOnboardingCompleted == false -> Screen.Onboarding.route
-                    pinCode != null && currentUserId != null -> Screen.PinEntry.route
-                    currentUserId != null -> Screen.Main.route
-                    else -> Screen.SignIn.route
+                // Xác định startDestination một lần duy nhất khi dữ liệu đã sẵn sàng
+                // và chỉ thay đổi nếu trạng thái login/onboarding thay đổi cơ bản.
+                val startDestination = remember(isOnboardingCompleted, currentUserId == null) {
+                    when {
+                        isOnboardingCompleted == false -> Screen.Onboarding.route
+                        pinCode != null && currentUserId != null -> Screen.PinEntry.route
+                        currentUserId != null -> Screen.Main.route
+                        else -> Screen.SignIn.route
+                    }
                 }
 
                 AppNavigation(

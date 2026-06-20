@@ -89,7 +89,7 @@ fun SavingCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Text(
-                    text = goal.title,
+                    text = goal.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
@@ -337,7 +337,7 @@ fun SavingSectionPreview() {
             goal = SavingGoalModel(
                 id = 1L,
                 userId = "user_1",
-                title = "Mua xe máy",
+                name = "Mua xe máy",
                 targetAmount = 50_000_000.0,
                 savingType = SavingType.ONE_TIME,
                 targetDate = System.currentTimeMillis() + 5L * 24 * 60 * 60 * 1000
@@ -348,7 +348,7 @@ fun SavingSectionPreview() {
             goal = SavingGoalModel(
                 id = 2L,
                 userId = "user_1",
-                title = "Quỹ du lịch",
+                name = "Quỹ du lịch",
                 targetAmount = 10_000_000.0,
                 savingType = SavingType.WEEKLY
             ),
@@ -358,7 +358,7 @@ fun SavingSectionPreview() {
             goal = SavingGoalModel(
                 id = 3L,
                 userId = "user_1",
-                title = "Quỹ đầu tư",
+                name = "Quỹ đầu tư",
                 targetAmount = 20_000_000.0,
                 savingType = SavingType.MONTHLY
             ),
@@ -368,7 +368,7 @@ fun SavingSectionPreview() {
             goal = SavingGoalModel(
                 id = 4L,
                 userId = "user_1",
-                title = "Laptop mới",
+                name = "Laptop mới",
                 targetAmount = 25_000_000.0,
                 savingType = SavingType.ONE_TIME,
                 targetDate = System.currentTimeMillis()

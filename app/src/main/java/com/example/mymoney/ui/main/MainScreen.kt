@@ -70,7 +70,10 @@ fun MainScreen(
     onStatisticsClick: () -> Unit = {},
     onNavigateToStreak: () -> Unit = {},
     onNavigateToPinSetup: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    onNavigateToAboutUs: () -> Unit = {},
+    onNavigateToReportBug: () -> Unit = {},
+    onNavigateToSupportUs: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -198,7 +201,10 @@ fun MainScreen(
                 onWalletColorChanged      = onWalletColorChanged,
                 onNavigateToBudgetManual  = onNavigateToBudgetManual,
                 onNavigateToAddSavingForm = { onNavigateToAddSavingForm() },
-                onNavigateToDetailSaving  = onNavigateToDetailSaving
+                onNavigateToDetailSaving  = onNavigateToDetailSaving,
+                onNavigateToAboutUs       = onNavigateToAboutUs,
+                onNavigateToReportBug     = onNavigateToReportBug,
+                onNavigateToSupportUs     = onNavigateToSupportUs
             )
         }
 

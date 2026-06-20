@@ -21,9 +21,9 @@ import com.example.mymoney.ui.auth.SignUpScreen
 import com.example.mymoney.ui.camera.CameraCaptureScreen
 import com.example.mymoney.ui.main.MainScreen
 import com.example.mymoney.ui.onboarding.OnboardingScreen
-import com.example.mymoney.ui.security.PinSetupScreen
-import com.example.mymoney.ui.security.PinEntryScreen
 import com.example.mymoney.ui.search.SearchScreen
+import com.example.mymoney.ui.security.PinEntryScreen
+import com.example.mymoney.ui.security.PinSetupScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -31,8 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.mymoney.ui.wallet.WalletSetupScreen
-import com.example.mymoney.ui.security.PinSetupScreen
-import com.example.mymoney.ui.security.PinEntryScreen
 import com.example.mymoney.ui.budget.BudgetFormScreen
 import com.example.mymoney.ui.streak.StreakScreen
 import com.example.mymoney.ui.saving.AddSavingRecordScreen
@@ -40,6 +38,9 @@ import com.example.mymoney.ui.saving.SavingDetailScreen
 import com.example.mymoney.ui.saving.SavingFormScreen
 import com.example.mymoney.ui.recurring.RecurringScreen
 import com.example.mymoney.presentation.viewmodel.streak.StreakViewModelFactory
+import com.example.mymoney.ui.other.AboutUsScreen
+import com.example.mymoney.ui.other.ReportBugScreen
+import com.example.mymoney.ui.other.SupportUsScreen
 import com.example.mymoney.ui.statistics.StatisticsScreen
 
 /**
@@ -71,14 +72,16 @@ fun AppNavigation(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier,
-        // Tắt toàn bộ animation khi chuyển màn hình
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
+        // Hiệu ứng chuyển cảnh mặc định: Fade nhanh
+        enterTransition = { fadeIn(animationSpec = tween(250)) },
+        exitTransition = { fadeOut(animationSpec = tween(250)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(250)) },
+        popExitTransition = { fadeOut(animationSpec = tween(250)) }
     ) {
         // ── Màn hình onboarding thống nhất (gồm 3 trang nội bộ) ──
-        composable(route = Screen.Onboarding.route) {
+        composable(
+            route = Screen.Onboarding.route,
+        ) {
             OnboardingScreen(
                 // Khi onboarding hoàn thành, điều hướng sang Main và xoá Onboarding khỏi back stack
                 onFinished = {
@@ -91,7 +94,9 @@ fun AppNavigation(
         }
 
         // ── Màn hình đăng nhập ──
-        composable(route = Screen.SignIn.route) {
+        composable(
+            route = Screen.SignIn.route,
+        ) {
             SignInScreen(
                 onNavigateToMain = {
                     navController.navigate(Screen.Main.route) {
@@ -105,7 +110,9 @@ fun AppNavigation(
         }
 
         // ── Màn hình đăng ký ──
-        composable(route = Screen.SignUp.route) {
+        composable(
+            route = Screen.SignUp.route,
+        ) {
             SignUpScreen(
                 onNavigateToMain = {
                     navController.navigate(Screen.Main.route) {
@@ -118,7 +125,9 @@ fun AppNavigation(
             )
         }
 // ── Màn hình chính ──
-composable(route = Screen.Main.route) {
+composable(
+    route = Screen.Main.route,
+) {
     MainScreen(
         userId = userId,
         onAddTransactionClick = { walletId ->
@@ -159,43 +168,20 @@ composable(route = Screen.Main.route) {
         },
         onNavigateToPinSetup = {
             navController.navigate(Screen.PinSetup.route)
+        },
+        onNavigateToAboutUs = {
+            navController.navigate(Screen.AboutUs.route)
+        },
+        onNavigateToReportBug = {
+            navController.navigate(Screen.ReportBug.route)
+        },
+        onNavigateToSupportUs = {
+            navController.navigate(Screen.SupportUs.route)
         }
     )
 }
         // ── Màn hình tìm kiếm ──
-        composable(
-            "search",
-            enterTransition = {
-                slideInVertically(
-                    initialOffsetY = { it }, // từ dưới lên
-                    animationSpec = tween(
-                        durationMillis = 400,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            },
-            exitTransition = {
-                slideOutVertically(
-                    targetOffsetY = { -it / 4 }, // đi xuống
-                    animationSpec = tween(300)
-                )
-            },
-            popEnterTransition = {
-                slideInVertically(
-                    initialOffsetY = { -it / 4 },
-                    animationSpec = tween(300)
-                )
-            },
-            popExitTransition = {
-                slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(
-                        400,
-                        easing = FastOutSlowInEasing
-                    )
-                )
-            }
-        ) {
+        composable("search") {
             val context = LocalContext.current
             val db = AppDatabase.getInstance(context)
             val repo = TransactionRepositoryImpl(db.transactionDao())
@@ -207,7 +193,11 @@ composable(route = Screen.Main.route) {
 
             SearchScreen(
                 factory = factory,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (navController.currentBackStackEntry?.destination?.route == "search") {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -221,7 +211,11 @@ composable(route = Screen.Main.route) {
             val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
             val lifecycleOwner = LocalLifecycleOwner.current
             AIChatScreen(
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.AddTransaction.route) {
+                        navController.popBackStack()
+                    }
+                },
                 onNavigateToRecurring = { wId -> navController.navigate(Screen.Recurring.createRoute(wId)) },
                 onNavigateToCamera = { wId -> navController.navigate(Screen.CameraCapture.createRoute(wId)) },
                 registerCameraResultListener = { callback ->
@@ -250,7 +244,9 @@ composable(route = Screen.Main.route) {
             CameraCaptureScreen(
                 walletId = walletId,
                 onNavigateBack = {
-                    navController.popBackStack()
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.CameraCapture.route) {
+                        navController.popBackStack()
+                    }
                 },
                 onPhotoTaken = { _ ->
                     // Giữ nguyên camera screen sau khi chụp — không pop back
@@ -258,7 +254,9 @@ composable(route = Screen.Main.route) {
                 onOcrResult = { text ->
                     // Forward OCR result back to previous screen via savedStateHandle
                     navController.previousBackStackEntry?.savedStateHandle?.set("camera_ocr_result", text)
-                    navController.popBackStack()
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.CameraCapture.route) {
+                        navController.popBackStack()
+                    }
                 }
             )
         }
@@ -317,7 +315,11 @@ composable(route = Screen.Main.route) {
             val factory = StreakViewModelFactory(repo, userId)
             StreakScreen(
                 factory = factory,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Streak.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -331,7 +333,11 @@ composable(route = Screen.Main.route) {
             val walletId = backStackEntry.arguments?.getLong("walletId") ?: 0L
             RecurringScreen(
                 walletId = walletId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Recurring.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -339,7 +345,11 @@ composable(route = Screen.Main.route) {
         composable(route = Screen.Statistics.route) {
             StatisticsScreen(
                 userId = userId,
-                onBackClick = { navController.popBackStack() },
+                onBackClick = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Statistics.route) {
+                        navController.popBackStack()
+                    }
+                },
                 onNavigateToBudget = {
                     navController.navigate(Screen.BudgetManual.createRoute(userId))
                 }
@@ -349,7 +359,11 @@ composable(route = Screen.Main.route) {
         // ── Security ──
         composable(route = Screen.PinSetup.route) {
             PinSetupScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.PinSetup.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -371,7 +385,11 @@ composable(route = Screen.Main.route) {
             val goalId = backStackEntry.arguments?.getLong("goalId") ?: 0L
             SavingDetailScreen(
                 goalId = goalId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.SavingDetail.route) {
+                        navController.popBackStack()
+                    }
+                },
                 onNavigateToAddRecord = { gId ->
                     navController.navigate(Screen.AddSavingRecord.createRoute(userId, gId))
                 }
@@ -391,7 +409,11 @@ composable(route = Screen.Main.route) {
             AddSavingRecordScreen(
                 userId = uid,
                 goalId = gId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.AddSavingRecord.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -405,8 +427,37 @@ composable(route = Screen.Main.route) {
             val uid = backStackEntry.arguments?.getString("userId") ?: userId
             SavingFormScreen(
                 userId = uid,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.SavingForm.route) {
+                        navController.popBackStack()
+                    }
+                }
             )
+        }
+
+        // ── Khác ──
+        composable(route = Screen.AboutUs.route) {
+            AboutUsScreen(onBackClick = {
+                if (navController.currentBackStackEntry?.destination?.route == Screen.AboutUs.route) {
+                    navController.popBackStack()
+                }
+            })
+        }
+
+        composable(route = Screen.ReportBug.route) {
+            ReportBugScreen(onBackClick = {
+                if (navController.currentBackStackEntry?.destination?.route == Screen.ReportBug.route) {
+                    navController.popBackStack()
+                }
+            })
+        }
+
+        composable(route = Screen.SupportUs.route) {
+            SupportUsScreen(onBackClick = {
+                if (navController.currentBackStackEntry?.destination?.route == Screen.SupportUs.route) {
+                    navController.popBackStack()
+                }
+            })
         }
     }
 }

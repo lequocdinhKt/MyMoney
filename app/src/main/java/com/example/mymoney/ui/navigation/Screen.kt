@@ -84,6 +84,11 @@ sealed class Screen(val route: String) {
 
     /** Màn hình nhập mã PIN để mở app */
     data object PinEntry : Screen("pin_entry")
+
+    // ── Khác ──
+    data object AboutUs : Screen("about_us")
+    data object ReportBug : Screen("report_bug")
+    data object SupportUs : Screen("support_us")
 }
 
 /**

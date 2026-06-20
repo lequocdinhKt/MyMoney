@@ -8,7 +8,7 @@ class AddSavingGoalUserCase (
     private val repository: SavingRepository
 ) {
     suspend operator fun invoke(savingGoal: SavingGoalModel) {
-        require(savingGoal.title.isNotBlank()) {"Tiêu đề không được để trống"}
+        require(savingGoal.name.isNotBlank()) {"Tiêu đề không được để trống"}
         require(savingGoal.targetAmount > 0) {"Mục tiêu phải lớn hơn 0"}
         if(savingGoal.savingType == SavingType.ONE_TIME) {
             require(savingGoal.targetDate != null) {

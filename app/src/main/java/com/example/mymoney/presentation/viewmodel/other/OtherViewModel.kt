@@ -19,6 +19,20 @@ class OtherViewModel : ViewModel() {
 
     /** Xử lý sự kiện từ UI */
     fun onEvent(event: OtherEvent) {
-        // TODO: Xử lý event khi có thêm chức năng
+        when (event) {
+            is OtherEvent.AboutUsClicked -> {
+                // TODO: Điều hướng sang màn hình About
+            }
+            is OtherEvent.SupportUsClicked -> {
+                // TODO: Hiển thị thông tin ủng hộ
+            }
+            is OtherEvent.ReportBugClicked -> {
+                // TODO: Gửi log hoặc mở form báo lỗi
+            }
+            is OtherEvent.NavigateToAboutUs,
+            is OtherEvent.NavigateToReportBug -> {
+                // Side-effects handled by UI
+            }
+        }
     }
 }

@@ -52,6 +52,9 @@ interface CategoryDao {
     @Query("UPDATE categories SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
 
+    @Query("DELETE FROM categories WHERE user_id = :userId AND is_deleted = 1")
+    suspend fun hardDeleteDeletedItems(userId: String)
+
     /** Cập nhật supabase_id theo tên category — dùng khi sync từ Supabase xuống */
     @Query("UPDATE categories SET supabase_id = :supabaseId WHERE name = :name AND is_deleted = 0")
     suspend fun updateSupabaseIdByName(name: String, supabaseId: String)

@@ -35,7 +35,7 @@ private val LightColorScheme = lightColorScheme(
     surface          = SurfaceLight,
     onSurface        = OnBackgroundLight,
     surfaceVariant   = GrayLight,
-    onSurfaceVariant = GrayMedium,
+    onSurfaceVariant = Color(0xFF455A64), // Even darker variant for light mode
 )
 
 private val DarkColorScheme = darkColorScheme(

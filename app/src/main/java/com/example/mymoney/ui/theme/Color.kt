@@ -38,6 +38,6 @@ val WarningAmber     = Color(0xFFFF9900)  // hsl(38, 100%, 50%)
 val WarningContainer = Color(0xFFFFF3CD)  // hsl(38, 100%, 90%)
 val OnWarning        = Color(0xFF1A0F00)
 
-// ── Neutral – Light Gray  hsl(207, 20%, 88%)
+// ── Neutral – Gray
 val GrayLight        = Color(0xFFD9E4EE)  // hsl(207, 20%, 88%)
-val GrayMedium       = Color(0xFF8AAABF)  // hsl(207, 20%, 58%)
+val GrayMedium       = Color(0xFF5C707D)  // Darker gray for better contrast (was 0xFF8AAABF)

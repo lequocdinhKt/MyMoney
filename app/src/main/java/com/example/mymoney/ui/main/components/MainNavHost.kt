@@ -1,7 +1,8 @@
 package com.example.mymoney.ui.main.components
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -38,16 +39,19 @@ fun MainNavHost(
     onWalletColorChanged: (colorHex: String) -> Unit = {},
     onNavigateToBudgetManual: (budgetId: Long) -> Unit = {},
     onNavigateToAddSavingForm: () -> Unit = {},
-    onNavigateToDetailSaving: (savingId: Long) -> Unit = {}
+    onNavigateToDetailSaving: (savingId: Long) -> Unit = {},
+    onNavigateToAboutUs: () -> Unit = {},
+    onNavigateToReportBug: () -> Unit = {},
+    onNavigateToSupportUs: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
         startDestination = BottomTab.Home.route,
         modifier = Modifier.padding(innerPadding),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
+        enterTransition = { fadeIn(animationSpec = tween(250)) },
+        exitTransition = { fadeOut(animationSpec = tween(200)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(250)) },
+        popExitTransition = { fadeOut(animationSpec = tween(200)) }
     ) {
         composable(BottomTab.Home.route) {
             HomeScreen(
@@ -71,6 +75,12 @@ fun MainNavHost(
                 onNavigateToDetailSaving = onNavigateToDetailSaving
             )
         }
-        composable(BottomTab.Other.route)  { OtherScreen() }
+        composable(BottomTab.Other.route)  { 
+            OtherScreen(
+                onNavigateToAboutUs = onNavigateToAboutUs,
+                onNavigateToReportBug = onNavigateToReportBug,
+                onNavigateToSupportUs = onNavigateToSupportUs
+            ) 
+        }
     }
 }

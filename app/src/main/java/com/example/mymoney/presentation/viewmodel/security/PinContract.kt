@@ -7,10 +7,14 @@ data class PinUiState(
     val currentPin: String? = null,
     val isBiometricEnabled: Boolean = false,
     val errorMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val retryCount: Int = 0,
+    val lockUntil: Long = 0L,
+    val isForgotPinDialogVisible: Boolean = false
 )
 
 enum class PinStep {
+    UNLOCK,            // Mở khóa ứng dụng
     ENTER_CURRENT_PIN, // Khi chỉnh sửa, cần nhập PIN cũ
     ENTER_NEW_PIN,     // Nhập PIN mới lần 1
     CONFIRM_NEW_PIN    // Nhập PIN mới lần 2 để xác nhận
@@ -22,4 +26,8 @@ sealed interface PinEvent {
     data object OnClearClick : PinEvent
     data class OnToggleBiometric(val enabled: Boolean) : PinEvent
     data object OnResetState : PinEvent
+    data object OnForgotPinClick : PinEvent
+    data object OnConfirmForgotPin : PinEvent
+    data object OnDismissForgotPin : PinEvent
+    data object OnBiometricSuccess : PinEvent
 }

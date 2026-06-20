@@ -6,8 +6,6 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.datastore.SettingPreferences
 import com.example.mymoney.data.local.db.AppDatabase
 import com.example.mymoney.data.repository.AuthRepositoryImpl
-import com.example.mymoney.data.repository.SupabaseTransactionRepository
-import com.example.mymoney.data.repository.TransactionRepositoryImpl
 
 /**
  * Factory inject toàn bộ dependency chain:
@@ -31,11 +29,7 @@ class SettingViewModelFactory(
         return SettingViewModel(
             settingPreferences      = SettingPreferences(appCtx),
             authRepository          = AuthRepositoryImpl(),
-            transactionRepository   = TransactionRepositoryImpl(db.transactionDao()),
-            supabaseTransactionRepo = SupabaseTransactionRepository(
-                categoryDao = db.categoryDao(),
-                walletDao   = db.walletDao()
-            )
+            db                      = db
         ) as T
     }
 }

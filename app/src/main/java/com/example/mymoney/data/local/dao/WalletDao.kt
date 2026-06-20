@@ -47,6 +47,9 @@ interface WalletDao {
     @Query("UPDATE wallets SET sync_status = ${SyncStatus.SYNCED}, supabase_id = :supabaseId WHERE id = :localId")
     suspend fun markSynced(localId: Long, supabaseId: String)
 
+    @Query("DELETE FROM wallets WHERE user_id = :userId AND is_deleted = 1")
+    suspend fun hardDeleteDeletedItems(userId: String)
+
 
     /** Khi 1 ví được set mặc định -> bỏ mặc định toàn bộ ví khác */
     @Query("UPDATE wallets SET is_default = 0, updated_at = :now, sync_status = ${SyncStatus.PENDING_UPDATE} WHERE user_id = :userId")

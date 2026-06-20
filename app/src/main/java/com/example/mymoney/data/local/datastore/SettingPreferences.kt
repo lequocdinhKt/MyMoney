@@ -38,6 +38,8 @@ class SettingPreferences(private val context: Context) {
         val KEY_AI_CUSTOM_RULES          = stringPreferencesKey("ai_custom_rules")
         val KEY_PIN_CODE                  = stringPreferencesKey("pin_code")
         val KEY_BIOMETRIC_ENABLED         = booleanPreferencesKey("biometric_enabled")
+        val KEY_PIN_RETRY_COUNT           = androidx.datastore.preferences.core.intPreferencesKey("pin_retry_count")
+        val KEY_PIN_LOCKED_UNTIL          = androidx.datastore.preferences.core.longPreferencesKey("pin_locked_until")
     }
 
     // ── Read Flows ─────────────────────────────────────────────────────────────
@@ -97,6 +99,12 @@ class SettingPreferences(private val context: Context) {
     /** Biometric enabled status */
     val isBiometricEnabled: Flow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[KEY_BIOMETRIC_ENABLED] ?: false }
+
+    val pinRetryCount: Flow<Int> = context.dataStore.data
+        .map { prefs -> prefs[KEY_PIN_RETRY_COUNT] ?: 0 }
+
+    val pinLockedUntil: Flow<Long> = context.dataStore.data
+        .map { prefs -> prefs[KEY_PIN_LOCKED_UNTIL] ?: 0L }
 
     // ── Write ──────────────────────────────────────────────────────────────────
 
@@ -165,6 +173,18 @@ class SettingPreferences(private val context: Context) {
     suspend fun setBiometricEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_BIOMETRIC_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setPinRetryCount(count: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PIN_RETRY_COUNT] = count
+        }
+    }
+
+    suspend fun setPinLockedUntil(timestamp: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PIN_LOCKED_UNTIL] = timestamp
         }
     }
 

@@ -108,7 +108,7 @@ private fun SavingFormContent(
     onNavigateBack: () -> Unit
 ) {
     val cleanAmount = uiState.amount.replace(".", "").replace(",", "").toLongOrNull() ?: 0L
-    val isValid = uiState.title.isNotBlank() && cleanAmount > 0
+    val isValid = uiState.name.isNotBlank() && cleanAmount > 0
 
     Column(
         modifier = Modifier
@@ -162,6 +162,15 @@ private fun SavingFormContent(
             }
         )
 
+        if (uiState.error != null) {
+            Text(
+                text = uiState.error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
         Spacer(Modifier.height(16.dp))
 
         // ── Form ──
@@ -173,8 +182,8 @@ private fun SavingFormContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedTextField(
-                value = uiState.title,
-                onValueChange = { onEvent(AddSavingEvent.OnTitleChanged(it)) },
+                value = uiState.name,
+                onValueChange = { onEvent(AddSavingEvent.OnNameChanged(it)) },
                 label = { Text("Tiêu đề") },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),

@@ -5,7 +5,7 @@ import java.time.LocalDate
 data class AddSavingFormUiState(
     val isLoading: Boolean = false,
     val mode: SavingMode = SavingMode.ONE_TIME,
-    val title: String = "",
+    val name: String = "",
     val amount: String = "",
     val targetDate: LocalDate = LocalDate.now().plusWeeks(1),  // One-time
     val recurringType: RecurringType = RecurringType.MONTHLY, // Recurring
@@ -27,7 +27,7 @@ enum class RecurringType {
 }
 
 sealed interface AddSavingEvent {
-    data class OnTitleChanged(val title: String) : AddSavingEvent
+    data class OnNameChanged(val name: String) : AddSavingEvent
     data class OnAmountChanged(val value: String) : AddSavingEvent
     data class OnTargetDateSelected(val date: LocalDate) : AddSavingEvent
     data class OnRecurringTypeSelected(val type: RecurringType) : AddSavingEvent

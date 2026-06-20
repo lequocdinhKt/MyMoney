@@ -25,7 +25,7 @@ class AddSavingFormViewModel(
 
     fun onEvent(event: AddSavingEvent) {
         when (event) {
-            is AddSavingEvent.OnTitleChanged          -> _uiState.update { it.copy(title = event.title) }
+            is AddSavingEvent.OnNameChanged          -> _uiState.update { it.copy(name = event.name, error = null) }
             is AddSavingEvent.OnAmountChanged         -> {
                 viewModelScope.launch {
                     val useGrouping = settingPreferences.isThousandSeparatorEnabled.first()
@@ -33,21 +33,22 @@ class AddSavingFormViewModel(
                     _uiState.update { it.copy(amount = formatted, error = null) }
                 }
             }
-            is AddSavingEvent.OnTargetDateSelected    -> _uiState.update { it.copy(targetDate = event.date, showDatePicker = false) }
-            is AddSavingEvent.OnRecurringTypeSelected -> _uiState.update { it.copy(recurringType = event.type) }
-            is AddSavingEvent.OnCurrencyChanged       -> _uiState.update { it.copy(currency = event.currency, showCurrencySheet = false) }
+            is AddSavingEvent.OnTargetDateSelected    -> _uiState.update { it.copy(targetDate = event.date, showDatePicker = false, error = null) }
+            is AddSavingEvent.OnRecurringTypeSelected -> _uiState.update { it.copy(recurringType = event.type, error = null) }
+            is AddSavingEvent.OnCurrencyChanged       -> _uiState.update { it.copy(currency = event.currency, showCurrencySheet = false, error = null) }
             is AddSavingEvent.OnModeChanged           -> {
                 _uiState.update { state ->
                     when (event.mode) {
                         SavingMode.ONE_TIME -> {
                             state.copy(
                                 mode = SavingMode.ONE_TIME,
-                                targetDate = state.targetDate
+                                targetDate = state.targetDate,
+                                error = null
                             )
                         }
 
                         SavingMode.RECURRING -> {
-                            state.copy(mode = SavingMode.RECURRING)
+                            state.copy(mode = SavingMode.RECURRING, error = null)
                         }
                     }
                 }
@@ -65,7 +66,7 @@ class AddSavingFormViewModel(
 
         val amount = state.amount.replace(".", "").replace(",", "").toDoubleOrNull() ?: 0.0
 
-        if (state.title.isBlank()) {
+        if (state.name.isBlank()) {
             _uiState.update {
                 it.copy(error = "Vui lòng nhập tiêu đề")
             }
@@ -99,7 +100,7 @@ class AddSavingFormViewModel(
 
                 val savingGoal = SavingGoalModel(
                     userId = userId,
-                    title = state.title.trim(),
+                    name = state.name.trim(),
                     currency = state.currency,
                     targetAmount = amount,
                     savingType = savingType,

@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mymoney.data.local.datastore.SettingPreferences
-import com.example.mymoney.data.repository.SupabaseTransactionRepository
+import com.example.mymoney.data.local.db.AppDatabase
+import com.example.mymoney.data.repository.SupabaseSyncRepository
 import com.example.mymoney.domain.repository.AuthRepository
-import com.example.mymoney.domain.repository.TransactionRepository
 import com.example.mymoney.presentation.viewmodel.setting.setting.CurrencyMode
 import com.example.mymoney.presentation.viewmodel.setting.setting.NumberFormat
 import com.example.mymoney.presentation.viewmodel.setting.setting.SettingEvent
@@ -47,11 +47,11 @@ private data class SettingExtrasState(
 class SettingViewModel(
     private val settingPreferences: SettingPreferences,
     private val authRepository: AuthRepository,
-    private val transactionRepository: TransactionRepository,
-    private val supabaseTransactionRepo: SupabaseTransactionRepository
+    private val db: AppDatabase
 ) : ViewModel() {
 
     private val TAG = "SettingViewModel"
+    private val syncRepository = SupabaseSyncRepository(db)
 
     // ── UI state: merge DataStore flows + backup state + UI extras ──
     private val _backupState = MutableStateFlow(BackupViewState())
@@ -179,48 +179,33 @@ class SettingViewModel(
 
     private fun startBackup() {
         viewModelScope.launch {
-            // 1. Bắt đầu loading
             _backupState.update { BackupViewState(isBackingUp = true) }
 
             try {
-                // 2. Lấy userId từ DataStore
                 val userId = settingPreferences.currentUserId.first()
+                val username = settingPreferences.currentUsername.first() ?: "User"
+                
                 if (userId.isNullOrBlank()) {
                     _backupState.update { BackupViewState(resultMsg = "⚠️ Chưa đăng nhập. Không thể sao lưu.") }
                     return@launch
                 }
 
-                // 3. Đọc tất cả giao dịch của userId từ Room (1 snapshot)
-                val transactions = transactionRepository.getAllTransactions(userId).first()
+                // 1. Thực hiện đồng bộ toàn bộ lên Supabase
+                val success = syncRepository.syncAll(userId, username)
 
-                if (transactions.isEmpty()) {
-                    _backupState.update { BackupViewState(resultMsg = "ℹ️ Không có giao dịch nào để sao lưu.") }
-                    return@launch
+                if (success) {
+                    // 2. Dọn dẹp dữ liệu local (Hard delete các bản ghi đã xóa tạm)
+                    db.transactionDao().hardDeleteDeletedItems(userId)
+                    db.walletDao().hardDeleteDeletedItems(userId)
+                    db.categoryDao().hardDeleteDeletedItems(userId)
+                    db.budgetDao().hardDeleteDeletedItems(userId)
+                    db.savingDao().hardDeleteDeletedItems(userId)
+                    db.savingRecordDao().hardDeleteDeletedItems(userId)
+
+                    _backupState.update { BackupViewState(resultMsg = "✅ Sao lưu và dọn dẹp dữ liệu thành công.") }
+                } else {
+                    _backupState.update { BackupViewState(resultMsg = "⚠️ Sao lưu thất bại hoặc không hoàn tất.") }
                 }
-
-                // 4. Map sang DTO
-                val dtos = transactions.map { tx ->
-                    SupabaseTransactionRepository.TransactionItem(
-                        note            = tx.note,
-                        amount          = tx.amount,
-                        type            = tx.type,
-                        category        = tx.category,
-                        timestampMillis = tx.timestamp,
-                        walletId        = tx.walletId,   // local Room ID → resolved to UUID by repo
-                        aiGenerated     = tx.aiGenerated
-                    )
-                }
-
-                // 5. Upsert lên Supabase
-                val count = supabaseTransactionRepo.upsertAll(userId, dtos)
-
-                val msg = if (count == dtos.size)
-                    "✅ Đã sao lưu $count giao dịch lên đám mây."
-                else
-                    "⚠️ Sao lưu một phần: $count/${dtos.size} giao dịch thành công."
-
-                _backupState.update { BackupViewState(resultMsg = msg) }
-                Log.d(TAG, msg)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Backup failed: ${e.message}", e)

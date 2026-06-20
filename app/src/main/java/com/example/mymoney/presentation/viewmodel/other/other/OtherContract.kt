@@ -15,4 +15,12 @@ data class OtherUiState(
 /**
  * Sự kiện người dùng gửi từ OtherScreen lên ViewModel.
  */
-sealed interface OtherEvent
+sealed interface OtherEvent {
+    data object AboutUsClicked : OtherEvent
+    data object SupportUsClicked : OtherEvent
+    data object ReportBugClicked : OtherEvent
+    
+    // Side-effects handled by UI
+    data object NavigateToAboutUs : OtherEvent
+    data object NavigateToReportBug : OtherEvent
+}

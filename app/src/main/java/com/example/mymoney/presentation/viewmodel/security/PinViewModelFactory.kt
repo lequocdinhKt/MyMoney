@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.mymoney.data.local.datastore.SettingPreferences
+import com.example.mymoney.data.repository.AuthRepositoryImpl
 
 class PinViewModelFactory(
-    private val context: Context
+    private val context: Context,
+    private val isSetupFlow: Boolean = false
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -15,7 +17,9 @@ class PinViewModelFactory(
             "Unknown ViewModel: ${modelClass.name}"
         }
         return PinViewModel(
-            settingPreferences = SettingPreferences(context.applicationContext)
+            settingPreferences = SettingPreferences(context.applicationContext),
+            authRepository = AuthRepositoryImpl(),
+            isSetupFlow = isSetupFlow
         ) as T
     }
 }

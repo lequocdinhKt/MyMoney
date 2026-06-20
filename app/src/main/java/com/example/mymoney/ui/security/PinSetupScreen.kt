@@ -28,7 +28,7 @@ import com.example.mymoney.presentation.viewmodel.security.PinViewModelFactory
 fun PinSetupScreen(
     onNavigateBack: () -> Unit,
     viewModel: PinViewModel = viewModel(
-        factory = PinViewModelFactory(LocalContext.current)
+        factory = PinViewModelFactory(LocalContext.current, isSetupFlow = true)
     )
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -65,6 +65,7 @@ fun PinSetupScreen(
                     PinStep.ENTER_CURRENT_PIN -> "Nhập mã PIN hiện tại"
                     PinStep.ENTER_NEW_PIN -> "Nhập mã PIN mới"
                     PinStep.CONFIRM_NEW_PIN -> "Xác nhận mã PIN mới"
+                    else -> ""
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
