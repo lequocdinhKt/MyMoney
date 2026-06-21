@@ -45,6 +45,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.CardDefaults
 import com.example.mymoney.domain.model.SavingGoalModel
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import com.example.mymoney.domain.model.SavingRecordModel
 import com.example.mymoney.ui.components.EmptyStateComposable
 import com.example.mymoney.ui.theme.MyMoneyTheme
 import com.example.mymoney.ui.theme.SuccessGreen
@@ -200,7 +205,13 @@ private fun SavingDetailContent(
                             EmptyStateComposable("Chưa có hồ sơ nào. Thêm mới ngay nào")
                         }
                     } else {
-                        // TODO: Hiển thị lịch sử tiết kiệm
+                        items(detail.records.sortedByDescending { it.recordDate }) { record ->
+                            SavingRecordItemRow(
+                                amount = record.amount,
+                                date = record.recordDate,
+                                note = record.note
+                            )
+                        }
                     }
                 }
             }
@@ -329,6 +340,63 @@ private fun SavingProgressSection(
                 valueColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun SavingRecordItemRow(
+    amount: Double,
+    date: Long,
+    note: String?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Icon
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Savings,
+                contentDescription = null,
+                tint = SuccessGreen,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = note ?: "Tiết kiệm",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1
+            )
+            Text(
+                text = formatDate(date),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+
+        Text(
+            text = "+${formatMoney(amount)}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = SuccessGreen
+        )
     }
 }
 

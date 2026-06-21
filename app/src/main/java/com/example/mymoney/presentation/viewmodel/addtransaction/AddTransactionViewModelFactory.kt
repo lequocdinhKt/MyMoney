@@ -50,7 +50,12 @@ class AddTransactionViewModelFactory(
             ensureDefaultWallet     = EnsureDefaultWalletUseCase(walletRepo),
             chatRepository          = ChatRepositoryImpl(db.chatMessageDao()),
             savingRepository        = savingRepo,
-            addSavingRecordUseCase  = AddSavingRecordUseCase(walletRepo, savingRecordRepo),
+            addSavingRecordUseCase  = AddSavingRecordUseCase(
+                walletRepository = walletRepo,
+                savingRecordRepository = savingRecordRepo,
+                savingRepository = savingRepo,
+                transactionRepository = txRepo
+            ),
             parseTransactionMessageUseCase = ParseTransactionMessageUseCase(aiParsingRepo),
             transcribeVoiceUseCase = TranscribeVoiceUseCase(aiParsingRepo),
             db                      = db,

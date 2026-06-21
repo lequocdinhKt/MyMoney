@@ -33,6 +33,7 @@ fun mapEmojiToDrawable(icon: String): Int {
         "📊" -> R.drawable.ic_category_income_investment
         "💼" -> R.drawable.ic_category_income_bag
         "🤝" -> R.drawable.ic_category_income_bag
+        "🐷" -> R.drawable.ic_category_income_money
         else -> R.drawable.ic_category_expense_noodle
     }
 }
